@@ -24,6 +24,16 @@ export const GoogleCalendarSettings = ({ onRefresh }: GoogleCalendarSettingsProp
   const [importEnd, setImportEnd] = useState(format(endOfMonth(addMonths(new Date(), 1)), "yyyy-MM-dd"));
 
   useEffect(() => {
+    // Volta da tela de autorização do Google
+    const params = new URLSearchParams(window.location.search);
+    const resultado = params.get("google_calendar");
+    if (resultado) {
+      if (resultado === "conectado") toast.success("Google Agenda conectado!");
+      else toast.error("Não foi possível conectar: " + (params.get("motivo") || "erro desconhecido"));
+      ["google_calendar", "motivo", "google_callback"].forEach((p) => params.delete(p));
+      const query = params.toString();
+      window.history.replaceState(null, "", window.location.pathname + (query ? `?${query}` : "") + window.location.hash);
+    }
     checkStatus();
   }, []);
 

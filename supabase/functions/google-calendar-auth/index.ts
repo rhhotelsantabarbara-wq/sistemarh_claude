@@ -10,6 +10,8 @@ const GOOGLE_CLIENT_ID = Deno.env.get("GOOGLE_CLIENT_ID");
 const GOOGLE_CLIENT_SECRET = Deno.env.get("GOOGLE_CLIENT_SECRET");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+const OAUTH_REDIRECT_URI = `${SUPABASE_URL}/functions/v1/google-calendar-auth?action=oauth_callback`;
+const STATE_TTL_MS = 15 * 60 * 1000;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -33,68 +35,105 @@ serve(async (req) => {
     }
 
     if (action === "init") {
-      // Generate OAuth URL
+      if (!userId) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       const body = await req.json();
-      const appRedirectUri = body.redirectUri;
+      let appRedirect: URL;
+      try {
+        appRedirect = new URL(String(body.redirectUri));
+        if (!["https:", "http:"].includes(appRedirect.protocol)) throw new Error("protocolo inválido");
+      } catch {
+        return new Response(JSON.stringify({ error: "redirectUri inválido" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
-      // Store the app redirect URI in state parameter
-      const state = encodeURIComponent(JSON.stringify({ appRedirectUri }));
-      
-      // Use edge function URL as the actual OAuth redirect (Google requires this)
-      const oauthRedirectUri = `${SUPABASE_URL}/functions/v1/google-calendar-auth?action=oauth_callback`;
+      // Estado aleatório guardado no banco (mesma tabela usada pelo Drive), ligado ao usuário logado
+      const state = crypto.randomUUID();
+      await supabase.from("google_drive_oauth_states").delete()
+        .lt("criado_em", new Date(Date.now() - STATE_TTL_MS).toISOString());
+      const { error: stateError } = await supabase.from("google_drive_oauth_states")
+        .insert({ state, user_id: userId, retorno: appRedirect.toString() });
+      if (stateError) throw stateError;
 
-      const scope = encodeURIComponent(
-        "https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly"
-      );
-
-      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-        `client_id=${GOOGLE_CLIENT_ID}` +
-        `&redirect_uri=${encodeURIComponent(oauthRedirectUri)}` +
-        `&response_type=code` +
-        `&scope=${scope}` +
-        `&access_type=offline` +
-        `&prompt=consent` +
-        `&state=${state}`;
+      const authUrl = "https://accounts.google.com/o/oauth2/v2/auth?" + new URLSearchParams({
+        client_id: GOOGLE_CLIENT_ID!,
+        redirect_uri: OAUTH_REDIRECT_URI,
+        response_type: "code",
+        scope: "https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly",
+        access_type: "offline",
+        prompt: "consent",
+        state,
+      }).toString();
 
       return new Response(JSON.stringify({ authUrl }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    
-    // Handle OAuth callback from Google (browser redirect)
+
+    // Retorno do Google (redirecionamento do navegador): troca o código pelos tokens aqui mesmo
+    // e devolve o usuário ao sistema com HTTP 302 (o Supabase não exibe respostas HTML das funções).
     if (action === "oauth_callback") {
-      const code = url.searchParams.get("code");
+      const texto = (msg: string, status = 400) =>
+        new Response(msg, { status, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+
       const stateParam = url.searchParams.get("state");
-      const error = url.searchParams.get("error");
-      
-      if (error) {
-        return new Response(`<html><body><script>window.location.href = "/eventos?error=${encodeURIComponent(error)}";</script></body></html>`, {
-          headers: { "Content-Type": "text/html" },
-        });
+      if (!stateParam) return texto("Parâmetros ausentes. Volte ao sistema e tente conectar novamente.");
+
+      const { data: st } = await supabase.from("google_drive_oauth_states")
+        .select("*").eq("state", stateParam).maybeSingle();
+      if (!st) return texto("Solicitação expirada. Volte ao sistema e clique em Conectar novamente.");
+      await supabase.from("google_drive_oauth_states").delete().eq("state", stateParam);
+
+      const destino = new URL(st.retorno);
+      destino.searchParams.delete("code");
+      const voltar = (params: Record<string, string>) => {
+        for (const [k, v] of Object.entries(params)) destino.searchParams.set(k, v);
+        return new Response(null, { status: 302, headers: { Location: destino.toString() } });
+      };
+
+      if (Date.now() - new Date(st.criado_em).getTime() > STATE_TTL_MS) {
+        return voltar({ google_calendar: "erro", motivo: "Tempo esgotado, tente novamente" });
       }
-      
-      if (!code || !stateParam) {
-        return new Response(`<html><body><script>window.location.href = "/eventos?error=missing_params";</script></body></html>`, {
-          headers: { "Content-Type": "text/html" },
-        });
-      }
-      
-      // Parse state to get app redirect URI
-      let appRedirectUri: string;
-      try {
-        const state = JSON.parse(decodeURIComponent(stateParam));
-        appRedirectUri = state.appRedirectUri;
-      } catch {
-        appRedirectUri = "/eventos?google_callback=true";
-      }
-      
-      // Redirect to app with code
-      const redirectUrl = new URL(appRedirectUri.startsWith("http") ? appRedirectUri : `https://${url.host}${appRedirectUri}`);
-      redirectUrl.searchParams.set("code", code);
-      
-      return new Response(`<html><body><script>window.location.href = "${redirectUrl.toString()}";</script></body></html>`, {
-        headers: { "Content-Type": "text/html" },
+      const googleError = url.searchParams.get("error");
+      if (googleError) return voltar({ google_calendar: "erro", motivo: googleError });
+      const code = url.searchParams.get("code");
+      if (!code) return voltar({ google_calendar: "erro", motivo: "missing_params" });
+
+      const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          code,
+          client_id: GOOGLE_CLIENT_ID!,
+          client_secret: GOOGLE_CLIENT_SECRET!,
+          redirect_uri: OAUTH_REDIRECT_URI,
+          grant_type: "authorization_code",
+        }),
       });
+      const tokens = await tokenResponse.json();
+      if (tokens.error || !tokens.access_token) {
+        console.error("Token error:", tokens);
+        return voltar({ google_calendar: "erro", motivo: tokens.error_description || tokens.error || "token" });
+      }
+
+      const { error: dbError } = await supabase.from("google_calendar_tokens").upsert({
+        user_id: st.user_id,
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+        expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
+      }, { onConflict: "user_id" });
+      if (dbError) {
+        console.error("DB error:", dbError);
+        return voltar({ google_calendar: "erro", motivo: "Falha ao salvar a conexão" });
+      }
+
+      return voltar({ google_calendar: "conectado" });
     }
 
     if (action === "callback") {
@@ -110,7 +149,6 @@ serve(async (req) => {
       }
 
       // Use the edge function URL as redirect_uri (must match what was used in auth URL)
-      const oauthRedirectUri = `${SUPABASE_URL}/functions/v1/google-calendar-auth?action=oauth_callback`;
 
       const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
         method: "POST",
@@ -119,7 +157,7 @@ serve(async (req) => {
           code,
           client_id: GOOGLE_CLIENT_ID!,
           client_secret: GOOGLE_CLIENT_SECRET!,
-          redirect_uri: oauthRedirectUri,
+          redirect_uri: OAUTH_REDIRECT_URI,
           grant_type: "authorization_code",
         }),
       });
