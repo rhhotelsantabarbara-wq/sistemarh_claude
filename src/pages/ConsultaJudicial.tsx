@@ -96,6 +96,7 @@ export default function ConsultaJudicial() {
         try { msg = (await (error as any).context?.json())?.error || msg; } catch { /* mantém a mensagem */ }
         throw new Error(msg);
       }
+      if ((data as any)?.error) throw new Error((data as any).error);
 
       toast.success(
         data.processos_encontrados > 0

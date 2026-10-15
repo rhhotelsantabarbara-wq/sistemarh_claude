@@ -138,11 +138,11 @@ serve(async (req) => {
     const token = req.headers.get('Authorization')?.replace('Bearer ', '');
     const { data: { user } } = token ? await supabase.auth.getUser(token) : { data: { user: null } };
     if (!user) {
-      return new Response(JSON.stringify({ error: 'Não autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ error: 'Não autorizado' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
     const { data: papel } = await supabase.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'gestor').maybeSingle();
     if (!papel) {
-      return new Response(JSON.stringify({ error: 'Apenas gestores podem fazer consultas judiciais' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ error: 'Apenas gestores podem fazer consultas judiciais' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     const { data: aiConfig } = await supabase
@@ -155,7 +155,7 @@ serve(async (req) => {
 
     if (!cpf || !nome) {
       return new Response(JSON.stringify({ error: 'CPF e nome são obrigatórios' }), {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -171,7 +171,7 @@ serve(async (req) => {
     const geminiKey = aiConfig?.google_gemini_api_key || Deno.env.get('GOOGLE_GEMINI_API_KEY');
     if (!geminiKey) {
       return new Response(JSON.stringify({ error: 'Chave do Google Gemini não configurada (Configurações → IA).' }), {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -182,7 +182,7 @@ serve(async (req) => {
     } catch (e) {
       const msg = e instanceof BuscaIndisponivelError ? e.message : `Erro na busca: ${(e as Error).message}`;
       return new Response(JSON.stringify({ error: msg }), {
-        status: 503,
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -236,7 +236,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error:', error);
     return new Response(JSON.stringify({ error: (error as Error).message }), {
-      status: 500,
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
