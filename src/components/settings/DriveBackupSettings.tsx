@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2, XCircle, RefreshCw, Upload, ExternalLink, HardDrive } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, RefreshCw, Upload, ExternalLink, HardDrive, Link2, Unlink } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { RetroactiveBackup } from "./RetroactiveBackup";
@@ -34,6 +34,7 @@ export const DriveBackupSettings = () => {
   const [connected, setConnected] = useState<boolean | null>(null);
   const [account, setAccount] = useState<{ emailAddress?: string; displayName?: string } | null>(null);
   const [logs, setLogs] = useState<LogItem[]>([]);
+  const [connecting, setConnecting] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -57,7 +58,42 @@ export const DriveBackupSettings = () => {
     setChecking(false);
   };
 
-  useEffect(() => { load(); checkConnection(); }, []);
+  useEffect(() => {
+    // Volta da tela de autorização do Google
+    const params = new URLSearchParams(window.location.search);
+    const resultado = params.get("drive");
+    if (resultado) {
+      if (resultado === "conectado") toast.success("Google Drive conectado!");
+      else toast.error("Não foi possível conectar: " + (params.get("motivo") || "erro desconhecido"));
+      params.delete("drive");
+      params.delete("motivo");
+      const query = params.toString();
+      window.history.replaceState(null, "", window.location.pathname + (query ? `?${query}` : "") + window.location.hash);
+    }
+    load();
+    checkConnection();
+  }, []);
+
+  const connectDrive = async () => {
+    setConnecting(true);
+    const retorno = window.location.origin + window.location.pathname;
+    const { data, error } = await supabase.functions.invoke("google-drive-auth", { body: { action: "init", retorno } });
+    if (error || !(data as any)?.authUrl) {
+      setConnecting(false);
+      let msg = (data as any)?.error || error?.message || "erro desconhecido";
+      try { msg = (await (error as any)?.context?.json())?.error || msg; } catch { /* mantém a mensagem */ }
+      toast.error("Não foi possível iniciar a conexão: " + msg);
+      return;
+    }
+    window.location.href = (data as any).authUrl;
+  };
+
+  const disconnectDrive = async () => {
+    if (!window.confirm("Desconectar a conta Google? Os backups automáticos vão parar até conectar de novo.")) return;
+    const { error } = await supabase.functions.invoke("google-drive-auth", { body: { action: "disconnect" } });
+    if (error) toast.error("Erro ao desconectar: " + error.message);
+    else { toast.success("Google Drive desconectado"); checkConnection(); }
+  };
 
   const save = async () => {
     setSaving(true);
@@ -116,9 +152,13 @@ export const DriveBackupSettings = () => {
               Conta vinculada: <strong>{account.displayName}</strong> ({account.emailAddress})
             </p>
           )}
-          {!connected && (
-            <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md">
-              Conecte a conta Google da empresa em <strong>Configurações do projeto → Connectors → Google Drive</strong>.
+          {connected === false && (
+            <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground bg-muted/50 p-3 rounded-md">
+              <span>Conecte a conta Google da empresa para ativar os backups no Drive.</span>
+              <Button size="sm" onClick={connectDrive} disabled={connecting}>
+                {connecting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Link2 className="h-4 w-4 mr-2" />}
+                Conectar Google Drive
+              </Button>
             </div>
           )}
 
@@ -154,6 +194,11 @@ export const DriveBackupSettings = () => {
               {testing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
               Testar upload
             </Button>
+            {connected && (
+              <Button variant="ghost" onClick={disconnectDrive}>
+                <Unlink className="h-4 w-4 mr-2" /> Desconectar
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>

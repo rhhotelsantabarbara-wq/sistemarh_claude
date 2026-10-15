@@ -51,7 +51,7 @@ const Settings = () => {
             Voltar ao Dashboard
           </Button>
           
-          <Tabs defaultValue="site" className="space-y-6">
+          <Tabs defaultValue={new URLSearchParams(window.location.search).has("drive") ? "drive" : "site"} className="space-y-6">
             <TabsList className="flex-wrap">
               <TabsTrigger value="site">Site</TabsTrigger>
               <TabsTrigger value="dashboard">Dashboard Funcionário</TabsTrigger>
