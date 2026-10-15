@@ -91,7 +91,11 @@ export default function ConsultaJudicial() {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        let msg = error.message;
+        try { msg = (await (error as any).context?.json())?.error || msg; } catch { /* mantém a mensagem */ }
+        throw new Error(msg);
+      }
 
       toast.success(
         data.processos_encontrados > 0

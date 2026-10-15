@@ -62,7 +62,9 @@ FORMATO DE RESPOSTA (JSON obrigatório):
 }`;
 }
 
-async function callGeminiWithGrounding(prompt: string, apiKey: string, modelo?: string): Promise<string> {
+class BuscaIndisponivelError extends Error {}
+
+async function callGeminiWithGrounding(prompt: string, apiKey: string, modelo?: string): Promise<{ texto: string; fontes: string[]; buscas: string[] }> {
   const geminiModel = modelo || 'gemini-3.5-flash';
   const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`;
 
@@ -81,55 +83,26 @@ async function callGeminiWithGrounding(prompt: string, apiKey: string, modelo?: 
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('Gemini API error:', errorText);
-    throw new Error(`Gemini API error: ${response.status}`);
+    console.error('Gemini API error:', response.status, errorText);
+    if (response.status === 429 || response.status === 403) {
+      throw new BuscaIndisponivelError(
+        'A busca na internet do Gemini não está liberada para a chave cadastrada (plano gratuito sem cota de pesquisa Google). ' +
+        'Ative o faturamento no Google AI Studio (Chaves de API → Configurar faturamento) para usar a consulta judicial.'
+      );
+    }
+    throw new BuscaIndisponivelError(`A busca na internet falhou (Gemini ${response.status}). Tente novamente em alguns minutos.`);
   }
 
   const data = await response.json();
   const parts = data.candidates?.[0]?.content?.parts || [];
-  const text = parts.map((p: any) => p.text || '').join('');
-
-  const groundingMetadata = data.candidates?.[0]?.groundingMetadata;
-  if (groundingMetadata) {
-    console.log('Grounding sources count:', groundingMetadata.groundingChunks?.length || 0);
-    if (groundingMetadata.groundingChunks) {
-      for (const chunk of groundingMetadata.groundingChunks.slice(0, 5)) {
-        console.log('Source:', chunk.web?.uri || 'unknown');
-      }
-    }
-  }
-
-  return text;
-}
-
-async function callGeminiSemGrounding(prompt: string, apiKey: string | undefined): Promise<string> {
-  if (!apiKey) throw new Error('GOOGLE_GEMINI_API_KEY not configured');
-
-  // Endpoint do Gemini compatível com o formato OpenAI (substitui o gateway de IA da Lovable)
-  const response = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gemini-3.5-flash',
-      messages: [
-        { role: 'system', content: 'Você é um investigador jurídico especializado em busca de processos judiciais no Brasil. Responda sempre em JSON válido. NÃO invente processos.' },
-        { role: 'user', content: prompt },
-      ],
-      temperature: 0.0,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Gemini (sem grounding) error:', response.status, errorText);
-    throw new Error(`Gemini error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  return data.choices?.[0]?.message?.content || '';
+  const texto = parts.map((p: any) => p.text || '').join('');
+  const gm = data.candidates?.[0]?.groundingMetadata || {};
+  const fontes = (gm.groundingChunks || [])
+    .map((c: any) => (c.web?.title ? `${c.web.title} — ${c.web.uri}` : c.web?.uri))
+    .filter(Boolean);
+  const buscas = gm.webSearchQueries || [];
+  console.log(`Grounding: ${buscas.length} busca(s), ${fontes.length} fonte(s)`);
+  return { texto, fontes, buscas };
 }
 
 function parseAIResponse(aiResponse: string) {
@@ -161,6 +134,17 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Somente gestores podem consultar
+    const token = req.headers.get('Authorization')?.replace('Bearer ', '');
+    const { data: { user } } = token ? await supabase.auth.getUser(token) : { data: { user: null } };
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Não autorizado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const { data: papel } = await supabase.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'gestor').maybeSingle();
+    if (!papel) {
+      return new Response(JSON.stringify({ error: 'Apenas gestores podem fazer consultas judiciais' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     const { data: aiConfig } = await supabase
       .from('configuracoes_ia')
       .select('*')
@@ -182,85 +166,28 @@ serve(async (req) => {
 
     console.log(`=== Consulta Judicial: ${nome} (${cpfFormatado}) ===`);
 
-    let aiResponse = '';
-    let usedProvider = '';
-
-    // Strategy 1: Gemini with Google Search grounding (best for real web search)
+    // Só a busca com Google Search conta como consulta. Modelos sem acesso à internet
+    // não conseguem achar processos e davam um falso "nenhum processo encontrado".
     const geminiKey = aiConfig?.google_gemini_api_key || Deno.env.get('GOOGLE_GEMINI_API_KEY');
-    if (geminiKey) {
-      try {
-        console.log('Tentativa 1: Gemini com Google Search grounding...');
-        aiResponse = await callGeminiWithGrounding(prompt, geminiKey, aiConfig?.modelo);
-        usedProvider = 'gemini-grounding';
-        console.log(`Gemini response length: ${aiResponse.length}`);
-      } catch (e) {
-        console.error('Gemini falhou:', e.message);
-      }
+    if (!geminiKey) {
+      return new Response(JSON.stringify({ error: 'Chave do Google Gemini não configurada (Configurações → IA).' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    // Strategy 2: If Gemini found nothing or failed, try Gemini without grounding as second opinion
-    const parsed1 = aiResponse ? parseAIResponse(aiResponse) : null;
-    if (!parsed1 || (parsed1.processos_encontrados === 0 && geminiKey)) {
-      try {
-        console.log('Tentativa 2: Gemini sem grounding (segunda opinião)...');
-        const respostaSegunda = await callGeminiSemGrounding(prompt, geminiKey);
-        const parsed2 = parseAIResponse(respostaSegunda);
-        
-        if (parsed2 && parsed2.processos_encontrados > 0) {
-          console.log(`Gemini (2ª opinião) encontrou ${parsed2.processos_encontrados} processo(s)!`);
-          aiResponse = respostaSegunda;
-          usedProvider = 'gemini';
-        } else if (!parsed1) {
-          aiResponse = respostaSegunda;
-          usedProvider = 'gemini';
-        }
-      } catch (e) {
-        console.error('Gemini (2ª opinião) falhou:', e.message);
-      }
+    let busca: { texto: string; fontes: string[]; buscas: string[] };
+    try {
+      busca = await callGeminiWithGrounding(prompt, geminiKey, aiConfig?.modelo);
+    } catch (e) {
+      const msg = e instanceof BuscaIndisponivelError ? e.message : `Erro na busca: ${(e as Error).message}`;
+      return new Response(JSON.stringify({ error: msg }), {
+        status: 503,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
-
-    // Strategy 3: If still no response, try OpenAI if configured
-    if (!aiResponse) {
-      const openaiKey = aiConfig?.openai_api_key || Deno.env.get('OPENAI_API_KEY');
-      if (openaiKey) {
-        try {
-          console.log('Tentativa 3: OpenAI...');
-          const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${openaiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'gpt-4o-mini',
-              messages: [
-                { role: 'system', content: 'Você é um investigador jurídico especializado em busca de processos judiciais no Brasil. Responda sempre em JSON válido.' },
-                { role: 'user', content: prompt },
-              ],
-              temperature: 0.0,
-              max_tokens: 8192,
-            }),
-          });
-
-          if (openaiResponse.ok) {
-            const openaiData = await openaiResponse.json();
-            aiResponse = openaiData.choices?.[0]?.message?.content || '';
-            usedProvider = 'openai';
-          }
-        } catch (e) {
-          console.error('OpenAI falhou:', e.message);
-        }
-      }
-    }
-
-    // Fallback: Gemini without grounding if nothing worked
-    if (!aiResponse) {
-      console.log('Fallback final: Gemini sem grounding...');
-      aiResponse = await callGeminiSemGrounding(prompt, geminiKey);
-      usedProvider = 'gemini-fallback';
-    }
-
-    console.log(`Provider usado: ${usedProvider}`);
+    const aiResponse = busca.texto;
+    const usedProvider = 'gemini-google-search';
 
     // Parse final response
     let resultado: any = {};
@@ -270,10 +197,15 @@ serve(async (req) => {
     const parsedResult = parseAIResponse(aiResponse);
     if (parsedResult) {
       resultado = parsedResult;
+      // Fontes que a pesquisa realmente abriu, para conferência manual
+      if (busca.fontes.length > 0) {
+        resultado.fontes = Array.from(new Set([...(resultado.fontes || []), ...busca.fontes]));
+      }
+      resultado.buscas_realizadas = busca.buscas;
       processos_encontrados = parsedResult.processos_encontrados || 0;
       resumo = parsedResult.resumo_geral || 'Consulta realizada com sucesso.';
     } else {
-      resultado = { raw_response: aiResponse };
+      resultado = { raw_response: aiResponse, fontes: busca.fontes, buscas_realizadas: busca.buscas };
       resumo = aiResponse.substring(0, 500);
     }
 
@@ -303,7 +235,7 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('Error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: (error as Error).message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
