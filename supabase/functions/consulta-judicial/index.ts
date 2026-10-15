@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import "../_shared/geminiFallback.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -62,7 +63,7 @@ FORMATO DE RESPOSTA (JSON obrigatório):
 }
 
 async function callGeminiWithGrounding(prompt: string, apiKey: string, modelo?: string): Promise<string> {
-  const geminiModel = modelo || 'gemini-2.0-flash';
+  const geminiModel = modelo || 'gemini-3.5-flash';
   const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`;
 
   const response = await fetch(geminiUrl, {
@@ -112,7 +113,7 @@ async function callGeminiSemGrounding(prompt: string, apiKey: string | undefined
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.5-flash',
       messages: [
         { role: 'system', content: 'Você é um investigador jurídico especializado em busca de processos judiciais no Brasil. Responda sempre em JSON válido. NÃO invente processos.' },
         { role: 'user', content: prompt },

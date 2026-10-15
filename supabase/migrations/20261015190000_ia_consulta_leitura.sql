@@ -57,7 +57,7 @@ $fn$;
 REVOKE ALL ON FUNCTION public.ia_consulta_sql(text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.ia_consulta_sql(text) TO service_role;
 
--- Modelos antigos do Gemini foram descontinuados: atualiza para o 2.5 Flash
-UPDATE public.configuracoes_ia SET modelo = 'gemini-2.5-flash'
-WHERE provedor = 'gemini' AND (modelo IS NULL OR modelo IN ('gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'));
-ALTER TABLE public.configuracoes_ia ALTER COLUMN modelo SET DEFAULT 'gemini-2.5-flash';
+-- Modelos antigos do Gemini (1.x e 2.x) foram descontinuados: atualiza para o 3.5 Flash
+UPDATE public.configuracoes_ia SET modelo = 'gemini-3.5-flash'
+WHERE coalesce(provedor, 'gemini') = 'gemini' AND (modelo IS NULL OR modelo ~ '^gemini-(1|2)[.-]');
+ALTER TABLE public.configuracoes_ia ALTER COLUMN modelo SET DEFAULT 'gemini-3.5-flash';

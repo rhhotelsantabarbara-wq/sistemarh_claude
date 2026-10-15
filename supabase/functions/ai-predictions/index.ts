@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import "../_shared/geminiFallback.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -53,8 +54,8 @@ serve(async (req) => {
     }
     const openaiKey = iaConfig?.openai_api_key || OPENAI_API_KEY;
     const provedor = iaConfig?.provedor || (openaiKey ? "openai" : "gemini");
-    const defaultModels: Record<string, string> = { openai: "gpt-4o-mini", gemini: "gemini-2.0-flash" };
-    const aiModel = iaConfig?.modelo || defaultModels[provedor] || "gemini-2.0-flash";
+    const defaultModels: Record<string, string> = { openai: "gpt-4o-mini", gemini: "gemini-3.5-flash" };
+    const aiModel = iaConfig?.modelo || defaultModels[provedor] || "gemini-3.5-flash";
 
     const getAiUrl = () => provedor === "openai" ? "https://api.openai.com/v1/chat/completions" : "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
     const getAiHeaders = () => ({

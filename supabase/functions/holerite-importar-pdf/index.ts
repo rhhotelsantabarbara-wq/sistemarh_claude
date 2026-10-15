@@ -3,6 +3,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { PDFDocument } from "npm:pdf-lib@1.17.1";
+import "../_shared/geminiFallback.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -207,10 +208,10 @@ async function splitPdfIntoBatches(pdfBase64: string, batchSize = PAGE_BATCH_SIZ
   return batches.length ? batches : [{ base64: pdfBase64, pages: [1] }];
 }
 
-const FALLBACK_MODELS = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-flash"];
+const FALLBACK_MODELS = ["gemini-3.5-flash", "gemini-3.8-flash", "gemini-flash-latest"];
 
 async function callGemini(pdfBase64: string, apiKey: string, model: string): Promise<any> {
-  const primary = model || "gemini-2.0-flash";
+  const primary = model || "gemini-3.5-flash";
   const chain = [primary, ...FALLBACK_MODELS.filter((m) => m !== primary)];
   let lastErr: any;
   for (const m of chain) {
@@ -364,7 +365,7 @@ Deno.serve(async (req) => {
         if (!geminiKey) {
           throw new Error("Chave do Google Gemini não configurada em Configurações > IA.");
         }
-        const modelo = (cfg as any)?.provedor === "gemini" ? ((cfg as any)?.modelo || "gemini-2.0-flash") : "gemini-2.0-flash";
+        const modelo = (cfg as any)?.provedor === "gemini" ? ((cfg as any)?.modelo || "gemini-3.5-flash") : "gemini-3.5-flash";
         const batches = await splitPdfIntoBatches(body.pdf_base64);
         const holerites: any[] = [];
         const avisos: string[] = [];

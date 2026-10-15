@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { DRIVE_BASE, driveHeaders } from "../_shared/googleDrive.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { modeloGemini } from "../_shared/geminiFallback.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -618,10 +619,9 @@ serve(async (req) => {
     if (iaConfig?.google_gemini_api_key) GOOGLE_GEMINI_API_KEY = iaConfig.google_gemini_api_key;
     const openaiKey = iaConfig?.openai_api_key || OPENAI_API_KEY;
     const provedor = iaConfig?.provedor || (openaiKey ? "openai" : OLLAMA_BASE_URL ? "ollama" : "gemini");
-    const defaultModels: Record<string, string> = { openai: "gpt-4o-mini", ollama: "llama3.1", gemini: "gemini-2.5-flash" };
-    const modelosDescontinuados = ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"];
-    const modeloConfig = iaConfig?.modelo && !modelosDescontinuados.includes(iaConfig.modelo) ? iaConfig.modelo : null;
-    const aiModel = modeloConfig || defaultModels[provedor] || "gemini-2.5-flash";
+    const defaultModels: Record<string, string> = { openai: "gpt-4o-mini", ollama: "llama3.1", gemini: "gemini-3.5-flash" };
+    // Gemini: troca modelos descontinuados pelo atual (e o fetch tenta reservas se o modelo estiver fora do ar)
+    const aiModel = provedor === "gemini" ? modeloGemini(iaConfig?.modelo) : (iaConfig?.modelo || defaultModels[provedor]);
 
     if (provedor === "openai" && !openaiKey) throw new Error("Chave da OpenAI não configurada.");
     if (provedor === "gemini" && !GOOGLE_GEMINI_API_KEY) throw new Error("Chave do Google Gemini não configurada.");

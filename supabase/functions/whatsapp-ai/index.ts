@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import "../_shared/geminiFallback.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -741,7 +742,7 @@ Se a imagem não estiver clara ou não for possível determinar, use match: fals
           const base64 = btoa(String.fromCharCode(...new Uint8Array(imgBuffer)));
           const mimeType = imgResponse.headers.get("content-type") || "image/jpeg";
 
-          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_GEMINI_API_KEY}`;
+          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${GOOGLE_GEMINI_API_KEY}`;
           const geminiResponse = await fetch(geminiUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -1316,7 +1317,7 @@ serve(async (req) => {
           const whisperData = await whisperResponse.json();
           transcribedText = whisperData.text?.trim() || "";
         } else if (GOOGLE_GEMINI_API_KEY_CHECK) {
-          const aiModelAudio = (iaConfigAudio?.modelo && !iaConfigAudio.modelo.startsWith("gpt")) ? iaConfigAudio.modelo : "gemini-2.0-flash";
+          const aiModelAudio = (iaConfigAudio?.modelo && !iaConfigAudio.modelo.startsWith("gpt")) ? iaConfigAudio.modelo : "gemini-3.5-flash";
           const geminiNativeUrl = `https://generativelanguage.googleapis.com/v1beta/models/${aiModelAudio}:generateContent?key=${GOOGLE_GEMINI_API_KEY_CHECK}`;
           const transcribeResponse = await fetch(geminiNativeUrl, {
             method: "POST", headers: { "Content-Type": "application/json" },
@@ -1389,7 +1390,7 @@ serve(async (req) => {
     if (iaConfigMain?.google_gemini_api_key) GOOGLE_GEMINI_API_KEY = iaConfigMain.google_gemini_api_key;
     if (iaConfigMain?.openai_api_key) OPENAI_API_KEY = iaConfigMain.openai_api_key;
     const provedor = iaConfigMain?.provedor || "gemini";
-    const aiModel = iaConfigMain?.modelo || (provedor === "openai" ? "gpt-4o-mini" : "gemini-2.0-flash");
+    const aiModel = iaConfigMain?.modelo || (provedor === "openai" ? "gpt-4o-mini" : "gemini-3.5-flash");
 
     if (provedor === "openai" && !OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
     if (provedor !== "openai" && !GOOGLE_GEMINI_API_KEY) throw new Error("GOOGLE_GEMINI_API_KEY not configured");

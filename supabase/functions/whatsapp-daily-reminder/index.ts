@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import "../_shared/geminiFallback.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -90,7 +91,7 @@ serve(async (req) => {
       OPENAI_API_KEY = (iaConfig as any).openai_api_key;
     }
     const provedor = (iaConfig as any)?.provedor || "gemini";
-    const aiModel = iaConfig?.modelo || (provedor === "openai" ? "gpt-4o-mini" : "gemini-2.0-flash");
+    const aiModel = iaConfig?.modelo || (provedor === "openai" ? "gpt-4o-mini" : "gemini-3.5-flash");
 
     // Determine API URL and key based on provider
     let aiApiUrl: string;
