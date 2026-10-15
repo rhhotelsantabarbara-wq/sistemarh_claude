@@ -19,7 +19,7 @@ export function AISettings() {
   const [configId, setConfigId] = useState<string | null>(null);
 
   const defaultModels: Record<string, string> = {
-    gemini: "gemini-2.0-flash",
+    gemini: "gemini-2.5-flash",
     openai: "gpt-4o-mini",
     ollama: "llama3.1",
   };
@@ -197,7 +197,7 @@ export function AISettings() {
           />
           <p className="text-xs text-muted-foreground">
             {provedor === "openai" && "Modelos: gpt-4o-mini, gpt-4o, gpt-4-turbo, gpt-3.5-turbo"}
-            {provedor === "gemini" && "Modelos: gemini-2.0-flash (gratuito), gemini-1.5-pro"}
+            {provedor === "gemini" && "Modelos: gemini-2.5-flash (recomendado, gratuito), gemini-2.5-pro (mais inteligente, mais lento)"}
             {provedor === "ollama" && "Modelos: llama3.1, mistral, codellama, etc."}
           </p>
         </div>

@@ -10,7 +10,9 @@ const corsHeaders = {
 // ============= RETRIEVAL TOOLS (compactados) =============
 
 async function consultarFuncionarios(supabase: any, params: any) {
-  let query = supabase.from("employees").select("nome_completo, cargo, setor, status, data_admissao, salario, tipo_contrato, telefone, cpf, data_nascimento, sexo, empresas(nome)");
+  // Com filtro de empresa usa join obrigatório (!inner) para o total sair certo
+  const empresaJoin = params.empresa ? "empresas!inner(nome)" : "empresas(nome)";
+  let query = supabase.from("employees").select(`nome_completo, cargo, setor, status, data_admissao, salario, tipo_contrato, telefone, cpf, data_nascimento, sexo, ${empresaJoin}`, { count: "exact" });
   if (params.status) query = query.eq("status", params.status);
   if (params.setor) query = query.ilike("setor", `%${params.setor}%`);
   if (params.nome) query = query.ilike("nome_completo", `%${params.nome}%`);
@@ -18,9 +20,16 @@ async function consultarFuncionarios(supabase: any, params: any) {
   if (params.sexo) query = query.ilike("sexo", `%${params.sexo}%`);
   if (params.empresa) query = query.ilike("empresas.nome", `%${params.empresa}%`);
   if (!params.status && !params.incluir_inativos) query = query.in("status", ["ativo", "ferias", "em_admissao", "afastado"]);
-  const { data, error } = await query.order("nome_completo").limit(30);
+  const { data, error, count } = await query.order("nome_completo").limit(80);
   if (error) return { error: error.message };
-  return { total: (data || []).length, funcionarios: (data || []).map((e: any) => `${e.nome_completo}|${e.status}|${e.cargo}|${e.setor||"-"}|Adm:${e.data_admissao||"-"}|R$${e.salario||"-"}|${e.tipo_contrato||"-"}|${e.telefone||"-"}|${e.sexo||"-"}|${e.empresas?.nome||"-"}`) };
+  const lista = data || [];
+  const total = count ?? lista.length;
+  return {
+    total_exato: total,
+    mostrando: lista.length,
+    aviso: total > lista.length ? `Lista cortada em ${lista.length} de ${total}. Para contagens e agrupamentos use consultar_banco_sql.` : undefined,
+    funcionarios: lista.map((e: any) => `${e.nome_completo}|${e.status}|${e.cargo}|${e.setor||"-"}|Adm:${e.data_admissao||"-"}|R$${e.salario||"-"}|${e.tipo_contrato||"-"}|${e.telefone||"-"}|${e.sexo||"-"}|${e.empresas?.nome||"-"}`),
+  };
 }
 
 async function consultarFerias(supabase: any, params: any) {
@@ -395,6 +404,35 @@ async function atualizarStatusAdiantamentos(supabase: any, params: any) {
   return `✅ ${adiantamentos.length} adiantamento(s) atualizado(s) para "${targetStatus}" (${targetMes}/${targetAno}): ${nomes}`;
 }
 
+async function consultarBancoSql(supabase: any, params: any) {
+  const consulta = String(params.consulta || "").trim();
+  if (!consulta) return "Informe a consulta SQL.";
+  const { data, error } = await supabase.rpc("ia_consulta_sql", { consulta });
+  if (error) return `ERRO SQL: ${error.message}. Corrija a consulta (confira nomes de tabelas/colunas em information_schema.columns) e tente de novo.`;
+  const linhas = Array.isArray(data) ? data : [];
+  const texto = JSON.stringify(linhas);
+  return `LINHAS(${linhas.length}${linhas.length === 200 ? ", limite de 200 atingido" : ""}): ${texto.length > 30000 ? texto.slice(0, 30000) + "...(cortado)" : texto}`;
+}
+
+async function salvarMemoria(supabase: any, params: any, user: { id: string; nome: string }) {
+  const conteudo = String(params.conteudo || "").trim();
+  if (!conteudo) return "Conteúdo da memória é obrigatório.";
+  const { error } = await supabase.from("cerebrum_memorias").insert({
+    conteudo,
+    categoria: params.categoria || "geral",
+    contexto: params.contexto || null,
+    ensinado_por: user.id,
+    nome_professor: user.nome,
+  });
+  if (error) return `Erro ao salvar memória: ${error.message}`;
+  return `✅ Memória salva: "${conteudo}"`;
+}
+
+async function carregarMemorias(supabase: any) {
+  const { data } = await supabase.from("cerebrum_memorias").select("conteudo, categoria").eq("ativo", true).order("created_at", { ascending: false }).limit(60);
+  return (data || []).map((m: any) => `- [${m.categoria}] ${m.conteudo}`).join("\n");
+}
+
 // ============= TOOL DEFINITIONS (compactadas) =============
 
 const toolDefinitions = [
@@ -422,12 +460,16 @@ const toolDefinitions = [
   { type: "function", function: { name: "consultar_memorias", description: "Busca memórias permanentes do Cérebrum.", parameters: { type: "object", properties: { categoria: { type: "string", enum: ["preferencia", "correcao", "padrao_rh", "fato", "regra", "geral"] } } } } },
   { type: "function", function: { name: "consultar_identidade", description: "Retorna a história de criação e identidade do Cérebrum.", parameters: { type: "object", properties: {} } } },
   { type: "function", function: { name: "atualizar_status_adiantamentos", description: "Atualiza o status dos adiantamentos (ex: para 'feito' quando já foram pagos). Use quando o gestor disser que já depositou/pagou os adiantamentos.", parameters: { type: "object", properties: { mes: { type: "number", description: "Mês dos adiantamentos" }, ano: { type: "number", description: "Ano dos adiantamentos" }, nome_funcionario: { type: "string", description: "Nome do funcionário (opcional, se vazio atualiza todos do mês)" }, status_novo: { type: "string", enum: ["feito", "aguardando"], description: "Novo status" } } } } },
+  { type: "function", function: { name: "consultar_banco_sql", description: "Executa UMA consulta SQL SELECT (PostgreSQL, somente leitura) no banco do RH e devolve até 200 linhas em JSON. Use para contagens exatas, somas, médias, agrupamentos, rankings, cruzamentos entre tabelas e qualquer pergunta que as outras ferramentas não cobrem. Se não souber as colunas, consulte antes: SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_schema='public' AND table_name IN (...). Prefira agregar no SQL (COUNT, SUM, AVG, GROUP BY) a trazer listas grandes.", parameters: { type: "object", properties: { consulta: { type: "string", description: "Consulta SELECT ou WITH ... SELECT, sem ponto e vírgula" } }, required: ["consulta"] } } },
+  { type: "function", function: { name: "salvar_memoria", description: "Salva uma memória permanente quando o gestor ensinar algo, corrigir você, definir uma regra/preferência ou pedir 'lembre que...'. Escreva a memória de forma clara e autossuficiente.", parameters: { type: "object", properties: { conteudo: { type: "string" }, categoria: { type: "string", enum: ["preferencia", "correcao", "padrao_rh", "fato", "regra", "geral"] }, contexto: { type: "string" } }, required: ["conteudo"] } } },
   { type: "function", function: { name: "listar_drive_pastas", description: "Lista as pastas dentro da pasta de backup do Google Drive (BACKUP RH). Use para mostrar quais tipos de documentos existem (EPI, UNIFORME, TAC etc).", parameters: { type: "object", properties: {} } } },
   { type: "function", function: { name: "buscar_drive_arquivos", description: "Busca arquivos dentro da pasta de backup do Google Drive (BACKUP RH). Pode filtrar por nome e/ou tipo de pasta (EPI, UNIFORME, TAC etc). Retorna nome, link e data.", parameters: { type: "object", properties: { nome: { type: "string", description: "Parte do nome do arquivo (ex: nome do funcionário)" }, tipo: { type: "string", description: "Filtrar por pasta: EPI, UNIFORME, TAC, CRACHÁ, DESLIGAMENTO, ENCAMINHAMENTO, ETIQUETA, PONTO, CONTA SALÁRIO" } } } } },
 ];
 
-async function executeTool(supabase: any, toolName: string, params: any) {
+async function executeTool(supabase: any, toolName: string, params: any, user: { id: string; nome: string }) {
   switch (toolName) {
+    case "consultar_banco_sql": return await consultarBancoSql(supabase, params);
+    case "salvar_memoria": return await salvarMemoria(supabase, params, user);
     case "consultar_funcionarios": return await consultarFuncionarios(supabase, params);
     case "consultar_ferias": return await consultarFerias(supabase, params);
     case "consultar_faltas_folgas": return await consultarFaltasFolgas(supabase, params);
@@ -546,6 +588,18 @@ serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
+    // Somente gestores podem usar o Cérebrum (ele acessa salários, CPFs etc.)
+    const jsonErro = (msg: string, status: number) =>
+      new Response(JSON.stringify({ error: msg }), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const token = req.headers.get("Authorization")?.replace("Bearer ", "");
+    if (!token) return jsonErro("Não autorizado", 401);
+    const { data: { user } } = await supabase.auth.getUser(token);
+    if (!user) return jsonErro("Sessão inválida", 401);
+    const { data: papel } = await supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "gestor").maybeSingle();
+    if (!papel) return jsonErro("Apenas gestores podem usar o Cérebrum", 403);
+    const { data: perfil } = await supabase.from("profiles").select("nome_completo").eq("id", user.id).maybeSingle();
+    const usuario = { id: user.id, nome: perfil?.nome_completo || user.email || "Gestor" };
+
     // Config da IA com cache
     const OLLAMA_BASE_URL = Deno.env.get("OLLAMA_BASE_URL");
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
@@ -564,23 +618,47 @@ serve(async (req) => {
     if (iaConfig?.google_gemini_api_key) GOOGLE_GEMINI_API_KEY = iaConfig.google_gemini_api_key;
     const openaiKey = iaConfig?.openai_api_key || OPENAI_API_KEY;
     const provedor = iaConfig?.provedor || (openaiKey ? "openai" : OLLAMA_BASE_URL ? "ollama" : "gemini");
-    const defaultModels: Record<string, string> = { openai: "gpt-4o-mini", ollama: "llama3.1", gemini: "gemini-2.0-flash" };
-    const aiModel = iaConfig?.modelo || defaultModels[provedor] || "gemini-2.0-flash";
+    const defaultModels: Record<string, string> = { openai: "gpt-4o-mini", ollama: "llama3.1", gemini: "gemini-2.5-flash" };
+    const modelosDescontinuados = ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"];
+    const modeloConfig = iaConfig?.modelo && !modelosDescontinuados.includes(iaConfig.modelo) ? iaConfig.modelo : null;
+    const aiModel = modeloConfig || defaultModels[provedor] || "gemini-2.5-flash";
 
     if (provedor === "openai" && !openaiKey) throw new Error("Chave da OpenAI não configurada.");
     if (provedor === "gemini" && !GOOGLE_GEMINI_API_KEY) throw new Error("Chave do Google Gemini não configurada.");
     if (provedor === "ollama" && !OLLAMA_BASE_URL) throw new Error("OLLAMA_BASE_URL não configurada.");
 
-    // System prompt COMPACTADO: sem memórias, sem resumo, sem identidade
-    const nowDate = new Date();
+    // System prompt
+    const agora = new Date();
+    const dataBR = agora.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", weekday: "long", day: "2-digit", month: "long", year: "numeric" });
+    const horaBR = agora.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
+    const hojeISO = agora.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+    const memorias = await carregarMemorias(supabase);
     const systemPrompt = `Você é o CÉREBRUM — inteligência estratégica do RH do Hotel Fazenda Santa Bárbara. Criação de Bruno Carvalho.
-Simpático, caloroso, acolhedor. Use emojis. Organize com Markdown. Português brasileiro.
+Simpático, caloroso, acolhedor. Use emojis com moderação. Organize com Markdown (tabelas quando ajudar). Português brasileiro.
+Você está conversando com: ${usuario.nome} (gestor).
 PESSOAS ESPECIAIS: Sr. Jaime e Sra. Stela (donos) = máximo respeito/deferência. Bruno Carvalho = criador/gestor.
-REGRAS: NÃO invente dados. SEMPRE use tools. Pode fornecer dados cadastrais (CPF, salário etc) ao gestor.
-AÇÕES: Pode atualizar status de adiantamentos quando o gestor pedir (ex: "já paguei os adiantamentos", "marca como feito").
-Para saber quem você é, use consultar_identidade. Para memórias, use consultar_memorias. Para visão geral, use consultar_resumo_rapido.
-Para buscar PDFs no Google Drive (BACKUP RH): listar_drive_pastas mostra os tipos de documento, buscar_drive_arquivos encontra arquivos por nome/tipo e retorna o link.
-Data: ${nowDate.toISOString()} | Ano: ${nowDate.getFullYear()}`;
+
+COMO TRABALHAR:
+1. NUNCA invente dados. Toda informação sobre pessoas, números, datas e valores vem das ferramentas.
+2. Para contagens, totais, médias, rankings, comparações e cruzamentos, use consultar_banco_sql com agregação (COUNT, SUM, AVG, GROUP BY). Os números precisam ser exatos.
+3. Se não souber o nome de uma coluna, consulte information_schema.columns antes. Se uma consulta der erro, corrija e tente de novo.
+4. Pode chamar várias ferramentas e encadear consultas até ter a resposta completa. Pense no que a pergunta realmente pede antes de responder.
+5. Funcionários ativos = status em (ativo, ferias, em_admissao, afastado), salvo se pedirem outra coisa. "demitido" = desligado.
+6. Ao listar pessoas, diga o total exato. Se a lista for longa, mostre um resumo e ofereça o detalhe.
+7. Quando o gestor ensinar algo, corrigir você ou pedir "lembre que...", use salvar_memoria e confirme. Respeite sempre as memórias abaixo.
+8. Pode fornecer dados cadastrais (CPF, salário etc.) ao gestor.
+9. Seja direto: comece pela resposta, depois os detalhes. Se notar algo preocupante nos dados (ex.: muitas faltas, estoque baixo, exame vencido), mencione.
+
+TABELAS PRINCIPAIS: employees (funcionários: nome_completo, cargo, setor, status, data_admissao, data_demissao, salario, sexo, data_nascimento, empresa_id), empresas, setores, funcoes, registros_ponto, banco_horas, faltas, folgas, ferias, ferias_planejadas, afastamentos, folha_pagamento, folha_pagamento_itens, adiantamentos, historico_reajustes_salariais, tacs, avaliacoes_desempenho, notas_avaliacao, encaminhamentos_medicos, estoque_epis, estoque_uniformes, epis, uniformes, cursos, progresso_treinamento, vagas, candidaturas, eventos, avisos, holerite_documentos, metas_funcionario.
+
+AÇÕES: pode atualizar status de adiantamentos quando o gestor pedir (ex.: "já paguei os adiantamentos").
+Google Drive (BACKUP RH): listar_drive_pastas mostra os tipos de documento; buscar_drive_arquivos encontra arquivos por nome/tipo e devolve o link.
+Para contar quem você é, use consultar_identidade.
+
+MEMÓRIAS (o que o gestor já te ensinou):
+${memorias || "- (nenhuma ainda)"}
+
+Agora: ${dataBR}, ${horaBR} (horário de Brasília). Hoje = ${hojeISO}.`;
 
     // Ollama sem tools
     if (provedor === "ollama") {
@@ -588,7 +666,7 @@ Data: ${nowDate.toISOString()} | Ano: ${nowDate.getFullYear()}`;
       const resumo = await consultarResumoRapido(supabase);
       const ollamaMessages = [
         { role: "system", content: systemPrompt + "\n\n" + resumo },
-        ...(messages || []).slice(-8),
+        ...(messages || []).slice(-20),
         ...(userMessage ? [{ role: "user", content: userMessage }] : []),
       ];
       const response = await fetch(ollamaUrl, {
@@ -605,8 +683,8 @@ Data: ${nowDate.toISOString()} | Ano: ${nowDate.getFullYear()}`;
       : "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
     const aiKey = provedor === "openai" ? openaiKey : GOOGLE_GEMINI_API_KEY;
 
-    // Limitar histórico a últimas 8 mensagens
-    const limitedMessages = (messages || []).slice(-8);
+    // Histórico: últimas 20 mensagens
+    const limitedMessages = (messages || []).slice(-20);
 
     const aiMessages: any[] = [
       { role: "system", content: systemPrompt },
@@ -614,12 +692,20 @@ Data: ${nowDate.toISOString()} | Ano: ${nowDate.getFullYear()}`;
       ...(userMessage ? [{ role: "user", content: userMessage }] : []),
     ];
 
-    // Multi-round tool call loop (até 3 rounds)
-    for (let round = 0; round < 3; round++) {
+    // Raciocínio em várias rodadas (até 8); na última, força a resposta final sem ferramentas
+    const MAX_ROUNDS = 8;
+    for (let round = 0; round < MAX_ROUNDS; round++) {
+      const ultimaRodada = round === MAX_ROUNDS - 1;
+      if (ultimaRodada) {
+        aiMessages.push({ role: "user", content: "Responda agora ao gestor com base no que já consultou, sem chamar mais ferramentas. Se faltou algum dado, diga o que faltou." });
+      }
+      const requestBody = JSON.stringify(ultimaRodada
+        ? { model: aiModel, messages: aiMessages, stream: false }
+        : { model: aiModel, messages: aiMessages, tools: toolDefinitions, stream: false });
       let aiResponse = await fetch(aiUrl, {
         method: "POST",
         headers: { Authorization: `Bearer ${aiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ model: aiModel, messages: aiMessages, tools: toolDefinitions, stream: false }),
+        body: requestBody,
       });
 
       if (aiResponse.status === 429) {
@@ -628,7 +714,7 @@ Data: ${nowDate.toISOString()} | Ano: ${nowDate.getFullYear()}`;
           aiResponse = await fetch(aiUrl, {
             method: "POST",
             headers: { Authorization: `Bearer ${aiKey}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ model: aiModel, messages: aiMessages, tools: toolDefinitions, stream: false }),
+            body: requestBody,
           });
           if (aiResponse.status !== 429) break;
         }
@@ -666,9 +752,12 @@ Data: ${nowDate.toISOString()} | Ano: ${nowDate.getFullYear()}`;
       aiMessages.push(assistantMsg);
 
       for (const toolCall of assistantMsg.tool_calls) {
-        const params = JSON.parse(toolCall.function.arguments);
+        let params: any = {};
+        try { params = JSON.parse(toolCall.function.arguments || "{}"); } catch { params = {}; }
         console.log(`Tool: ${toolCall.function.name}`);
-        const result = await executeTool(supabase, toolCall.function.name, params);
+        let result: any;
+        try { result = await executeTool(supabase, toolCall.function.name, params, usuario); }
+        catch (e) { result = `Erro na ferramenta: ${(e as Error).message}`; }
         aiMessages.push({ role: "tool", tool_call_id: toolCall.id, content: typeof result === "string" ? result : JSON.stringify(result) });
       }
     }
