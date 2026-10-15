@@ -101,18 +101,18 @@ async function callGeminiWithGrounding(prompt: string, apiKey: string, modelo?: 
   return text;
 }
 
-async function callLovableAI(prompt: string): Promise<string> {
-  const apiKey = Deno.env.get('LOVABLE_API_KEY');
-  if (!apiKey) throw new Error('LOVABLE_API_KEY not configured');
+async function callGeminiSemGrounding(prompt: string, apiKey: string | undefined): Promise<string> {
+  if (!apiKey) throw new Error('GOOGLE_GEMINI_API_KEY not configured');
 
-  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+  // Endpoint do Gemini compatível com o formato OpenAI (substitui o gateway de IA da Lovable)
+  const response = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'google/gemini-2.5-flash',
+      model: 'gemini-2.5-flash',
       messages: [
         { role: 'system', content: 'Você é um investigador jurídico especializado em busca de processos judiciais no Brasil. Responda sempre em JSON válido. NÃO invente processos.' },
         { role: 'user', content: prompt },
@@ -123,8 +123,8 @@ async function callLovableAI(prompt: string): Promise<string> {
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('Lovable AI error:', response.status, errorText);
-    throw new Error(`Lovable AI error: ${response.status}`);
+    console.error('Gemini (sem grounding) error:', response.status, errorText);
+    throw new Error(`Gemini error: ${response.status}`);
   }
 
   const data = await response.json();
@@ -197,24 +197,24 @@ serve(async (req) => {
       }
     }
 
-    // Strategy 2: If Gemini found nothing or failed, try Lovable AI as second opinion
+    // Strategy 2: If Gemini found nothing or failed, try Gemini without grounding as second opinion
     const parsed1 = aiResponse ? parseAIResponse(aiResponse) : null;
     if (!parsed1 || (parsed1.processos_encontrados === 0 && geminiKey)) {
       try {
-        console.log('Tentativa 2: Lovable AI (segunda opinião)...');
-        const lovableResponse = await callLovableAI(prompt);
-        const parsed2 = parseAIResponse(lovableResponse);
+        console.log('Tentativa 2: Gemini sem grounding (segunda opinião)...');
+        const respostaSegunda = await callGeminiSemGrounding(prompt, geminiKey);
+        const parsed2 = parseAIResponse(respostaSegunda);
         
         if (parsed2 && parsed2.processos_encontrados > 0) {
-          console.log(`Lovable AI encontrou ${parsed2.processos_encontrados} processo(s)!`);
-          aiResponse = lovableResponse;
-          usedProvider = 'lovable-ai';
+          console.log(`Gemini (2ª opinião) encontrou ${parsed2.processos_encontrados} processo(s)!`);
+          aiResponse = respostaSegunda;
+          usedProvider = 'gemini';
         } else if (!parsed1) {
-          aiResponse = lovableResponse;
-          usedProvider = 'lovable-ai';
+          aiResponse = respostaSegunda;
+          usedProvider = 'gemini';
         }
       } catch (e) {
-        console.error('Lovable AI falhou:', e.message);
+        console.error('Gemini (2ª opinião) falhou:', e.message);
       }
     }
 
@@ -252,11 +252,11 @@ serve(async (req) => {
       }
     }
 
-    // Fallback: use Lovable AI if nothing worked
+    // Fallback: Gemini without grounding if nothing worked
     if (!aiResponse) {
-      console.log('Fallback final: Lovable AI...');
-      aiResponse = await callLovableAI(prompt);
-      usedProvider = 'lovable-ai-fallback';
+      console.log('Fallback final: Gemini sem grounding...');
+      aiResponse = await callGeminiSemGrounding(prompt, geminiKey);
+      usedProvider = 'gemini-fallback';
     }
 
     console.log(`Provider usado: ${usedProvider}`);

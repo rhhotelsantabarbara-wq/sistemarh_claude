@@ -1,20 +1,15 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { DRIVE_BASE, driveHeaders } from "../_shared/googleDrive.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const GATEWAY = "https://connector-gateway.lovable.dev/google_drive";
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
-const GOOGLE_DRIVE_API_KEY = Deno.env.get("GOOGLE_DRIVE_API_KEY")!;
+const GATEWAY = DRIVE_BASE;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-const driveHeaders = {
-  Authorization: `Bearer ${LOVABLE_API_KEY}`,
-  "X-Connection-Api-Key": GOOGLE_DRIVE_API_KEY,
-};
 
 async function findOrCreateFolder(
   supabase: any,
@@ -35,7 +30,7 @@ async function findOrCreateFolder(
     (parentId ? ` and '${parentId}' in parents` : "")
   );
   const searchRes = await fetch(`${GATEWAY}/drive/v3/files?q=${q}&fields=files(id,name)`, {
-    headers: driveHeaders,
+    headers: await driveHeaders(),
   });
   const searchJson = await searchRes.json();
   let folderId: string | undefined = searchJson?.files?.[0]?.id;
@@ -45,7 +40,7 @@ async function findOrCreateFolder(
     if (parentId) body.parents = [parentId];
     const createRes = await fetch(`${GATEWAY}/drive/v3/files?fields=id`, {
       method: "POST",
-      headers: { ...driveHeaders, "Content-Type": "application/json" },
+      headers: { ...(await driveHeaders()), "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
     const createJson = await createRes.json();
@@ -95,7 +90,7 @@ Deno.serve(async (req) => {
     // Action: status — verifica conexão
     if (action === "status") {
       const aboutRes = await fetch(`${GATEWAY}/drive/v3/about?fields=user(emailAddress,displayName),storageQuota`, {
-        headers: driveHeaders,
+        headers: await driveHeaders(),
       });
       if (!aboutRes.ok) {
         const txt = await aboutRes.text();
@@ -161,7 +156,7 @@ Deno.serve(async (req) => {
         `${GATEWAY}/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink,size`,
         {
           method: "POST",
-          headers: { ...driveHeaders, "Content-Type": `multipart/related; boundary=${boundary}` },
+          headers: { ...(await driveHeaders()), "Content-Type": `multipart/related; boundary=${boundary}` },
           body: body1,
         }
       );

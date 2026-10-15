@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { DRIVE_BASE, driveHeaders } from "../_shared/googleDrive.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -458,17 +459,7 @@ async function executeTool(supabase: any, toolName: string, params: any) {
 }
 
 // ============= GOOGLE DRIVE TOOLS =============
-const DRIVE_GATEWAY = "https://connector-gateway.lovable.dev/google_drive";
-
-function driveHeaders() {
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  const GOOGLE_DRIVE_API_KEY = Deno.env.get("GOOGLE_DRIVE_API_KEY");
-  if (!LOVABLE_API_KEY || !GOOGLE_DRIVE_API_KEY) throw new Error("Conexão com Google Drive não configurada");
-  return {
-    Authorization: `Bearer ${LOVABLE_API_KEY}`,
-    "X-Connection-Api-Key": GOOGLE_DRIVE_API_KEY,
-  };
-}
+const DRIVE_GATEWAY = DRIVE_BASE;
 
 async function getDriveRootId(supabase: any): Promise<string | null> {
   const { data } = await supabase.from("drive_backup_config").select("pasta_raiz_id, ativo").eq("id", 1).maybeSingle();
@@ -480,7 +471,7 @@ async function listarDrivePastas(supabase: any) {
     const rootId = await getDriveRootId(supabase);
     if (!rootId) return "Backup do Google Drive ainda não foi configurado. Peça ao gestor para configurar em Configurações → Google Drive.";
     const q = encodeURIComponent(`'${rootId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`);
-    const res = await fetch(`${DRIVE_GATEWAY}/drive/v3/files?q=${q}&fields=files(id,name)&pageSize=100`, { headers: driveHeaders() });
+    const res = await fetch(`${DRIVE_GATEWAY}/drive/v3/files?q=${q}&fields=files(id,name)&pageSize=100`, { headers: await driveHeaders() });
     if (!res.ok) return `Erro Drive: ${res.status}`;
     const json = await res.json();
     const pastas = (json.files || []).map((f: any) => f.name).sort();
@@ -513,7 +504,7 @@ async function buscarDriveArquivos(supabase: any, params: any) {
     const nameClause = params.nome ? ` and name contains '${String(params.nome).replace(/'/g, "\\'")}'` : "";
     const q = encodeURIComponent(`(${parentsClause}) and mimeType!='application/vnd.google-apps.folder' and trashed=false${nameClause}`);
 
-    const res = await fetch(`${DRIVE_GATEWAY}/drive/v3/files?q=${q}&fields=files(id,name,webViewLink,modifiedTime,parents)&pageSize=50&orderBy=modifiedTime desc`, { headers: driveHeaders() });
+    const res = await fetch(`${DRIVE_GATEWAY}/drive/v3/files?q=${q}&fields=files(id,name,webViewLink,modifiedTime,parents)&pageSize=50&orderBy=modifiedTime desc`, { headers: await driveHeaders() });
     if (!res.ok) return `Erro Drive: ${res.status} - ${await res.text()}`;
     const json = await res.json();
     const arquivos = json.files || [];
