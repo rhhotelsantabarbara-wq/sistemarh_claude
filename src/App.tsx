@@ -57,6 +57,7 @@ import NR1Relatorios from "./pages/nr1/Relatorios";
 import NR1Config from "./pages/nr1/Config";
 import ClimaResponderPublic from "./pages/public/ClimaResponder";
 import DenunciaPublica from "./pages/public/DenunciaPublica";
+import Privacidade from "./pages/public/Privacidade";
 import MeusHolerites from "./pages/MeusHolerites";
 import ValidarHolerite from "./pages/ValidarHolerite";
 import AppLayout from "./components/layout/AppLayout";
@@ -131,6 +132,7 @@ const App = () => {
               {/* Públicas (sem login) */}
               <Route path="/clima/:token" element={<ClimaResponderPublic />} />
               <Route path="/denuncia" element={<DenunciaPublica />} />
+              <Route path="/privacidade" element={<Privacidade />} />
               <Route path="/lideranca/:token" element={<NR1LiderancaResponder />} />
               <Route path="/validar-holerite/:protocolo" element={<ValidarHolerite />} />
               <Route path="/meus-holerites" element={<MeusHolerites />} />
