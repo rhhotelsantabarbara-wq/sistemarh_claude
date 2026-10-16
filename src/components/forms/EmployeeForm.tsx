@@ -224,61 +224,40 @@ const EmployeeForm = ({ employeeId, initialData, onSaved, onCancel }: EmployeeFo
     }
   };
 
-  const handleCpfLookup = async () => {
-    const cpf = formValues.cpf;
-    if (!cpf) {
-      toast.error("Digite o CPF antes de buscar");
+  const handleCpfLookup = async (automatico = false) => {
+    const cpf = (formValues.cpf || "").replace(/\D/g, "");
+    if (cpf.length !== 11) {
+      if (!automatico) toast.error("Digite os 11 números do CPF antes de buscar");
       return;
     }
 
     setCpfLoading(true);
     try {
-      const { data: result, error } = await supabase.functions.invoke('cpf-lookup', {
-        body: { cpf }
-      });
-
+      const { data: result, error } = await supabase.functions.invoke("cpf-lookup", { body: { cpf } });
       if (error) {
         toast.error("Erro ao consultar CPF: " + error.message);
         return;
       }
-
       if (result?.error) {
         toast.error(result.error);
         return;
       }
 
-      const apiData = result?.data;
-      if (!apiData) {
-        toast.error("Nenhum dado retornado para este CPF");
-        return;
-      }
-
-      console.log("CPF lookup data:", apiData);
-
-      // Map API fields to form - only fill empty fields
+      const dados = result?.dados || {};
+      const rotulos: Record<string, string> = { nome_completo: "nome", data_nascimento: "nascimento", sexo: "sexo" };
+      // Só preenche campos vazios, para não apagar o que já foi digitado
       const updates: Record<string, string> = {};
-
-      const nome = apiData.nome || apiData.name || apiData.nome_completo;
-      if (nome && !formValues.nome_completo) {
-        updates.nome_completo = nome;
-      }
-
-      const nascimento = apiData.data_nascimento || apiData.nascimento || apiData.birth_date || apiData.date_of_birth;
-      if (nascimento && !formValues.data_nascimento) {
-        // Try to convert to yyyy-MM-dd
-        let dateFormatted = nascimento;
-        if (/^\d{2}\/\d{2}\/\d{4}$/.test(nascimento)) {
-          const [dd, mm, yyyy] = nascimento.split("/");
-          dateFormatted = `${yyyy}-${mm}-${dd}`;
-        }
-        updates.data_nascimento = dateFormatted;
+      for (const campo of ["nome_completo", "data_nascimento", "sexo"]) {
+        if (dados[campo] && !formValues[campo]) updates[campo] = dados[campo];
       }
 
       if (Object.keys(updates).length > 0) {
         setFormValues(prev => ({ ...prev, ...updates }));
-        toast.success(`Dados encontrados! ${Object.keys(updates).length} campo(s) preenchido(s)`);
+        toast.success(`CPF encontrado: ${Object.keys(updates).map((c) => rotulos[c]).join(", ")} preenchido(s) em Dados Pessoais`);
+      } else if (dados.nome_completo) {
+        toast.info(`CPF de ${dados.nome_completo}. Os campos já estavam preenchidos.`);
       } else {
-        toast.info("CPF encontrado, mas os campos já estão preenchidos");
+        toast.error("Nenhum dado retornado para este CPF");
       }
     } catch (err: any) {
       console.error("CPF lookup error:", err);
@@ -287,6 +266,20 @@ const EmployeeForm = ({ employeeId, initialData, onSaved, onCancel }: EmployeeFo
       setCpfLoading(false);
     }
   };
+
+  // Cadastro novo: consulta sozinho quando o CPF tiver 11 dígitos (uma vez por CPF)
+  const [ultimoCpfConsultado, setUltimoCpfConsultado] = useState<string>("");
+  useEffect(() => {
+    if (employeeId) return; // só no cadastro novo
+    const cpf = (formValues.cpf || "").replace(/\D/g, "");
+    if (cpf.length !== 11 || cpf === ultimoCpfConsultado) return;
+    const t = setTimeout(() => {
+      setUltimoCpfConsultado(cpf);
+      handleCpfLookup(true);
+    }, 600);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formValues.cpf]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -509,7 +502,7 @@ const EmployeeForm = ({ employeeId, initialData, onSaved, onCancel }: EmployeeFo
                 isEditing={!!employeeId}
                 formValues={formValues}
                 onFormChange={handleFormChange}
-                onCpfLookup={handleCpfLookup}
+                onCpfLookup={() => handleCpfLookup(false)}
                 cpfLoading={cpfLoading}
               />
             </TabsContent>
