@@ -666,130 +666,172 @@ async function enviarFotoFuncionario(supabase: any, params: any) {
 
 // ============= VISION TOOL =============
 
+// Busca por aparência com economia: cada foto é descrita UMA vez pela IA de visão e a descrição fica
+// guardada (tabela funcionario_foto_descricao). Depois, "quem tem barba?" é respondido comparando as
+// descrições em texto, numa única chamada. Só reanalisa a foto quando ela muda.
+const PROMPT_DESCRICAO_FOTO = `Descreva objetivamente a aparência visível da pessoa nesta foto, em português, num único parágrafo curto.
+Inclua quando visível: cabelo (cor, comprimento, tipo, calvície), barba/bigode, óculos, cor dos olhos, tom de pele,
+sobrancelhas, tatuagens, piercings, brincos, colares e outros acessórios, chapéu/boné/touca, maquiagem, sorriso,
+roupa ou uniforme (cor), faixa etária aparente, formato do rosto e qualquer detalhe marcante.
+Se algo não estiver visível, diga "não visível". Não identifique a pessoa e não invente.`;
+const MAX_NOVAS_DESCRICOES = 30;
+
+function paraBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+
+async function descreverFoto(fotoUrl: string, provedor: string, geminiKey?: string | null, openaiKey?: string | null): Promise<string | null> {
+  try {
+    if (provedor === "openai" && openaiKey) {
+      const r = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${openaiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [{ role: "user", content: [{ type: "text", text: PROMPT_DESCRICAO_FOTO }, { type: "image_url", image_url: { url: fotoUrl, detail: "low" } }] }],
+          max_tokens: 250,
+        }),
+      });
+      if (!r.ok) return null;
+      const d = await r.json();
+      return (d.choices?.[0]?.message?.content || "").trim() || null;
+    }
+    if (!geminiKey) return null;
+    const img = await fetch(fotoUrl);
+    if (!img.ok) return null;
+    const mime = (img.headers.get("content-type") || "image/jpeg").split(";")[0].trim();
+    const base64 = paraBase64(await img.arrayBuffer());
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${geminiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contents: [{ parts: [{ text: PROMPT_DESCRICAO_FOTO }, { inline_data: { mime_type: mime, data: base64 } }] }] }),
+    });
+    if (!r.ok) return null;
+    const d = await r.json();
+    return (d.candidates?.[0]?.content?.parts?.map((p: any) => p.text || "").join("") || "").trim() || null;
+  } catch (err) {
+    console.error("Erro ao descrever foto:", err);
+    return null;
+  }
+}
+
 async function identificarPorAparencia(supabase: any, params: any, iaConfig: any) {
   const { caracteristica, setor, empresa } = params;
   if (!caracteristica) return "Informe a característica física para pesquisar (ex: olho azul, cabelo loiro, óculos).";
 
-  // Build employee query
   let query = supabase
     .from("employees")
     .select("id, nome_completo, cargo, setor, foto_url, empresa_id, empresas(nome)")
     .in("status", ["ativo", "ferias", "em_admissao", "afastado"])
     .not("foto_url", "is", null);
-
   if (setor) query = query.ilike("setor", `%${setor}%`);
-
-  // If empresa filter provided, resolve ids first
   if (empresa) {
     const { data: empData } = await supabase.from("empresas").select("id").ilike("nome", `%${empresa}%`);
     const ids = (empData || []).map((e: any) => e.id);
     if (ids.length > 0) query = query.in("empresa_id", ids);
   }
 
-  const { data: employees, error } = await query.order("nome_completo").limit(10);
+  const { data: employees, error } = await query.order("nome_completo").limit(400);
   if (error) return `Erro ao buscar funcionários: ${error.message}`;
-  if (!employees || employees.length === 0) return "Nenhum funcionário com foto cadastrada encontrado para os filtros informados.";
-
-  const semFoto = employees.filter((e: any) => !e.foto_url).length;
-  const comFoto = employees.filter((e: any) => e.foto_url);
-
+  const comFoto = (employees || []).filter((e: any) => e.foto_url);
   if (comFoto.length === 0) return "Nenhum dos funcionários filtrados possui foto cadastrada no sistema.";
 
-  // Determine vision model and API key
   const provedor = iaConfig?.provedor || "gemini";
-  let GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-  let OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-  if (iaConfig?.google_gemini_api_key) GOOGLE_GEMINI_API_KEY = iaConfig.google_gemini_api_key;
-  if (iaConfig?.openai_api_key) OPENAI_API_KEY = iaConfig.openai_api_key;
+  const geminiKey = iaConfig?.google_gemini_api_key || Deno.env.get("GOOGLE_GEMINI_API_KEY");
+  const openaiKey = iaConfig?.openai_api_key || Deno.env.get("OPENAI_API_KEY");
 
-  const visionPrompt = `Analise esta foto de um funcionário. A pergunta é: este funcionário tem "${caracteristica}"?
-Responda APENAS com JSON válido, sem markdown:
-{"match": true ou false, "confianca": "alta" ou "media" ou "baixa", "descricao": "descreva brevemente o que você vê relacionado à característica pedida"}
-Se a imagem não estiver clara ou não for possível determinar, use match: false e confianca: baixa.`;
-
-  // Analyze all photos in parallel
-  const analysisResults = await Promise.all(
-    comFoto.map(async (emp: any) => {
-      try {
-        let analysisJson: any = null;
-
-        if (provedor === "openai" && OPENAI_API_KEY) {
-          const response = await fetch("https://api.openai.com/v1/chat/completions", {
-            method: "POST",
-            headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({
-              model: "gpt-4o",
-              messages: [{
-                role: "user",
-                content: [
-                  { type: "text", text: visionPrompt },
-                  { type: "image_url", image_url: { url: emp.foto_url, detail: "low" } }
-                ]
-              }],
-              max_tokens: 200,
-            }),
-          });
-          if (response.ok) {
-            const data = await response.json();
-            const rawText = data.choices?.[0]?.message?.content || "";
-            const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-            if (jsonMatch) analysisJson = JSON.parse(jsonMatch[0]);
-          }
-        } else if (GOOGLE_GEMINI_API_KEY) {
-          // Gemini Vision — fetch image as base64
-          const imgResponse = await fetch(emp.foto_url);
-          if (!imgResponse.ok) return { emp, match: false, confianca: "baixa", descricao: "Erro ao carregar imagem" };
-          const imgBuffer = await imgResponse.arrayBuffer();
-          const base64 = btoa(String.fromCharCode(...new Uint8Array(imgBuffer)));
-          const mimeType = imgResponse.headers.get("content-type") || "image/jpeg";
-
-          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${GOOGLE_GEMINI_API_KEY}`;
-          const geminiResponse = await fetch(geminiUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [{
-                parts: [
-                  { text: visionPrompt },
-                  { inline_data: { mime_type: mimeType.split(";")[0].trim(), data: base64 } }
-                ]
-              }]
-            }),
-          });
-          if (geminiResponse.ok) {
-            const geminiData = await geminiResponse.json();
-            const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
-            const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-            if (jsonMatch) analysisJson = JSON.parse(jsonMatch[0]);
-          }
-        }
-
-        if (!analysisJson) return { emp, match: false, confianca: "baixa", descricao: "Não foi possível analisar" };
-        return { emp, match: analysisJson.match === true, confianca: analysisJson.confianca || "baixa", descricao: analysisJson.descricao || "" };
-      } catch (err) {
-        console.error(`Vision analysis error for ${emp.nome_completo}:`, err);
-        return { emp, match: false, confianca: "baixa", descricao: "Erro na análise" };
-      }
-    })
-  );
-
-  const matches = analysisResults.filter((r: any) => r.match);
-  const aviso = semFoto > 0 ? `\n⚠️ ${semFoto} funcionário(s) sem foto foram ignorados.` : "";
-
-  if (matches.length === 0) {
-    return `Analisei ${comFoto.length} foto(s) e não encontrei nenhum funcionário com "${caracteristica}" nas fotos cadastradas.${aviso}`;
+  // 1) Descrições já guardadas (se a tabela ainda não existir, segue sem guardar)
+  const descricoes = new Map<string, string>();
+  let podeGuardar = true;
+  const { data: guardadas, error: erroCache } = await supabase
+    .from("funcionario_foto_descricao")
+    .select("employee_id, foto_url, descricao")
+    .in("employee_id", comFoto.map((e: any) => e.id));
+  if (erroCache) { podeGuardar = false; console.warn("Cache de fotos indisponível:", erroCache.message); }
+  for (const g of guardadas || []) {
+    const emp = comFoto.find((e: any) => e.id === g.employee_id);
+    if (emp && emp.foto_url === g.foto_url && g.descricao) descricoes.set(g.employee_id, g.descricao);
   }
 
-  // Return special object with multiple images to send
+  // 2) Descreve só as fotos novas ou trocadas (limite por pedido, para não estourar a cota)
+  const faltando = comFoto.filter((e: any) => !descricoes.has(e.id));
+  const agora = faltando.slice(0, MAX_NOVAS_DESCRICOES);
+  for (let i = 0; i < agora.length; i += 6) {
+    const lote = agora.slice(i, i + 6);
+    const feitas = await Promise.all(lote.map((e: any) => descreverFoto(e.foto_url, provedor, geminiKey, openaiKey)));
+    const novas: any[] = [];
+    lote.forEach((e: any, j: number) => {
+      if (feitas[j]) {
+        descricoes.set(e.id, feitas[j]!);
+        novas.push({ employee_id: e.id, foto_url: e.foto_url, descricao: feitas[j], atualizado_em: new Date().toISOString() });
+      }
+    });
+    if (podeGuardar && novas.length > 0) {
+      const { error: erroSalvar } = await supabase.from("funcionario_foto_descricao").upsert(novas, { onConflict: "employee_id" });
+      if (erroSalvar) { podeGuardar = false; console.warn("Não foi possível guardar descrições:", erroSalvar.message); }
+    }
+  }
+  const pendentes = faltando.length - agora.length;
+
+  const analisaveis = comFoto.filter((e: any) => descricoes.has(e.id));
+  if (analisaveis.length === 0) return "Não consegui analisar as fotos agora (limite da IA). Tente de novo em alguns minutos.";
+
+  // 3) Uma única chamada de texto compara a característica com todas as descrições
+  const lista = analisaveis.map((e: any, i: number) => `${i + 1}. ${descricoes.get(e.id)}`).join("\n");
+  const pergunta = `Abaixo há descrições de fotos de funcionários, numeradas. Quais pessoas têm "${caracteristica}"?
+Considere sinônimos e variações (ex.: "olho claro" inclui azul e verde). Se a descrição diz "não visível" para o item, não inclua.
+Responda APENAS com JSON válido, sem markdown: {"encontrados":[{"n":número,"confianca":"alta"|"media"|"baixa","motivo":"trecho curto da descrição"}]}
+
+${lista}`;
+
+  const usarOpenai = provedor === "openai" && openaiKey;
+  let resposta: any = null;
+  try {
+    const r = await fetch(usarOpenai ? "https://api.openai.com/v1/chat/completions" : "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${usarOpenai ? openaiKey : geminiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: usarOpenai ? "gpt-4o-mini" : "gemini-3.5-flash", messages: [{ role: "user", content: pergunta }], stream: false }),
+    });
+    if (r.ok) {
+      const d = await r.json();
+      const texto = d.choices?.[0]?.message?.content || "";
+      const json = texto.match(/\{[\s\S]*\}/);
+      if (json) resposta = JSON.parse(json[0]);
+    } else {
+      console.error("Comparação de aparência falhou:", r.status);
+    }
+  } catch (err) {
+    console.error("Comparação de aparência:", err);
+  }
+  if (!resposta) return "Não consegui comparar as fotos agora (limite da IA). Tente de novo em alguns minutos.";
+
+  const matches = (resposta.encontrados || [])
+    .map((m: any) => ({ emp: analisaveis[Number(m.n) - 1], confianca: m.confianca || "media", descricao: m.motivo || "" }))
+    .filter((m: any) => m.emp);
+
+  const semFoto = (employees || []).length - comFoto.length;
+  const avisos = [
+    semFoto > 0 ? `⚠️ ${semFoto} funcionário(s) sem foto foram ignorados.` : "",
+    pendentes > 0 ? `⏳ ${pendentes} foto(s) ainda não foram analisadas; pergunte de novo para incluí-las.` : "",
+  ].filter(Boolean).join("\n");
+  const aviso = avisos ? `\n${avisos}` : "";
+
+  if (matches.length === 0) {
+    return `Analisei ${analisaveis.length} foto(s) e não encontrei nenhum funcionário com "${caracteristica}" nas fotos cadastradas.${aviso}`;
+  }
+
   return {
     _sendMultipleImages: true,
-    matches: matches.map((r: any) => ({
+    matches: matches.slice(0, 10).map((r: any) => ({
       url: r.emp.foto_url,
       caption: `📸 *${r.emp.nome_completo}*\n🏷️ ${r.emp.cargo}${r.emp.setor ? ` | ${r.emp.setor}` : ""}\n🔍 ${r.descricao}`,
       nome: r.emp.nome_completo,
     })),
-    resumo: `Encontrei *${matches.length}* funcionário(s) com "${caracteristica}":\n${matches.map((r: any) => `• *${r.emp.nome_completo}* (${r.emp.cargo}${r.emp.setor ? `, ${r.emp.setor}` : ""}) — confiança: ${r.confianca}`).join("\n")}${aviso}`,
-    analisados: comFoto.length,
+    resumo: `Encontrei *${matches.length}* funcionário(s) com "${caracteristica}"${matches.length > 10 ? " (enviando as 10 primeiras fotos)" : ""}:\n${matches.map((r: any) => `• *${r.emp.nome_completo}* (${r.emp.cargo}${r.emp.setor ? `, ${r.emp.setor}` : ""}) — confiança: ${r.confianca}`).join("\n")}${aviso}`,
+    analisados: analisaveis.length,
   };
 }
 
@@ -873,6 +915,72 @@ async function atualizarStatusAdiantamentos(supabase: any, params: any) {
 async function fetchMemorias(supabase: any) {
   const { data } = await supabase.from("cerebrum_memorias").select("conteudo, categoria, nome_professor, created_at").eq("ativo", true).order("created_at", { ascending: false }).limit(100);
   return data || [];
+}
+
+// ============= ECONOMIA DE CRÉDITOS =============
+
+const normalizarTexto = (s: string) =>
+  (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+const PALAVRAS_VAZIAS = new Set(["para", "como", "qual", "quais", "quem", "esta", "esse", "essa", "isso", "mais", "tem", "uma", "um", "dos", "das", "que", "com", "por", "sobre", "voce", "pode", "sera", "foi", "ele", "ela", "meu", "minha", "todos", "todas"]);
+
+// Envia só as memórias ligadas ao assunto: até 25 que compartilham palavras com a conversa + as 8 mais recentes.
+// Com poucas memórias (até 30), manda todas.
+function selecionarMemorias(memorias: any[], textoConversa: string): any[] {
+  if (memorias.length <= 30) return memorias;
+  const palavras = new Set(
+    normalizarTexto(textoConversa).split(/[^a-z0-9]+/).filter((w) => w.length >= 3 && !PALAVRAS_VAZIAS.has(w)),
+  );
+  const pontuadas = memorias.map((m, i) => {
+    const texto = normalizarTexto(`${m.categoria || ""} ${m.conteudo || ""}`);
+    let pontos = 0;
+    palavras.forEach((w) => { if (texto.includes(w)) pontos++; });
+    return { m, i, pontos };
+  });
+  const relevantes = pontuadas.filter((p) => p.pontos > 0).sort((a, b) => b.pontos - a.pontos).slice(0, 25);
+  const escolhidas = new Set([...relevantes.map((p) => p.i), ...pontuadas.slice(0, 8).map((p) => p.i)]);
+  return pontuadas.filter((p) => escolhidas.has(p.i)).map((p) => p.m);
+}
+
+// Mensagens de cortesia ("ok", "obrigado", "bom dia") não precisam consultar o banco
+const MENSAGEM_SIMPLES = /^(ok+|okay|blz|beleza|obrigad[oa]s?|muito obrigad[oa]|valeu|vlw|bom dia|boa tarde|boa noite|oi+|ola|tudo bem\??|tudo certo|show|top|perfeito|certo|entendi|entendido|combinado|otimo|massa|tchau|ate mais|kk+|haha+|rs+|👍|🙏|❤️|😊|😀)[\s!.,?]*$/i;
+function ehMensagemSimples(texto: string): boolean {
+  return MENSAGEM_SIMPLES.test(normalizarTexto(texto).trim());
+}
+
+// Reduz o resultado das consultas antes de mandar para a IA: tira campos vazios e técnicos,
+// encurta textos longos e, em listas grandes, manda as primeiras linhas + o total.
+const CAMPOS_TECNICOS = new Set(["created_at", "updated_at", "user_id", "created_by", "updated_by", "foto_url_original"]);
+const LIMITE_RESULTADO = 24000; // ~6 mil tokens: resultados menores que isso vão completos (só sem campos vazios)
+
+function enxugar(valor: any, maxItens: number, maxTexto: number): any {
+  if (Array.isArray(valor)) {
+    const itens = valor.slice(0, maxItens).map((v) => enxugar(v, maxItens, maxTexto));
+    if (valor.length > maxItens) itens.push(`… e mais ${valor.length - maxItens} registro(s) não mostrados (total: ${valor.length}). Para ver outros, refaça a consulta com filtro mais específico.`);
+    return itens;
+  }
+  if (valor && typeof valor === "object") {
+    const novo: Record<string, any> = {};
+    for (const [k, v] of Object.entries(valor)) {
+      if (v === null || v === undefined || v === "" || CAMPOS_TECNICOS.has(k)) continue;
+      if (Array.isArray(v) && v.length === 0) continue;
+      novo[k] = enxugar(v, maxItens, maxTexto);
+    }
+    return novo;
+  }
+  if (typeof valor === "string" && valor.length > maxTexto) return valor.slice(0, maxTexto) + "…";
+  return valor;
+}
+
+function compactarResultado(resultado: any): string {
+  if (typeof resultado === "string") {
+    return resultado.length > LIMITE_RESULTADO ? resultado.slice(0, LIMITE_RESULTADO) + "\n… (resultado cortado; peça um filtro mais específico)" : resultado;
+  }
+  for (const [maxItens, maxTexto] of [[5000, 1000], [150, 500], [80, 300], [40, 200], [20, 150]]) {
+    const texto = JSON.stringify(enxugar(resultado, maxItens, maxTexto));
+    if (texto.length <= LIMITE_RESULTADO) return texto;
+  }
+  return JSON.stringify(enxugar(resultado, 10, 150)).slice(0, LIMITE_RESULTADO) + "…";
 }
 
 // ============= TOOL DEFINITIONS =============
@@ -1382,10 +1490,11 @@ serve(async (req) => {
     let GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
     let OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
+    const pareceSimples = ehMensagemSimples(userMessage);
     const [iaConfigRes, whatsappConfigRes, resumo, memorias, historyRes] = await Promise.all([
       supabase.from("configuracoes_ia").select("google_gemini_api_key, openai_api_key, modelo, provedor").limit(1).maybeSingle(),
       supabase.from("configuracoes_whatsapp").select("*").limit(1).maybeSingle(),
-      consultarResumoRapido(supabase),
+      pareceSimples ? Promise.resolve("") : consultarResumoRapido(supabase),
       fetchMemorias(supabase),
       supabase.from("whatsapp_conversas").select("role, content, created_at").eq("phone_number", phoneNumber).order("created_at", { ascending: false }).limit(20),
     ]);
@@ -1409,17 +1518,25 @@ serve(async (req) => {
       return new Response(JSON.stringify({ status: "ignored", reason: "unauthorized by config" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const memoriasText = memorias.length > 0
-      ? "\n\n=== MEMÓRIA PERMANENTE ===\n" + memorias.map((m: any) => `- [${m.categoria}] ${m.conteudo}${m.nome_professor ? ` (por ${m.nome_professor})` : ""}`).join("\n")
+    const rawHistory = (historyRes.data || []).reverse();
+    // "ok"/"beleza" logo depois de uma pergunta do Cérebrum pode ser uma confirmação de ação: aí mantém as ferramentas
+    const ultimaResposta = [...rawHistory].reverse().find((h: any) => h.role === "assistant");
+    const mensagemSimples = pareceSimples && !String(ultimaResposta?.content || "").includes("?");
+    // Memórias: só as ligadas ao assunto (com base na mensagem atual e nas últimas trocas)
+    const memoriasUsadas = selecionarMemorias(memorias, [userMessage, ...rawHistory.slice(-4).map((h: any) => h.content || "")].join(" "));
+    const memoriasText = memoriasUsadas.length > 0
+      ? "\n\n=== MEMÓRIA PERMANENTE ===\n" + memoriasUsadas.map((m: any) => `- [${m.categoria}] ${m.conteudo}${m.nome_professor ? ` (por ${m.nome_professor})` : ""}`).join("\n")
       : "";
 
-    const rawHistory = (historyRes.data || []).reverse();
-    const historyMessages = rawHistory.map((h: any) => ({ role: h.role, content: h.content }));
-
+    // O histórico vai uma vez só, como conversa (antes ia também repetido dentro das instruções).
+    // Respostas antigas muito longas são encurtadas: as 4 últimas mensagens vão inteiras.
+    const historyMessages = rawHistory.map((h: any, i: number) => {
+      const recente = i >= rawHistory.length - 4;
+      const conteudo = String(h.content || "");
+      return { role: h.role, content: !recente && conteudo.length > 800 ? conteudo.slice(0, 800) + "…" : conteudo };
+    });
     const conversationSummary = rawHistory.length > 0
-      ? `\nHISTÓRICO RECENTE (${rawHistory.length} msgs):\n` +
-        rawHistory.map((h: any) => `[${h.role === 'user' ? 'USUÁRIO' : 'VOCÊ'}]: ${h.content.substring(0, 300)}`).join("\n") +
-        "\nUse este histórico para resolver pronomes (ele/ela/dele/dessa pessoa)."
+      ? "\nHá histórico desta conversa nas mensagens anteriores: use-o para resolver pronomes (ele/ela/dele/dessa pessoa)."
       : "";
 
     const now = new Date();
@@ -1507,17 +1624,17 @@ ${resumo}`;
       let aiResponse = await fetch(aiUrl, {
         method: "POST",
         headers: { Authorization: `Bearer ${aiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ model: aiModel, messages, tools: toolDefinitions, stream: false }),
+        body: JSON.stringify({ model: aiModel, messages, ...(mensagemSimples ? {} : { tools: toolDefinitions }), stream: false }),
       });
 
-      // Retry on 429
+      // Limite atingido: uma nova tentativa só (a troca de modelo/reserva já é feita em _shared/geminiFallback.ts)
       if (aiResponse.status === 429) {
-        for (let retry = 1; retry <= 3; retry++) {
-          await new Promise(r => setTimeout(r, retry * 2000));
+        for (let retry = 1; retry <= 1; retry++) {
+          await new Promise(r => setTimeout(r, 3000));
           aiResponse = await fetch(aiUrl, {
             method: "POST",
             headers: { Authorization: `Bearer ${aiKey}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ model: aiModel, messages, tools: toolDefinitions, stream: false }),
+            body: JSON.stringify({ model: aiModel, messages, ...(mensagemSimples ? {} : { tools: toolDefinitions }), stream: false }),
           });
           if (aiResponse.status !== 429) break;
         }
@@ -1558,7 +1675,7 @@ ${resumo}`;
           continue;
         }
 
-        messages.push({ role: "tool", tool_call_id: toolCall.id, content: typeof result === "string" ? result : JSON.stringify(result) } as any);
+        messages.push({ role: "tool", tool_call_id: toolCall.id, content: compactarResultado(result) } as any);
       }
     }
 
