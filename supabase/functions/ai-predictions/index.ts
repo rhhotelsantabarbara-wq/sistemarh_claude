@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import "../_shared/geminiFallback.ts";
+import { exigirPapel } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,6 +40,10 @@ serve(async (req) => {
   }
 
   try {
+    // Só usuários com permissão podem executar esta função
+    const acesso = await exigirPapel(req, ["gestor", "admin_parcial"]);
+    if (acesso.resposta) return acesso.resposta;
+
     const { type } = await req.json(); // "turnover" | "promotion"
     
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");

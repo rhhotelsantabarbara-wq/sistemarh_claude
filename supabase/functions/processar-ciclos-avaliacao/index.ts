@@ -1,4 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.81.1';
+import { exigirSegredoCron } from "../_shared/segredoExterno.ts";
+import { exigirPapel } from "../_shared/auth.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,6 +22,12 @@ interface Ciclo {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Aceita o agendamento (x-cron-secret) ou um gestor logado (botão no sistema)
+  if (exigirSegredoCron(req)) {
+    const acesso = await exigirPapel(req, ["gestor", "admin_parcial"]);
+    if (acesso.resposta) return acesso.resposta;
   }
 
   try {

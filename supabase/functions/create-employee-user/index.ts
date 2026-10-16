@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.81.1'
+import { exigirPapel, papeisDoUsuario } from "../_shared/auth.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,6 +12,10 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Só usuários com permissão podem executar esta função
+    const acesso = await exigirPapel(req, ["gestor", "admin_parcial"]);
+    if (acesso.resposta) return acesso.resposta;
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -46,7 +51,9 @@ Deno.serve(async (req) => {
       user_metadata: {
         nome_completo: nome_completo,
         role: 'funcionario'
-      }
+      },
+      // O papel vem de app_metadata (só o servidor consegue definir)
+      app_metadata: { role: 'funcionario' }
     })
 
     if (authError) {
@@ -61,6 +68,15 @@ Deno.serve(async (req) => {
         }
         const existingUser = users.users.find(u => u.email === email)
         if (existingUser) {
+          // Só reaproveita (e troca a senha de) contas que são apenas de funcionário,
+          // para ninguém assumir a conta de um gestor/admin por aqui
+          const papeisExistente = await papeisDoUsuario(existingUser.id)
+          if (papeisExistente.some((p) => p !== 'funcionario')) {
+            return new Response(
+              JSON.stringify({ error: 'Já existe um usuário gestor/administrador com este CPF' }),
+              { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+          }
           // Atualizar senha do usuário existente
           const { data: updated, error: updateError } = await supabaseClient.auth.admin.updateUserById(
             existingUser.id,

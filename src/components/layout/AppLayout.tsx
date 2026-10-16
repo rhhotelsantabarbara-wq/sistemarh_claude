@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import CarregandoTela from "./CarregandoTela";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -109,7 +110,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   }
 
   if (userRole !== "gestor" && userRole !== "admin_parcial") {
-    return <>{children}</>;
+    return <Suspense fallback={<CarregandoTela telaCheia />}>{children}</Suspense>;
   }
 
   const isPartial = userRole === "admin_parcial";
@@ -150,9 +151,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
           {/* Main content */}
           <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
-            {typeof children === "function"
-              ? (children as any)({ selectedEmpresa, empresas, user })
-              : children}
+            <Suspense fallback={<CarregandoTela />}>
+              {typeof children === "function"
+                ? (children as any)({ selectedEmpresa, empresas, user })
+                : children}
+            </Suspense>
           </main>
         </div>
       </div>

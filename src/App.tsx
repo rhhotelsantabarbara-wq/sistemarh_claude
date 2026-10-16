@@ -6,62 +6,66 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
-import EmployeeDetails from "./pages/EmployeeDetails";
-import Stock from "./pages/Stock";
-import Afastamentos from "./pages/Afastamentos";
-import DistribuirEpi from "./pages/DistribuirEpi";
-import DistribuirUniforme from "./pages/DistribuirUniforme";
-import Sectors from "./pages/Sectors";
-import Turnover from "./pages/Turnover";
-import Financeiro from "./pages/Financeiro";
-import Companies from "./pages/Companies";
-import Payroll from "./pages/Payroll";
-import Funcoes from "./pages/Funcoes";
-import Contracts from "./pages/Contracts";
-import Managers from "./pages/Managers";
-import AdminUsers from "./pages/AdminUsers";
-import SalaryAdjustment from "./pages/SalaryAdjustment";
-import ControlePonto from "./pages/ControlePonto";
-import NotFound from "./pages/NotFound";
-import Vagas from "./pages/Vagas";
-import VagaDetalhes from "./pages/VagaDetalhes";
-import Recrutamento from "./pages/Recrutamento";
-import CandidaturasVaga from "./pages/CandidaturasVaga";
-import Relatorios from "./pages/Relatorios";
-import SaudeOcupacional from "./pages/SaudeOcupacional";
-import VacationSchedule from "./pages/VacationSchedule";
-import Settings from "./pages/Settings";
-import Avaliacoes from "./pages/Avaliacoes";
-import Treinamentos from "./pages/Treinamentos";
-import Adiantamentos from "./pages/Adiantamentos";
-import PlanoAdmissaoDesligamento from "./pages/PlanoAdmissaoDesligamento";
-import PeopleManager from "./pages/PeopleManager";
-import Tacs from "./pages/Tacs";
-import Crachas from "./pages/Crachas";
-import Eventos from "./pages/Eventos";
-import AIInsights from "./pages/AIInsights";
-import ConsultaJudicial from "./pages/ConsultaJudicial";
-import Contabilidade from "./pages/Contabilidade";
-import NR1Dashboard from "./pages/nr1/Dashboard";
-import NR1PainelGerencial from "./pages/nr1/PainelGerencial";
-import NR1AuditoriaMT from "./pages/nr1/AuditoriaMT";
-import NR1Denuncias from "./pages/nr1/Denuncias";
-import NR1Clima from "./pages/nr1/Clima";
-import NR1Riscos from "./pages/nr1/Riscos";
-import NR1Treinamentos from "./pages/nr1/Treinamentos";
-import NR1Acoes from "./pages/nr1/Acoes";
-import NR1Lideranca from "./pages/nr1/Lideranca";
-import NR1LiderancaResponder from "./pages/nr1/LiderancaResponder";
-import NR1Relatorios from "./pages/nr1/Relatorios";
-import NR1Config from "./pages/nr1/Config";
-import ClimaResponderPublic from "./pages/public/ClimaResponder";
-import DenunciaPublica from "./pages/public/DenunciaPublica";
-import Privacidade from "./pages/public/Privacidade";
-import MeusHolerites from "./pages/MeusHolerites";
-import ValidarHolerite from "./pages/ValidarHolerite";
 import AppLayout from "./components/layout/AppLayout";
+import CarregandoTela from "./components/layout/CarregandoTela";
+import { lazyComRetry } from "./lib/lazyComRetry";
+import { Suspense } from "react";
 import { FloatingAIChat } from "./components/ai/FloatingAIChat";
+
+const Dashboard = lazyComRetry(() => import("./pages/Dashboard"));
+const EmployeeDetails = lazyComRetry(() => import("./pages/EmployeeDetails"));
+const Stock = lazyComRetry(() => import("./pages/Stock"));
+const Afastamentos = lazyComRetry(() => import("./pages/Afastamentos"));
+const DistribuirEpi = lazyComRetry(() => import("./pages/DistribuirEpi"));
+const DistribuirUniforme = lazyComRetry(() => import("./pages/DistribuirUniforme"));
+const Sectors = lazyComRetry(() => import("./pages/Sectors"));
+const Turnover = lazyComRetry(() => import("./pages/Turnover"));
+const Financeiro = lazyComRetry(() => import("./pages/Financeiro"));
+const Companies = lazyComRetry(() => import("./pages/Companies"));
+const Payroll = lazyComRetry(() => import("./pages/Payroll"));
+const Funcoes = lazyComRetry(() => import("./pages/Funcoes"));
+const Contracts = lazyComRetry(() => import("./pages/Contracts"));
+const Managers = lazyComRetry(() => import("./pages/Managers"));
+const AdminUsers = lazyComRetry(() => import("./pages/AdminUsers"));
+const SalaryAdjustment = lazyComRetry(() => import("./pages/SalaryAdjustment"));
+const ControlePonto = lazyComRetry(() => import("./pages/ControlePonto"));
+const NotFound = lazyComRetry(() => import("./pages/NotFound"));
+const Vagas = lazyComRetry(() => import("./pages/Vagas"));
+const VagaDetalhes = lazyComRetry(() => import("./pages/VagaDetalhes"));
+const Recrutamento = lazyComRetry(() => import("./pages/Recrutamento"));
+const CandidaturasVaga = lazyComRetry(() => import("./pages/CandidaturasVaga"));
+const Relatorios = lazyComRetry(() => import("./pages/Relatorios"));
+const SaudeOcupacional = lazyComRetry(() => import("./pages/SaudeOcupacional"));
+const VacationSchedule = lazyComRetry(() => import("./pages/VacationSchedule"));
+const Settings = lazyComRetry(() => import("./pages/Settings"));
+const Avaliacoes = lazyComRetry(() => import("./pages/Avaliacoes"));
+const Treinamentos = lazyComRetry(() => import("./pages/Treinamentos"));
+const Adiantamentos = lazyComRetry(() => import("./pages/Adiantamentos"));
+const PlanoAdmissaoDesligamento = lazyComRetry(() => import("./pages/PlanoAdmissaoDesligamento"));
+const PeopleManager = lazyComRetry(() => import("./pages/PeopleManager"));
+const Tacs = lazyComRetry(() => import("./pages/Tacs"));
+const Crachas = lazyComRetry(() => import("./pages/Crachas"));
+const Eventos = lazyComRetry(() => import("./pages/Eventos"));
+const AIInsights = lazyComRetry(() => import("./pages/AIInsights"));
+const ConsultaJudicial = lazyComRetry(() => import("./pages/ConsultaJudicial"));
+const Contabilidade = lazyComRetry(() => import("./pages/Contabilidade"));
+const NR1Dashboard = lazyComRetry(() => import("./pages/nr1/Dashboard"));
+const NR1PainelGerencial = lazyComRetry(() => import("./pages/nr1/PainelGerencial"));
+const NR1AuditoriaMT = lazyComRetry(() => import("./pages/nr1/AuditoriaMT"));
+const NR1Denuncias = lazyComRetry(() => import("./pages/nr1/Denuncias"));
+const NR1Clima = lazyComRetry(() => import("./pages/nr1/Clima"));
+const NR1Riscos = lazyComRetry(() => import("./pages/nr1/Riscos"));
+const NR1Treinamentos = lazyComRetry(() => import("./pages/nr1/Treinamentos"));
+const NR1Acoes = lazyComRetry(() => import("./pages/nr1/Acoes"));
+const NR1Lideranca = lazyComRetry(() => import("./pages/nr1/Lideranca"));
+const NR1LiderancaResponder = lazyComRetry(() => import("./pages/nr1/LiderancaResponder"));
+const NR1Relatorios = lazyComRetry(() => import("./pages/nr1/Relatorios"));
+const NR1Config = lazyComRetry(() => import("./pages/nr1/Config"));
+const ClimaResponderPublic = lazyComRetry(() => import("./pages/public/ClimaResponder"));
+const DenunciaPublica = lazyComRetry(() => import("./pages/public/DenunciaPublica"));
+const Privacidade = lazyComRetry(() => import("./pages/public/Privacidade"));
+const MeusHolerites = lazyComRetry(() => import("./pages/MeusHolerites"));
+const ValidarHolerite = lazyComRetry(() => import("./pages/ValidarHolerite"));
 
 const queryClient = new QueryClient();
 
@@ -76,6 +80,7 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <FloatingAIChat />
+            <Suspense fallback={<CarregandoTela telaCheia />}>
             <Routes>
               <Route path="/" element={<Auth />} />
               <Route path="/auth" element={<Auth />} />
@@ -143,6 +148,7 @@ const App = () => {
 
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </Suspense>
           </BrowserRouter>
         </TooltipProvider>
       </ThemeProvider>

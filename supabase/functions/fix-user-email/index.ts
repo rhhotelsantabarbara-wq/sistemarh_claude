@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.81.1'
+import { exigirPapel } from "../_shared/auth.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,6 +12,10 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Só usuários com permissão podem executar esta função
+    const acesso = await exigirPapel(req, ["gestor"]);
+    if (acesso.resposta) return acesso.resposta;
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',

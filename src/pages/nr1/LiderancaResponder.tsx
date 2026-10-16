@@ -12,29 +12,27 @@ export default function NR1LiderancaResponder() {
   const { token } = useParams();
   const [estado, setEstado] = useState<"validando" | "valido" | "invalido" | "enviado">("validando");
   const [pesquisa, setPesquisa] = useState<any>(null);
-  const [tokenRow, setTokenRow] = useState<any>(null);
   const [valores, setValores] = useState<Record<string, number>>({});
   const [comentario, setComentario] = useState("");
 
   useEffect(() => {
     (async () => {
       if (!token) return setEstado("invalido");
-      const { data: tk } = await (supabase.from("nr1_lideranca_tokens") as any).select("*").eq("token", token).maybeSingle();
-      if (!tk || tk.usado) return setEstado("invalido");
-      const { data: p } = await (supabase.from("nr1_lideranca_pesquisas") as any).select("*").eq("id", tk.pesquisa_id).maybeSingle();
-      if (!p || !p.ativa) return setEstado("invalido");
-      setTokenRow(tk); setPesquisa(p); setEstado("valido");
+      // Valida o código no servidor (os códigos não ficam mais visíveis para visitantes)
+      const { data: p } = await (supabase.rpc as any)("nr1_validar_token", { p_tipo: "lideranca", p_token: token });
+      if (!p) return setEstado("invalido");
+      setPesquisa(p); setEstado("valido");
     })();
   }, [token]);
 
   const enviar = async () => {
     const respostas = PERGUNTAS_LIDERANCA.map((q) => ({ pergunta_id: q.id, valor: valores[q.id] || 0 }));
     if (respostas.some((r) => !r.valor)) return toast.error("Responda todas as perguntas");
-    const { error: e1 } = await (supabase.from("nr1_lideranca_respostas") as any).insert({
-      pesquisa_id: pesquisa.id, respostas, comentario: comentario || null,
+    // Grava a resposta e gasta o código na mesma operação
+    const { error: e1 } = await (supabase.rpc as any)("nr1_enviar_resposta", {
+      p_tipo: "lideranca", p_token: token, p_respostas: respostas, p_comentario: comentario || null,
     });
     if (e1) return toast.error(e1.message);
-    await (supabase.from("nr1_lideranca_tokens") as any).update({ usado: true, usado_em: new Date().toISOString() }).eq("id", tokenRow.id);
     setEstado("enviado");
   };
 

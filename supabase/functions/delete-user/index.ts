@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.81.1'
+import { exigirPapel, papeisDoUsuario } from "../_shared/auth.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,6 +12,10 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Só usuários com permissão podem executar esta função
+    const acesso = await exigirPapel(req, ["gestor", "admin_parcial"]);
+    if (acesso.resposta) return acesso.resposta;
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -31,6 +36,23 @@ Deno.serve(async (req) => {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
+      )
+    }
+
+    // Admin parcial só pode excluir funcionários (nunca gestores ou outros admins)
+    if (!acesso.papeis.includes('gestor')) {
+      const papeisAlvo = await papeisDoUsuario(user_id)
+      if (papeisAlvo.some((p) => p !== 'funcionario')) {
+        return new Response(
+          JSON.stringify({ error: 'Apenas gestores podem excluir gestores ou administradores' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    }
+    if (user_id === acesso.userId) {
+      return new Response(
+        JSON.stringify({ error: 'Você não pode excluir o seu próprio usuário' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
