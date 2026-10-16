@@ -2,6 +2,7 @@ import jsPDF from "jspdf";
 import { parseDateOnly } from "@/lib/date";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { saveAndBackup } from "./pdfBackupHelper";
 
 interface DadosDesligamento {
   funcionario: {
@@ -123,7 +124,7 @@ export const gerarPedidoDemissao = (dados: DadosDesligamento) => {
   doc.text("Assinatura do responsável pela empresa", margin, y);
 
   const fileNamePD = `pedido_demissao_${dados.funcionario.nome_completo.replace(/\s+/g, "_")}.pdf`;
-  import("./pdfBackupHelper").then(({ saveAndBackup }) => saveAndBackup(doc, fileNamePD, "Desligamentos"));
+  saveAndBackup(doc, fileNamePD, "Desligamentos");
 };
 
 export const gerarCartaDemissao = (dados: DadosDesligamento) => {
@@ -229,5 +230,5 @@ export const gerarCartaDemissao = (dados: DadosDesligamento) => {
   doc.text(`CPF: ${dados.funcionario.cpf || "_______________"}`, margin, y);
 
   const fileNameCD = `carta_dispensa_${dados.funcionario.nome_completo.replace(/\s+/g, "_")}.pdf`;
-  import("./pdfBackupHelper").then(({ saveAndBackup }) => saveAndBackup(doc, fileNameCD, "Desligamentos"));
+  saveAndBackup(doc, fileNameCD, "Desligamentos");
 };

@@ -2,6 +2,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import QRCode from "qrcode";
 import { backupPdfToDrive } from "@/hooks/useDriveBackup";
+import { saveAndBackup } from "./pdfBackupHelper";
 
 export interface HoleriteAssinaturaInfo {
   protocolo: string;
@@ -450,7 +451,6 @@ export async function gerarHoleritePdf(
       subpasta,
     });
   } else {
-    const { saveAndBackup } = await import("./pdfBackupHelper");
     saveAndBackup(doc, nomeArquivo, "Holerites", {
       employee_id: pagamento.employee_id,
       subpasta,

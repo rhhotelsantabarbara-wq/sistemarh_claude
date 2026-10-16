@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import { backupPdfToDrive } from "@/hooks/useDriveBackup";
+import { saveAndBackup } from "./pdfBackupHelper";
 
 export interface PdfOutputOptions {
   silent?: boolean;
@@ -18,7 +19,6 @@ async function handleOutput(doc: jsPDF, fileName: string, tipo: string, opts: Pd
       subpasta: opts.subpasta,
     });
   } else {
-    const { saveAndBackup } = await import("./pdfBackupHelper");
     saveAndBackup(doc, fileName, tipo, { employee_id: opts.employee_id, subpasta: opts.subpasta });
   }
 }

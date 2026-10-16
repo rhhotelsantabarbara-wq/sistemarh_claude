@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { saveAndBackup } from "./pdfBackupHelper";
 
 // Pimaco 6282 specifications (in mm)
 // Etiqueta: 33.9mm x 101.6mm
@@ -57,7 +58,7 @@ export function generateEtiquetasPontoPDF(etiquetas: EtiquetaData[]): void {
   const first = etiquetas[0];
   const mesAnoSlug = first?.mes && first?.ano ? `${first.mes}_${first.ano}` : "sem_data";
   const fileName = `etiquetas_ponto_${mesAnoSlug}.pdf`;
-  import("./pdfBackupHelper").then(({ saveAndBackup }) => saveAndBackup(doc, fileName, "Etiquetas"));
+  saveAndBackup(doc, fileName, "Etiquetas");
 }
 
 function desenharEtiqueta(doc: jsPDF, data: EtiquetaData, x: number, y: number): void {

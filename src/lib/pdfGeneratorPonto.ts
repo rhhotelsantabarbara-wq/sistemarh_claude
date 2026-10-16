@@ -2,6 +2,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { saveAndBackup } from "./pdfBackupHelper";
 
 function formatDecimalToHoursMinutes(decimal: number): string {
   const isNegative = decimal < 0;
@@ -217,7 +218,6 @@ export async function generatePontoPDF(data: ReportData) {
   }
 
   const fileName = `relatorio_ponto_${data.employee.nome_completo.replace(/\s+/g, "_")}_${data.mes.replace(/\s+/g, "_")}.pdf`;
-  const { saveAndBackup } = await import("./pdfBackupHelper");
   saveAndBackup(doc, fileName, "Ponto", { subpasta: data.mes });
 }
 
@@ -250,6 +250,5 @@ export async function generatePontoPDFBatch(reports: ReportData[], mes: string) 
   }
 
   const fileName = `relatorios_ponto_${mes.replace(/\s+/g, "_")}.pdf`;
-  const { saveAndBackup } = await import("./pdfBackupHelper");
   saveAndBackup(doc, fileName, "Ponto", { subpasta: mes });
 }

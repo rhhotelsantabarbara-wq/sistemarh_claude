@@ -1,4 +1,5 @@
 import jsPDF from "jspdf";
+import { saveAndBackup } from "./pdfBackupHelper";
 
 const tipoLabels: Record<string, string> = {
   advertencia_verbal: "Advertência Verbal",
@@ -158,6 +159,5 @@ export const generateTacPDF = async (tac: any) => {
 
   // Save
   const fileName = `TAC_${employeeName.replace(/\s+/g, "_")}_${new Date(tac.data_ocorrencia).toLocaleDateString("pt-BR").replace(/\//g, "-")}.pdf`;
-  const { saveAndBackup } = await import("./pdfBackupHelper");
   saveAndBackup(doc, fileName, "TACs", { employee_id: tac.employee_id });
 };

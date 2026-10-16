@@ -1,4 +1,5 @@
 import jsPDF from "jspdf";
+import { saveAndBackup } from "./pdfBackupHelper";
 
 interface EmployeeForBadge {
   id: string;
@@ -405,5 +406,5 @@ export async function generateCustomBadgesPDF(
 
   const timestamp = new Date().toISOString().slice(0, 10);
   const fileName = `crachas_personalizado_${timestamp}.pdf`;
-  import("./pdfBackupHelper").then(({ saveAndBackup }) => saveAndBackup(doc, fileName, "Crachas"));
+  saveAndBackup(doc, fileName, "Crachas");
 }

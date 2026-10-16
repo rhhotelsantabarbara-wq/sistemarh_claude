@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { saveAndBackup } from "./pdfBackupHelper";
 
 interface DadosSolicitacaoContaSalario {
   funcionario: {
@@ -81,5 +82,5 @@ export function gerarSolicitacaoContaSalario(dados: DadosSolicitacaoContaSalario
 
   // Save PDF
   const fileName = `solicitacao_conta_salario_${dados.funcionario.nome_completo.replace(/\s/g, "_")}.pdf`;
-  import("./pdfBackupHelper").then(({ saveAndBackup }) => saveAndBackup(doc, fileName, "ContaSalario"));
+  saveAndBackup(doc, fileName, "ContaSalario");
 }
