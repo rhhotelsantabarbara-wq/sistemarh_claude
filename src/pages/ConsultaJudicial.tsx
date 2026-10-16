@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import {
   Scale, Search, Loader2, CheckCircle, AlertTriangle, History, ExternalLink,
-  Plus, Trash2, HelpCircle, Info,
+  Plus, Trash2, HelpCircle, Info, RefreshCw, Check, X, PencilLine,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -43,8 +43,21 @@ interface ProcessoManual {
 }
 
 // Consultas antigas feitas pela IA sem acesso à internet não são confiáveis
-const ORIGENS_CONFIAVEIS = ["manual", "gemini-google-search"];
+const ORIGENS_CONFIAVEIS = ["manual", "gemini-google-search", "tavily"];
 const consultaConfiavel = (c?: ConsultaResult) => !!c && ORIGENS_CONFIAVEIS.includes(c.resultado?._provider);
+
+interface Candidato {
+  titulo: string;
+  url: string;
+  trecho: string;
+  numeros: string[];
+  tribunais: string[];
+  revisao: null | "confirmado" | "descartado";
+}
+
+const candidatosDe = (c?: ConsultaResult): Candidato[] =>
+  c?.resultado?._provider === "tavily" ? (c.resultado.candidatos || []) : [];
+const pendentesDe = (c?: ConsultaResult) => candidatosDe(c).filter((x) => !x.revisao).length;
 
 const processoVazio = (): ProcessoManual => ({ numero_processo: "", tribunal: "", link: "", observacao: "" });
 
@@ -75,6 +88,8 @@ export default function ConsultaJudicial() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [detailDialog, setDetailDialog] = useState<ConsultaResult | null>(null);
+  const [buscandoId, setBuscandoId] = useState<string | null>(null);
+  const [lote, setLote] = useState<{ atual: number; total: number } | null>(null);
 
   // Pesquisa manual
   const [pesquisaEmp, setPesquisaEmp] = useState<Employee | null>(null);
@@ -114,6 +129,79 @@ export default function ConsultaJudicial() {
       setConsultas(map);
     }
     setLoading(false);
+  };
+
+  const buscarAutomatico = async (emp: Employee, silencioso = false): Promise<boolean> => {
+    setBuscandoId(emp.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("consulta-judicial", {
+        body: { employee_id: emp.id, nome: emp.nome_completo },
+      });
+      if (error) {
+        let msg = error.message;
+        try { msg = (await (error as any).context?.json())?.error || msg; } catch { /* mantém a mensagem */ }
+        throw new Error(msg);
+      }
+      if ((data as any)?.error) throw new Error((data as any).error);
+      if ((data as any)?.consulta) {
+        setConsultas((prev) => ({ ...prev, [emp.id]: (data as any).consulta }));
+      }
+      if (!silencioso) {
+        const n = (data as any)?.candidatos || 0;
+        if (n > 0) toast.warning(`${n} resultado(s) para conferir: ${emp.nome_completo}`);
+        else toast.success(`Nada encontrado para ${emp.nome_completo}`);
+      }
+      return true;
+    } catch (e: any) {
+      toast.error("Erro na busca: " + (e.message || "Erro desconhecido"));
+      return false;
+    } finally {
+      setBuscandoId(null);
+    }
+  };
+
+  const buscarTodos = async () => {
+    const alvo = filteredEmployees.filter((e) => !consultaConfiavel(consultas[e.id]));
+    if (alvo.length === 0) {
+      toast.info("Todos os colaboradores da lista já foram pesquisados.");
+      return;
+    }
+    if (!window.confirm(`Pesquisar ${alvo.length} colaborador(es) ainda não pesquisados? Cada um usa 1 ou 2 das 1.000 buscas grátis do mês.`)) return;
+    setLote({ atual: 0, total: alvo.length });
+    for (let i = 0; i < alvo.length; i++) {
+      setLote({ atual: i + 1, total: alvo.length });
+      const ok = await buscarAutomatico(alvo[i], true);
+      if (!ok) break; // erro de chave ou limite: para o lote
+    }
+    setLote(null);
+    await loadData();
+    toast.success("Busca em lote finalizada. Confira os marcados em amarelo.");
+  };
+
+  const revisarCandidato = async (consulta: ConsultaResult, indice: number, revisao: "confirmado" | "descartado" | null) => {
+    const candidatos = candidatosDe(consulta).map((c, i) => (i === indice ? { ...c, revisao } : c));
+    const confirmados = candidatos.filter((c) => c.revisao === "confirmado").length;
+    const pendentes = candidatos.filter((c) => !c.revisao).length;
+    const resumo = pendentes > 0
+      ? `${candidatos.length} resultado(s) citando o nome; ${pendentes} para conferir.`
+      : confirmados > 0
+        ? `${confirmados} resultado(s) confirmado(s) como sendo do colaborador.`
+        : "Resultados conferidos: nenhum é do colaborador.";
+    const atualizado = {
+      ...consulta,
+      processos_encontrados: confirmados,
+      resumo,
+      resultado: { ...consulta.resultado, candidatos },
+    };
+    const { error } = await supabase.from("consultas_judiciais")
+      .update({ processos_encontrados: confirmados, resumo, resultado: atualizado.resultado })
+      .eq("id", consulta.id);
+    if (error) {
+      toast.error("Erro ao salvar: " + error.message);
+      return;
+    }
+    setConsultas((prev) => ({ ...prev, [consulta.employee_id]: atualizado }));
+    setDetailDialog(atualizado);
   };
 
   const abrirPesquisa = (emp: Employee) => {
@@ -180,6 +268,7 @@ export default function ConsultaJudicial() {
   const consultasConfiaveis = Object.values(consultas).filter(consultaConfiavel);
   const totalConsultados = consultasConfiaveis.length;
   const totalComProcesso = consultasConfiaveis.filter((c) => c.processos_encontrados > 0).length;
+  const totalParaConferir = consultasConfiaveis.filter((c) => pendentesDe(c) > 0).length;
 
   if (loading) {
     return (
@@ -191,14 +280,23 @@ export default function ConsultaJudicial() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Scale className="h-6 w-6" />
-          Consulta Judicial
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          Pesquise processos públicos nos sites de consulta e registre o que encontrar
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Scale className="h-6 w-6" />
+            Consulta Judicial
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            Busca automática no JusBrasil e no Escavador pelo nome exato. Você só confere os resultados.
+          </p>
+        </div>
+        <Button onClick={buscarTodos} disabled={!!lote || !!buscandoId} variant="outline">
+          {lote ? (
+            <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{lote.atual}/{lote.total}</>
+          ) : (
+            <><RefreshCw className="h-4 w-4 mr-2" />Buscar todos</>
+          )}
+        </Button>
       </div>
 
       <Card className="border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800">
@@ -218,7 +316,7 @@ export default function ConsultaJudicial() {
       </Card>
 
       {/* KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold">{employees.length}</div>
@@ -234,7 +332,13 @@ export default function ConsultaJudicial() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-destructive">{totalComProcesso}</div>
-            <p className="text-sm text-muted-foreground">Com processos registrados</p>
+            <p className="text-sm text-muted-foreground">Confirmados com processo</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold text-amber-600">{totalParaConferir}</div>
+            <p className="text-sm text-muted-foreground">Para conferir</p>
           </CardContent>
         </Card>
       </div>
@@ -297,6 +401,15 @@ export default function ConsultaJudicial() {
                           <HelpCircle className="h-3 w-3" />
                           Não verificado
                         </Badge>
+                      ) : pendentesDe(consulta) > 0 ? (
+                        <Badge
+                          variant="outline"
+                          className="gap-1 border-amber-400 bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-200 cursor-pointer"
+                          onClick={() => setDetailDialog(consulta)}
+                        >
+                          <AlertTriangle className="h-3 w-3" />
+                          {pendentesDe(consulta)} para conferir
+                        </Badge>
                       ) : consulta.processos_encontrados > 0 ? (
                         <Badge variant="destructive" className="gap-1">
                           <AlertTriangle className="h-3 w-3" />
@@ -315,9 +428,19 @@ export default function ConsultaJudicial() {
                           <History className="h-4 w-4" />
                         </Button>
                       )}
-                      <Button size="sm" onClick={() => abrirPesquisa(emp)}>
-                        <Search className="h-4 w-4 mr-1" />
-                        Pesquisar
+                      <Button size="sm" variant="ghost" onClick={() => abrirPesquisa(emp)} title="Pesquisar e registrar manualmente">
+                        <PencilLine className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => buscarAutomatico(emp)}
+                        disabled={buscandoId === emp.id || !!lote}
+                      >
+                        {buscandoId === emp.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <><Search className="h-4 w-4 mr-1" />Buscar</>
+                        )}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -501,13 +624,66 @@ export default function ConsultaJudicial() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Processos registrados</p>
+                  <p className="text-sm text-muted-foreground">Confirmados</p>
                   <p className="font-medium">{detailDialog.processos_encontrados}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Resumo</p>
                   <p className="text-sm">{detailDialog.resumo || "Sem resumo disponível"}</p>
                 </div>
+                {candidatosDe(detailDialog).length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                      Resultados que citam o nome. Abra o link e confira se é a mesma pessoa.
+                    </p>
+                    {candidatosDe(detailDialog).map((c, i) => (
+                      <Card
+                        key={i}
+                        className={
+                          c.revisao === "confirmado" ? "border-destructive" :
+                          c.revisao === "descartado" ? "opacity-60" : "border-amber-300"
+                        }
+                      >
+                        <CardContent className="pt-4 text-sm space-y-2">
+                          <a href={c.url} target="_blank" rel="noopener noreferrer" className="font-medium text-primary underline flex items-start gap-1">
+                            <span className="break-words">{c.titulo}</span> <ExternalLink className="h-3 w-3 shrink-0 mt-1" />
+                          </a>
+                          {c.trecho && <p className="text-xs text-muted-foreground line-clamp-3">{c.trecho}</p>}
+                          {c.numeros.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {c.numeros.map((n, j) => (
+                                <Badge key={n} variant="outline" className="font-mono text-xs">
+                                  {n}{c.tribunais[j] ? ` · ${c.tribunais[j]}` : ""}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                          <div className="flex flex-wrap items-center gap-2 pt-1">
+                            {c.revisao ? (
+                              <>
+                                <Badge variant={c.revisao === "confirmado" ? "destructive" : "secondary"}>
+                                  {c.revisao === "confirmado" ? "É do colaborador" : "Não é o colaborador"}
+                                </Badge>
+                                <Button size="sm" variant="ghost" onClick={() => revisarCandidato(detailDialog, i, null)}>
+                                  Desfazer
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <Button size="sm" variant="destructive" onClick={() => revisarCandidato(detailDialog, i, "confirmado")}>
+                                  <Check className="h-4 w-4 mr-1" /> É ele
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => revisarCandidato(detailDialog, i, "descartado")}>
+                                  <X className="h-4 w-4 mr-1" /> Não é
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
                 {detailDialog.resultado?.processos?.length > 0 && (
                   <div>
                     <p className="text-sm text-muted-foreground mb-2">Processos</p>
