@@ -2,13 +2,18 @@
 // - Período aquisitivo: cada 12 meses a partir da admissão (direito de 30 dias).
 // - Prazo limite (período concessivo): as férias devem ser gozadas nos 12 meses seguintes
 //   ao fim do período aquisitivo; dias gozados depois disso são pagos em dobro (art. 137).
-// - Para não acusar "vencida" em períodos antigos que nunca foram lançados no sistema,
-//   considera-se quitado tudo antes do último período que tem férias registradas.
-//   Sem nenhum registro, olham-se só os 2 períodos completos mais recentes.
+// - "Iniciar até" (limite sem dobra): último dia para COMEÇAR 30 dias de férias dentro do
+//   período concessivo (fim do concessivo − 30 dias), como no relatório da contabilidade.
+// - Âncora (employees.ferias_periodo_aberto_inicio): início do período aquisitivo mais antigo
+//   em aberto segundo a contabilidade. Com ela, os períodos são contados a partir dessa data
+//   (afastamentos podem deslocar os períodos) e tudo antes dela é considerado quitado.
+// - Sem âncora: períodos a partir da admissão; considera-se quitado tudo antes do último
+//   período com férias registradas. Sem nenhum registro, olham-se só os 2 últimos períodos.
 import { addDays, addYears, differenceInCalendarDays, differenceInDays } from "date-fns";
 
 export const DIAS_DIREITO = 30;
 export const DIAS_AVISO_VENCIMENTO = 90;
+export const DIAS_ANTECEDENCIA_LIMITE = 30;
 
 export interface RegistroFerias {
   id: string;
@@ -34,7 +39,8 @@ export interface PeriodoAquisitivo {
   indice: number;
   inicio: Date;
   fim: Date;
-  limite: Date;
+  limite: Date; // fim do período concessivo
+  iniciarAte: Date; // último dia para começar sem pagar em dobro
   gozados: number;
   saldo: number;
 }
@@ -51,7 +57,7 @@ export type SituacaoFerias =
   | "sem_admissao";
 
 export const SITUACOES: Record<SituacaoFerias, { rotulo: string; descricao: string; classe: string; ordem: number }> = {
-  vencida: { rotulo: "Vencida", descricao: "Passou do prazo: dias fora do prazo são pagos em dobro", classe: "bg-red-100 text-red-800 border-red-300 dark:bg-red-950 dark:text-red-200 dark:border-red-800", ordem: 1 },
+  vencida: { rotulo: "Vencida", descricao: "Passou do limite sem dobra: dias fora do período concessivo são pagos em dobro", classe: "bg-red-100 text-red-800 border-red-300 dark:bg-red-950 dark:text-red-200 dark:border-red-800", ordem: 1 },
   vence_breve: { rotulo: "Vence em breve", descricao: `Prazo termina em até ${DIAS_AVISO_VENCIMENTO} dias e ainda não foi programada`, classe: "bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-950 dark:text-orange-200 dark:border-orange-800", ordem: 2 },
   programada: { rotulo: "Programada", descricao: "Tem férias programadas aguardando aprovação", classe: "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950 dark:text-blue-200 dark:border-blue-800", ordem: 3 },
   pode_tirar: { rotulo: "Pode tirar", descricao: "Tem saldo e o prazo ainda está folgado", classe: "bg-amber-50 text-amber-900 border-amber-300 dark:bg-amber-950 dark:text-amber-200 dark:border-amber-800", ordem: 4 },
@@ -91,18 +97,18 @@ export function diasEntre(inicio: Date, fim: Date): number {
   return differenceInCalendarDays(fim, inicio) + 1;
 }
 
-function periodo(admissao: Date, k: number): Omit<PeriodoAquisitivo, "gozados" | "saldo"> {
-  const inicio = addYears(admissao, k);
-  const fim = addDays(addYears(admissao, k + 1), -1);
-  const limite = addDays(addYears(admissao, k + 2), -1);
-  return { indice: k, inicio, fim, limite };
+function periodo(base: Date, k: number): Omit<PeriodoAquisitivo, "gozados" | "saldo"> {
+  const inicio = addYears(base, k);
+  const fim = addDays(addYears(base, k + 1), -1);
+  const limite = addDays(addYears(base, k + 2), -1);
+  return { indice: k, inicio, fim, limite, iniciarAte: addDays(limite, -DIAS_ANTECEDENCIA_LIMITE) };
 }
 
 /** Em qual período aquisitivo (índice) um registro de férias se encaixa. */
-function indiceDoRegistro(admissao: Date, r: RegistroFerias): number {
+function indiceDoRegistro(base: Date, r: RegistroFerias): number {
   const aq = dataLocal(r.periodo_aquisitivo_inicio);
   if (!aq) return 0;
-  return Math.max(0, Math.round(differenceInDays(aq, admissao) / 365.25));
+  return Math.round(differenceInDays(aq, base) / 365.25);
 }
 
 export function calcularResumoFerias(
@@ -110,6 +116,7 @@ export function calcularResumoFerias(
   registros: RegistroFerias[],
   planejadas: FeriasPlanejada[],
   hoje: Date = hojeLocal(),
+  ancoraPeriodoAberto?: string | null,
 ): ResumoFerias {
   const emCurso = registros.find((r) => {
     const i = dataLocal(r.periodo_gozo_inicio);
@@ -125,7 +132,8 @@ export function calcularResumoFerias(
     .filter((p) => (dataLocal(p.periodo_fim) as Date) >= hoje)
     .sort((a, b) => a.periodo_inicio.localeCompare(b.periodo_inicio))[0] || null;
 
-  const admissao = dataLocal(dataAdmissao);
+  const ancora = dataLocal(ancoraPeriodoAberto);
+  const admissao = ancora || dataLocal(dataAdmissao);
   if (!admissao) {
     return { situacao: emCurso ? "de_ferias" : "sem_admissao", periodoPendente: null, periodoAtual: null, periodosVencidos: 0, saldoTotal: 0, emCurso, proximaAprovada, programada, semHistorico: registros.length === 0 };
   }
@@ -135,6 +143,7 @@ export function calcularResumoFerias(
   let ultimoComRegistro = -1;
   for (const r of registros) {
     const k = indiceDoRegistro(admissao, r);
+    if (k < 0) continue; // antes da âncora: já quitado
     gozadosPorPeriodo.set(k, (gozadosPorPeriodo.get(k) || 0) + (r.dias_totais || 0));
     ultimoComRegistro = Math.max(ultimoComRegistro, k);
   }
@@ -143,7 +152,7 @@ export function calcularResumoFerias(
   let completos = 0;
   while (periodo(admissao, completos).fim < hoje) completos++;
 
-  const primeiroConsiderado = ultimoComRegistro >= 0 ? ultimoComRegistro : Math.max(0, completos - 2);
+  const primeiroConsiderado = ancora ? 0 : ultimoComRegistro >= 0 ? ultimoComRegistro : Math.max(0, completos - 2);
 
   const montar = (k: number): PeriodoAquisitivo => {
     const p = periodo(admissao, k);
@@ -158,7 +167,7 @@ export function calcularResumoFerias(
   }
   const periodoAtual = montar(completos);
   const periodoPendente = pendentes[0] || null;
-  const periodosVencidos = pendentes.filter((p) => p.limite < hoje).length;
+  const periodosVencidos = pendentes.filter((p) => p.iniciarAte < hoje).length;
   const saldoTotal = pendentes.reduce((s, p) => s + p.saldo, 0);
 
   let situacao: SituacaoFerias;
@@ -166,9 +175,9 @@ export function calcularResumoFerias(
   else if (periodosVencidos > 0) situacao = "vencida";
   else if (proximaAprovada) situacao = "aprovada";
   else if (programada) situacao = "programada";
-  else if (periodoPendente && differenceInCalendarDays(periodoPendente.limite, hoje) <= DIAS_AVISO_VENCIMENTO) situacao = "vence_breve";
+  else if (periodoPendente && differenceInCalendarDays(periodoPendente.iniciarAte, hoje) <= DIAS_AVISO_VENCIMENTO) situacao = "vence_breve";
   else if (periodoPendente) situacao = "pode_tirar";
-  else if (completos === 0) situacao = "em_aquisicao";
+  else if (completos === 0 && (!dataLocal(dataAdmissao) || differenceInCalendarDays(hoje, dataLocal(dataAdmissao)!) < 365)) situacao = "em_aquisicao";
   else situacao = "em_dia";
 
   return { situacao, periodoPendente, periodoAtual, periodosVencidos, saldoTotal, emCurso, proximaAprovada, programada, semHistorico: registros.length === 0 };

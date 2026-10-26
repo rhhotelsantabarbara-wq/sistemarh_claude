@@ -72,9 +72,8 @@ export function ControleFerias({ filters, onFiltersChange, onProgramar, onAprova
     await supabase.rpc("sincronizar_status_ferias" as any).then(() => {}, () => {});
 
     const [empRes, ferRes, planRes] = await Promise.all([
-      supabase
-        .from("employees")
-        .select("id, nome_completo, setor, data_admissao, empresa_id, empresas(nome)")
+      (supabase.from("employees") as any)
+        .select("id, nome_completo, setor, data_admissao, ferias_periodo_aberto_inicio, empresa_id, empresas(nome)")
         .neq("status", "demitido")
         .order("nome_completo"),
       supabase
@@ -85,6 +84,12 @@ export function ControleFerias({ filters, onFiltersChange, onProgramar, onAprova
         .select("id, employee_id, periodo_inicio, periodo_fim, dias_totais, status, observacoes"),
     ]);
 
+    if (empRes.error && String(empRes.error.message || "").includes("ferias_periodo_aberto_inicio")) {
+      // Banco ainda sem a coluna nova: carrega sem ela
+      const r = await supabase.from("employees").select("id, nome_completo, setor, data_admissao, empresa_id, empresas(nome)").neq("status", "demitido").order("nome_completo");
+      empRes.data = r.data as any;
+      empRes.error = r.error as any;
+    }
     if (empRes.error || ferRes.error || planRes.error) {
       console.error("Controle de férias:", empRes.error || ferRes.error || planRes.error);
       toast.error("Erro ao carregar o controle de férias");
@@ -110,7 +115,7 @@ export function ControleFerias({ filters, onFiltersChange, onProgramar, onAprova
         nome: e.nome_completo,
         setor: e.setor || "Sem setor",
         empresa: e.empresa_id || "",
-        resumo: calcularResumoFerias(e.data_admissao, ferias.get(e.id) || [], planejadas.get(e.id) || [], hoje),
+        resumo: calcularResumoFerias(e.data_admissao, ferias.get(e.id) || [], planejadas.get(e.id) || [], hoje, e.ferias_periodo_aberto_inicio),
       })),
     );
     setCarregando(false);
@@ -140,8 +145,8 @@ export function ControleFerias({ filters, onFiltersChange, onProgramar, onAprova
       const oa = SITUACOES[a.resumo.situacao].ordem;
       const ob = SITUACOES[b.resumo.situacao].ordem;
       if (oa !== ob) return oa - ob;
-      const la = a.resumo.periodoPendente?.limite.getTime() ?? Infinity;
-      const lb = b.resumo.periodoPendente?.limite.getTime() ?? Infinity;
+      const la = a.resumo.periodoPendente?.iniciarAte.getTime() ?? Infinity;
+      const lb = b.resumo.periodoPendente?.iniciarAte.getTime() ?? Infinity;
       if (la !== lb) return la - lb;
       return a.nome.localeCompare(b.nome);
     });
@@ -218,7 +223,7 @@ export function ControleFerias({ filters, onFiltersChange, onProgramar, onAprova
                     <TableHead>Situação</TableHead>
                     <TableHead>Período aquisitivo</TableHead>
                     <TableHead className="text-center">Saldo</TableHead>
-                    <TableHead>Tirar até</TableHead>
+                    <TableHead title="Último dia para começar as férias sem pagar em dobro">Iniciar até</TableHead>
                     <TableHead>Férias marcadas</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -227,7 +232,7 @@ export function ControleFerias({ filters, onFiltersChange, onProgramar, onAprova
                   {visiveis.map((l) => {
                     const r = l.resumo;
                     const p = r.periodoPendente;
-                    const diasPrazo = p ? differenceInCalendarDays(p.limite, hoje) : null;
+                    const diasPrazo = p ? differenceInCalendarDays(p.iniciarAte, hoje) : null;
                     const marcada = r.emCurso || r.proximaAprovada;
                     return (
                       <TableRow key={l.id}>
@@ -262,7 +267,7 @@ export function ControleFerias({ filters, onFiltersChange, onProgramar, onAprova
                         <TableCell className="whitespace-nowrap text-sm">
                           {p ? (
                             <>
-                              <div>{fmt(p.limite)}</div>
+                              <div>{fmt(p.iniciarAte)}</div>
                               <div className={`text-xs ${diasPrazo! < 0 ? "text-red-700 dark:text-red-300 font-medium" : diasPrazo! <= 90 ? "text-orange-700 dark:text-orange-300" : "text-muted-foreground"}`}>
                                 {diasPrazo! < 0 ? `venceu há ${Math.abs(diasPrazo!)} dias` : diasPrazo === 0 ? "vence hoje" : `faltam ${diasPrazo} dias`}
                               </div>
@@ -310,7 +315,7 @@ export function ControleFerias({ filters, onFiltersChange, onProgramar, onAprova
             </div>
           )}
           <p className="text-xs text-muted-foreground">
-            Cálculo: 30 dias por período aquisitivo de 12 meses, a gozar nos 12 meses seguintes. Períodos anteriores ao último lançado no sistema são considerados quitados.
+            Cálculo: 30 dias por período aquisitivo de 12 meses, a gozar nos 12 meses seguintes. "Iniciar até" é o último dia para começar 30 dias de férias sem pagar em dobro. Quando o período em aberto veio da contabilidade, os períodos contam a partir dele; senão, da admissão.
           </p>
         </CardContent>
       </Card>

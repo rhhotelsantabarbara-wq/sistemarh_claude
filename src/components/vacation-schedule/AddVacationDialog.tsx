@@ -92,14 +92,14 @@ export function AddVacationDialog({
     (async () => {
       const emp = employees.find((e) => e.id === selectedEmployee);
       const [{ data: empData }, { data: registros }, { data: planejadas }] = await Promise.all([
-        supabase.from("employees").select("data_admissao, setor").eq("id", selectedEmployee).single(),
+        (supabase.from("employees") as any).select("*").eq("id", selectedEmployee).single(),
         supabase
           .from("ferias")
           .select("id, employee_id, periodo_aquisitivo_inicio, periodo_aquisitivo_fim, periodo_gozo_inicio, periodo_gozo_fim, dias_totais")
           .eq("employee_id", selectedEmployee),
         supabase.from("ferias_planejadas").select("id, employee_id, periodo_inicio, periodo_fim, dias_totais, status").eq("employee_id", selectedEmployee),
       ]);
-      setResumo(calcularResumoFerias(empData?.data_admissao, (registros || []) as RegistroFerias[], (planejadas || []) as FeriasPlanejada[]));
+      setResumo(calcularResumoFerias(empData?.data_admissao, (registros || []) as RegistroFerias[], (planejadas || []) as FeriasPlanejada[], undefined, empData?.ferias_periodo_aberto_inicio));
 
       const setor = empData?.setor || emp?.setor;
       if (!setor) { setAusenciasSetor([]); return; }
@@ -161,7 +161,7 @@ export function AddVacationDialog({
     }
     if (p && fim > p.limite) {
       const fora = Math.min(diasTotais, differenceInCalendarDays(fim, p.limite));
-      lista.push({ tipo: "alerta", texto: `Passa do prazo (${br(p.limite)}): ${fora} dia(s) fora do prazo são pagos em dobro.` });
+      lista.push({ tipo: "alerta", texto: `Termina depois do fim do período concessivo (${br(p.limite)}): ${fora} dia(s) fora do prazo são pagos em dobro.` });
     }
     if (differenceInCalendarDays(inicio, hoje) < 30) {
       lista.push({ tipo: "info", texto: "Começa em menos de 30 dias: a CLT pede aviso de férias com 30 dias de antecedência." });
@@ -245,7 +245,7 @@ export function AddVacationDialog({
                 <div className="flex flex-wrap gap-x-6 gap-y-1">
                   <span><span className="text-muted-foreground">Saldo:</span> <strong>{resumo.saldoTotal} dias</strong></span>
                   <span><span className="text-muted-foreground">Período:</span> {br(p.inicio)} a {br(p.fim)}</span>
-                  <span><span className="text-muted-foreground">Tirar até:</span> <strong>{br(p.limite)}</strong></span>
+                  <span><span className="text-muted-foreground">Iniciar até:</span> <strong>{br(p.iniciarAte)}</strong></span>
                 </div>
               ) : resumo.situacao === "sem_admissao" ? (
                 <span className="text-muted-foreground">Sem data de admissão no cadastro: não dá para calcular o saldo.</span>

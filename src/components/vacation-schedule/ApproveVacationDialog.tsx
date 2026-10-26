@@ -57,14 +57,14 @@ export function ApproveVacationDialog({ open, onOpenChange, plannedVacation, onS
     (async () => {
       setCarregando(true);
       const [{ data: emp }, { data: registros }] = await Promise.all([
-        supabase.from("employees").select("nome_completo, data_admissao").eq("id", plannedVacation.employee_id).single(),
+        (supabase.from("employees") as any).select("*").eq("id", plannedVacation.employee_id).single(),
         supabase
           .from("ferias")
           .select("id, employee_id, periodo_aquisitivo_inicio, periodo_aquisitivo_fim, periodo_gozo_inicio, periodo_gozo_fim, dias_totais")
           .eq("employee_id", plannedVacation.employee_id),
       ]);
       setNome(emp?.nome_completo || plannedVacation.employee_name || "");
-      const resumo = calcularResumoFerias(emp?.data_admissao, (registros || []) as RegistroFerias[], []);
+      const resumo = calcularResumoFerias(emp?.data_admissao, (registros || []) as RegistroFerias[], [], undefined, emp?.ferias_periodo_aberto_inicio);
       const sugerido = periodoParaLancamento(resumo);
       setAqInicio(sugerido ? iso(sugerido.inicio) : "");
       setAqFim(sugerido ? iso(sugerido.fim) : "");
