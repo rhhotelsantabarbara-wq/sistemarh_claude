@@ -9,7 +9,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Search, X, Filter } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { VacationFiltersType } from "@/components/vacation-schedule/types";
@@ -190,23 +189,6 @@ export function VacationFilters({ filters, onFiltersChange }: VacationFiltersPro
           </Select>
         </div>
 
-        <div className="flex items-end pb-2">
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="ferias-vencidas"
-              checked={filters.feriasVencidas || false}
-              onCheckedChange={(checked) =>
-                onFiltersChange({ ...filters, feriasVencidas: checked === true })
-              }
-            />
-            <Label 
-              htmlFor="ferias-vencidas" 
-              className="text-sm font-normal cursor-pointer"
-            >
-              Apenas férias vencidas
-            </Label>
-          </div>
-        </div>
       </div>
     </div>
   );

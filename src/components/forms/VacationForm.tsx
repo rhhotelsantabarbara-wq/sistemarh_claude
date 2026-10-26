@@ -113,11 +113,12 @@ const VacationForm = ({ employeeId, onSaved, onCancel, initialData }: VacationFo
       return;
     }
 
-    // Update employee status to "ferias"
-    const { error: statusError } = await supabase
-      .from("employees")
-      .update({ status: "ferias" })
-      .eq("id", employeeId);
+    // Só marca "de férias" se as férias já começaram (as futuras viram status automaticamente no dia)
+    const hojeStr = format(new Date(), "yyyy-MM-dd");
+    const comecou = periodoGozoInicio <= hojeStr && finalEndDate >= hojeStr;
+    const { error: statusError } = comecou
+      ? await supabase.from("employees").update({ status: "ferias" }).eq("id", employeeId)
+      : { error: null };
 
     if (statusError) {
       setLoading(false);
