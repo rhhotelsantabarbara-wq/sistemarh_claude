@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import { backupPdfToDrive } from "@/hooks/useDriveBackup";
 import { saveAndBackup } from "./pdfBackupHelper";
+import { dataBR } from "@/lib/date";
 
 export interface PdfOutputOptions {
   silent?: boolean;
@@ -111,7 +112,7 @@ export const generateEpiReceipt = async (data: EpiReceiptData, opts: PdfOutputOp
   doc.text(`Finalidade/Proteção: ${data.finalidade || 'Não informado'}`, 20, yPosition);
   yPosition += 6;
   
-  const formattedDate = new Date(data.dataEntrega).toLocaleDateString("pt-BR");
+  const formattedDate = dataBR(data.dataEntrega).toLocaleDateString("pt-BR");
   doc.text(`Data da Entrega: ${formattedDate}`, 20, yPosition);
   yPosition += 12;
 
@@ -233,7 +234,7 @@ export const generateUniformReceipt = async (data: UniformReceiptData, opts: Pdf
   doc.text(`Quantidade: ${data.quantidade}`, 20, yPosition);
   yPosition += 6;
   
-  const formattedDate = new Date(data.dataEntrega).toLocaleDateString("pt-BR");
+  const formattedDate = dataBR(data.dataEntrega).toLocaleDateString("pt-BR");
   doc.text(`Data da Entrega: ${formattedDate}`, 20, yPosition);
   yPosition += 12;
 

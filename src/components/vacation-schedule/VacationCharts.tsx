@@ -18,6 +18,7 @@ import {
   Line,
 } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
+import { dataBR } from "@/lib/date";
 
 interface VacationChartsProps {
   filters: VacationFiltersType;
@@ -101,13 +102,13 @@ export function VacationCharts({ filters }: VacationChartsProps) {
     }
 
     (plannedData || []).forEach((item) => {
-      const month = new Date(item.periodo_inicio).getMonth();
+      const month = dataBR(item.periodo_inicio).getMonth();
       monthCounts[month]++;
       monthPlanned[month]++;
     });
 
     (confirmedData || []).forEach((item) => {
-      const month = new Date(item.periodo_gozo_inicio).getMonth();
+      const month = dataBR(item.periodo_gozo_inicio).getMonth();
       monthCounts[month]++;
       monthConfirmed[month]++;
     });
@@ -160,8 +161,8 @@ export function VacationCharts({ filters }: VacationChartsProps) {
     });
 
     (confirmedData || []).forEach((item) => {
-      const start = new Date(item.periodo_gozo_inicio);
-      const end = new Date(item.periodo_gozo_fim);
+      const start = dataBR(item.periodo_gozo_inicio);
+      const end = dataBR(item.periodo_gozo_fim);
       if (now < start) statusCounts["Aprovado"]++;
       else if (now > end) statusCounts["Concluído"]++;
       else statusCounts["Em Andamento"]++;

@@ -1,6 +1,7 @@
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line, AreaChart, Area, Cell } from "recharts";
 import ChartCard from "./ChartCard";
 import { AlertTriangle, TrendingDown, Building2, Calendar, Users } from "lucide-react";
+import { dataBR } from "@/lib/date";
 
 interface AttendanceChartsProps {
   absenteeismBySector: Array<{ name: string; taxa: number }>;
@@ -104,7 +105,7 @@ const AttendanceCharts = ({ absenteeismBySector, topAbsentEmployees, absenceEvol
                   <div>
                     <p className="font-medium text-sm">{vacation.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {new Date(vacation.inicio).toLocaleDateString("pt-BR")} - {new Date(vacation.fim).toLocaleDateString("pt-BR")}
+                      {dataBR(vacation.inicio).toLocaleDateString("pt-BR")} - {dataBR(vacation.fim).toLocaleDateString("pt-BR")}
                     </p>
                   </div>
                   <div className="text-right">

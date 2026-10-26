@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { todayISO } from "@/lib/date";
+import { todayISO, dataBR } from "@/lib/date";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -147,7 +147,7 @@ export const EncaminhamentoCard = ({ encaminhamento, onRefresh }: Encaminhamento
                 {encaminhamento.data_agendamento && (
                   <p>
                     Data Agendada:{" "}
-                    {format(new Date(encaminhamento.data_agendamento), "dd/MM/yyyy", {
+                    {format(dataBR(encaminhamento.data_agendamento), "dd/MM/yyyy", {
                       locale: ptBR,
                     })}
                   </p>

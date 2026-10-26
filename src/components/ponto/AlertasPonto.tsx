@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Loader2, AlertTriangle, Clock, Coffee, LogOut, Wallet, TrendingDown } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { dataBR } from "@/lib/date";
 
 const TIPO_DIA_LABELS: Record<string, string> = {
   normal: "Normal",
@@ -316,7 +317,7 @@ export function AlertasPonto() {
     alertas.banco.length +
     alertas.saldoMes.length;
 
-  const mesLabel = new Date(`${mes}-01T00:00:00`).toLocaleDateString("pt-BR", {
+  const mesLabel = dataBR(`${mes}-01T00:00:00`).toLocaleDateString("pt-BR", {
     month: "long",
     year: "numeric",
   });
@@ -483,7 +484,7 @@ export function AlertasPonto() {
                       }
                     >
                       <TableCell className="whitespace-nowrap">
-                        {format(new Date(r.data + "T00:00:00"), "dd/MM (EEE)", { locale: ptBR })}
+                        {format(dataBR(r.data + "T00:00:00"), "dd/MM (EEE)", { locale: ptBR })}
                       </TableCell>
                       <TableCell>{TIPO_DIA_LABELS[r.tipo_dia || ""] || r.tipo_dia || "-"}</TableCell>
                       <TableCell>{r.hora_entrada || "-"}</TableCell>

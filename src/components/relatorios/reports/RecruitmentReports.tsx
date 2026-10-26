@@ -11,6 +11,7 @@ import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
 import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
+import { dataBR } from "@/lib/date";
 
 const RecruitmentReports = () => {
   const [selectedVaga, setSelectedVaga] = useState("all");
@@ -77,7 +78,7 @@ const RecruitmentReports = () => {
       Vaga: item.vagas?.titulo,
       Status: item.status,
       "Data Candidatura": item.data_candidatura
-        ? format(new Date(item.data_candidatura), "dd/MM/yyyy")
+        ? format(dataBR(item.data_candidatura), "dd/MM/yyyy")
         : "-",
       "Nota Avaliação": item.nota_avaliacao || "-",
     }));
@@ -187,7 +188,7 @@ const RecruitmentReports = () => {
                       <TableCell>{getStatusBadge(candidatura.status || "")}</TableCell>
                       <TableCell>
                         {candidatura.data_candidatura
-                          ? format(new Date(candidatura.data_candidatura), "dd/MM/yyyy")
+                          ? format(dataBR(candidatura.data_candidatura), "dd/MM/yyyy")
                           : "-"}
                       </TableCell>
                     </TableRow>

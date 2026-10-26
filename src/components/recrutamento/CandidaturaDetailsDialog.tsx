@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { parseDateOnly } from "@/lib/date";
+import { parseDateOnly, dataBR } from "@/lib/date";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -105,7 +105,7 @@ export default function CandidaturaDetailsDialog({
             <Badge>{candidatura.status}</Badge>
           </DialogTitle>
           <DialogDescription>
-            Candidatura realizada em {new Date(candidatura.data_candidatura).toLocaleDateString('pt-BR')}
+            Candidatura realizada em {dataBR(candidatura.data_candidatura).toLocaleDateString('pt-BR')}
           </DialogDescription>
         </DialogHeader>
 
@@ -215,7 +215,7 @@ export default function CandidaturaDetailsDialog({
             <div>
               <Label>Entrevista Agendada</Label>
               <p className="text-sm text-muted-foreground">
-                {new Date(candidatura.data_entrevista).toLocaleString('pt-BR')}
+                {dataBR(candidatura.data_entrevista).toLocaleString('pt-BR')}
               </p>
             </div>
           )}

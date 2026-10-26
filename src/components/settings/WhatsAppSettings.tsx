@@ -12,6 +12,7 @@ import { MessageSquare, Copy, Bell, Send, History, User, Bot, ChevronDown, Chevr
 import { WhatsAppContatos } from "./WhatsAppContatos";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { dataBR } from "@/lib/date";
 
 interface WhatsAppConfig {
   evolution_api_url: string;
@@ -101,7 +102,7 @@ export function WhatsAppSettings() {
 
       // Sort messages within each number chronologically
       Object.keys(grouped).forEach((num) => {
-        grouped[num].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        grouped[num].sort((a, b) => dataBR(a.created_at).getTime() - dataBR(b.created_at).getTime());
       });
 
       setConversas(grouped);
@@ -416,7 +417,7 @@ export function WhatsAppSettings() {
                         <div className="text-left">
                           <p className="font-medium text-sm">{formatPhoneNumber(phoneNumber)}</p>
                           <p className="text-xs text-muted-foreground">
-                            {msgs.length} mensagens · Última: {format(new Date(msgs[msgs.length - 1].created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                            {msgs.length} mensagens · Última: {format(dataBR(msgs[msgs.length - 1].created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                           </p>
                         </div>
                       </div>
@@ -452,7 +453,7 @@ export function WhatsAppSettings() {
                               >
                                 <p className="whitespace-pre-wrap break-words">{msg.content}</p>
                                 <p className={`text-[10px] mt-1 ${msg.role === "user" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                                  {format(new Date(msg.created_at), "dd/MM HH:mm", { locale: ptBR })}
+                                  {format(dataBR(msg.created_at), "dd/MM HH:mm", { locale: ptBR })}
                                 </p>
                               </div>
                               {msg.role === "user" && (

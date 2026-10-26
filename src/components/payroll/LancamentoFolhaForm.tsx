@@ -13,6 +13,7 @@ import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, Command
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Copy, TrendingUp, TrendingDown, Plus, X, Loader2, Search, Save, ChevronLeft, ChevronRight, Check, Circle } from "lucide-react";
 import { toast } from "sonner";
+import { dataBR } from "@/lib/date";
 
 interface Employee {
   id: string;
@@ -822,7 +823,7 @@ const LancamentoFolhaForm = ({ employees, empresaId, mes, ano, tipoFolha, onSucc
               <div className="space-y-2">
                 <p>Foi encontrado um rascunho salvo automaticamente para este período.</p>
                 {savedDraft && (
-                  <p className="text-sm text-muted-foreground">Salvo em: {new Date(savedDraft.savedAt).toLocaleString("pt-BR")}</p>
+                  <p className="text-sm text-muted-foreground">Salvo em: {dataBR(savedDraft.savedAt).toLocaleString("pt-BR")}</p>
                 )}
                 <p>Deseja restaurar os dados do rascunho ou começar do zero?</p>
               </div>

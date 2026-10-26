@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { dataBR } from "@/lib/date";
 
 interface EncaminhamentoFormProps {
   onSaved: () => void;
@@ -72,7 +73,7 @@ export const EncaminhamentoForm = ({ onSaved, onCancel, encaminhamentoId }: Enca
         setSelectedEmployee(data.employees);
         setTipoExame(data.tipo_exame);
         if (data.data_agendamento) {
-          setDataAgendamento(new Date(data.data_agendamento));
+          setDataAgendamento(dataBR(data.data_agendamento));
         }
         setCondicoesEspeciais({
           beneficiario_reabilitado: data.beneficiario_reabilitado,

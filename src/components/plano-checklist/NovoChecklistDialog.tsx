@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { parseDateOnly } from "@/lib/date";
+import { parseDateOnly, dataBR } from "@/lib/date";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -79,7 +79,7 @@ export function NovoChecklistDialog({
   };
 
   const calcularDiasAviso = (dataAdmissao: string): number => {
-    const admissao = new Date(dataAdmissao);
+    const admissao = dataBR(dataAdmissao);
     const hoje = new Date();
     const anosTrabalho = differenceInYears(hoje, admissao);
     

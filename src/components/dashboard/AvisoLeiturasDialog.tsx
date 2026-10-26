@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Eye, Check, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { dataBR } from "@/lib/date";
 
 interface AvisoLeiturasDialogProps {
   aviso: any;
@@ -173,7 +174,7 @@ const AvisoLeiturasDialog = ({ aviso, open, onOpenChange }: AvisoLeiturasDialogP
                     </div>
                   </div>
                   <Badge variant="outline">
-                    {format(new Date(leitura.lido_em), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                    {format(dataBR(leitura.lido_em), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                   </Badge>
                 </div>
               ))}

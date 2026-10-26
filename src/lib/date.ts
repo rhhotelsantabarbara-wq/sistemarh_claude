@@ -72,3 +72,16 @@ export function formatDateOnlyPtBR(value?: string | null): string {
   if (Number.isNaN(d.getTime())) return value;
   return d.toLocaleDateString("pt-BR");
 }
+
+/**
+ * Substituto de `new Date(valor)` para valores vindos do banco/formulários.
+ * Igual ao `new Date`, exceto que "YYYY-MM-DD" (coluna DATE / <input type="date">)
+ * vira meia-noite LOCAL, e não UTC — no Brasil o JS mostraria o dia anterior.
+ */
+export function dataBR(valor?: unknown): Date {
+  if (typeof valor === "string") {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(valor.trim());
+    if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  }
+  return new Date(valor as any);
+}

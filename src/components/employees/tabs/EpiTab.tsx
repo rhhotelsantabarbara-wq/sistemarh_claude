@@ -6,6 +6,7 @@ import { Plus, Shield, Trash2, FileDown, PenLine } from "lucide-react";
 import EpiForm from "@/components/forms/EpiForm";
 import { toast } from "sonner";
 import { generateEpiReceipt } from "@/lib/pdfGenerator";
+import { dataBR } from "@/lib/date";
 
 interface EpiTabProps {
   employeeId: string;
@@ -201,7 +202,7 @@ const EpiTab = ({ employeeId }: EpiTabProps) => {
                     <div>
                       <p className="text-muted-foreground">Data de Entrega</p>
                       <p className="font-medium">
-                        {new Date(epi.data_entrega).toLocaleDateString("pt-BR")}
+                        {dataBR(epi.data_entrega).toLocaleDateString("pt-BR")}
                       </p>
                     </div>
                     <div className="col-span-2">

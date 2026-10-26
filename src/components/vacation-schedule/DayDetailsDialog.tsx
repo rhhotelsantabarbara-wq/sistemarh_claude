@@ -14,6 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Calendar, Users, Building2, MapPin } from "lucide-react";
 import type { VacationEvent } from "./types";
 import { STATUS_COLORS, STATUS_LABELS } from "./types";
+import { dataBR } from "@/lib/date";
 
 interface DayDetailsDialogProps {
   open: boolean;
@@ -104,8 +105,8 @@ export function DayDetailsDialog({
               <div className="space-y-3">
                 {vacations.map((vacation, index) => {
                   const colors = STATUS_COLORS[vacation.status];
-                  const startDate = new Date(vacation.periodo_inicio);
-                  const endDate = new Date(vacation.periodo_fim);
+                  const startDate = dataBR(vacation.periodo_inicio);
+                  const endDate = dataBR(vacation.periodo_fim);
                   const totalDays = differenceInDays(endDate, startDate) + 1;
                   const daysRemaining = differenceInDays(endDate, selectedDate!) + 1;
 

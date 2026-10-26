@@ -14,6 +14,7 @@ import { Loader2, FileDown, Receipt, BarChart, Pencil, Trash2, CheckCircle } fro
 import { Badge } from "@/components/ui/badge";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { dataBR } from "@/lib/date";
 
 interface Employee {
   id: string;
@@ -336,7 +337,7 @@ const Adiantamentos = () => {
         a.empresas.nome,
         `R$ ${a.valor.toFixed(2)}`,
         getFormaPagamentoLabel(a.forma_pagamento),
-        new Date(a.created_at).toLocaleDateString("pt-BR")
+        dataBR(a.created_at).toLocaleDateString("pt-BR")
       ]);
 
       autoTable(doc, {
@@ -838,7 +839,7 @@ const Adiantamentos = () => {
                               )}
                             </TableCell>
                             <TableCell>
-                              {new Date(adiant.created_at).toLocaleDateString("pt-BR")}
+                              {dataBR(adiant.created_at).toLocaleDateString("pt-BR")}
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">

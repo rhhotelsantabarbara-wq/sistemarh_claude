@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Loader2, Save } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { dataBR } from "@/lib/date";
 
 const TIPO_DIA_OPTIONS = [
   { value: "normal", label: "Normal" },
@@ -328,7 +329,7 @@ export function LancamentoPontoLote() {
                 {records.map((record, index) => (
                   <TableRow key={record.data}>
                     <TableCell className="font-medium">
-                      {format(new Date(record.data + "T00:00:00"), "dd/MM (EEE)", { locale: ptBR })}
+                      {format(dataBR(record.data + "T00:00:00"), "dd/MM (EEE)", { locale: ptBR })}
                     </TableCell>
                     <TableCell>
                       <Select

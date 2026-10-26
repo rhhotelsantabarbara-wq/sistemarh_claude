@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { format, startOfMonth, endOfMonth, addMonths } from "date-fns";
+import { dataBR } from "@/lib/date";
 
 interface GoogleCalendarSettingsProps {
   onRefresh?: () => void;
@@ -150,8 +151,8 @@ export const GoogleCalendarSettings = ({ onRefresh }: GoogleCalendarSettingsProp
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            timeMin: new Date(importStart).toISOString(),
-            timeMax: new Date(importEnd + "T23:59:59").toISOString(),
+            timeMin: dataBR(importStart).toISOString(),
+            timeMax: dataBR(importEnd + "T23:59:59").toISOString(),
           }),
         }
       );

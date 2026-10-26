@@ -7,6 +7,7 @@ import { Bell, Calendar, Clock, MapPin, ChevronRight, X } from "lucide-react";
 import { format, parseISO, isToday, isTomorrow, isPast, differenceInHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
+import { dataBR } from "@/lib/date";
 
 interface Evento {
   id: string;
@@ -46,11 +47,11 @@ const EventoNotifications = () => {
   const fetchUpcomingEvents = async () => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const dayAfterTomorrow = new Date(today);
+    const dayAfterTomorrow = dataBR(today);
     dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
     
     // Buscar eventos passados não concluídos (últimos 7 dias) + eventos dos próximos 2 dias
-    const sevenDaysAgo = new Date(today);
+    const sevenDaysAgo = dataBR(today);
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     const { data, error } = await supabase

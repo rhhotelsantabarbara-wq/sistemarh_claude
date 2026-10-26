@@ -25,6 +25,7 @@ import { Loader2, Plus, RefreshCw, Trash2, Clock, History, Users } from "lucide-
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { dataBR } from "@/lib/date";
 
 export function BancoHoras() {
   const [selectedEmployee, setSelectedEmployee] = useState("");
@@ -572,7 +573,7 @@ export function BancoHoras() {
                   {historico.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell>
-                        {format(new Date(item.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                        {format(dataBR(item.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                       </TableCell>
                       <TableCell>
                         <Badge

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Users } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { todayISO, toISODateLocal } from "@/lib/date";
+import { todayISO, toISODateLocal, dataBR } from "@/lib/date";
 
 export const ProximasAvaliacoes = () => {
   const { data: proximosCiclos } = useQuery({
@@ -109,7 +109,7 @@ export const ProximasAvaliacoes = () => {
                 </div>
                 <div className="text-right">
                   <Badge variant="outline">
-                    {format(new Date(ciclo.data_proxima_execucao), "dd/MM/yyyy", { locale: ptBR })}
+                    {format(dataBR(ciclo.data_proxima_execucao), "dd/MM/yyyy", { locale: ptBR })}
                   </Badge>
                   <p className="text-xs text-muted-foreground mt-1">
                     {ciclo.tipo.charAt(0).toUpperCase() + ciclo.tipo.slice(1)}

@@ -9,6 +9,7 @@ import SignatureCanvas from "@/components/forms/SignatureCanvas";
 import { SelfieCapture } from "./SelfieCapture";
 import type { HoleriteEmpresa, HoleriteEmployee, HoleritePagamento } from "@/lib/pdfGeneratorHolerite";
 import { gerarCertificadoPdf, blobToBase64 } from "@/lib/pdfGeneratorCertificadoHolerite";
+import { dataBR } from "@/lib/date";
 
 interface Props {
   open: boolean;
@@ -78,7 +79,7 @@ async function gerarHoleritePdfBlob(
       ? `${x.slice(0, 3)}.${x.slice(3, 6)}.${x.slice(6, 9)}-${x.slice(9)}`
       : c;
   };
-  const formatDate = (d: string | null) => (d ? new Date(d).toLocaleDateString("pt-BR") : "-");
+  const formatDate = (d: string | null) => (d ? dataBR(d).toLocaleDateString("pt-BR") : "-");
 
   const proventos = pagamento.folha_pagamento_itens?.filter((i) => i.variaveis_folha?.tipo === "provento") || [];
   const descontos = pagamento.folha_pagamento_itens?.filter((i) => i.variaveis_folha?.tipo === "desconto") || [];
@@ -484,7 +485,7 @@ export function AssinaturaHoleriteWizard({
                 </p>
                 <p>
                   <strong>Data/Hora:</strong>{" "}
-                  {new Date(resultado.data_assinatura).toLocaleString("pt-BR")}
+                  {dataBR(resultado.data_assinatura).toLocaleString("pt-BR")}
                 </p>
               </div>
             </div>

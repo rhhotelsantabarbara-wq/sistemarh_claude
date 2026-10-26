@@ -19,6 +19,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { toast } from "sonner";
+import { dataBR } from "@/lib/date";
 
 interface Tarefa {
   id: string;
@@ -133,7 +134,7 @@ export default function TaskList() {
 
   const isOverdue = (dataVencimento: string | null) => {
     if (!dataVencimento) return false;
-    return new Date(dataVencimento + "T23:59:59") < new Date();
+    return dataBR(dataVencimento + "T23:59:59") < new Date();
   };
 
   return (
@@ -236,7 +237,7 @@ export default function TaskList() {
                     {tarefa.data_vencimento && !tarefa.concluida && (
                       <p className={`text-xs ${isOverdue(tarefa.data_vencimento) ? "text-destructive font-medium" : "text-muted-foreground"}`}>
                         {isOverdue(tarefa.data_vencimento) ? "Vencida: " : "Vence: "}
-                        {format(new Date(tarefa.data_vencimento + "T12:00:00"), "dd/MM/yyyy")}
+                        {format(dataBR(tarefa.data_vencimento + "T12:00:00"), "dd/MM/yyyy")}
                       </p>
                     )}
                   </div>

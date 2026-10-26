@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { parseDateOnly } from "@/lib/date";
+import { parseDateOnly, dataBR } from "@/lib/date";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -66,7 +66,7 @@ export function ChecklistTab({ employeeId, isManager = false }: ChecklistTabProp
     const dataInicio = (parseDateOnly(checklist.data_inicio) ?? new Date());
     return checklist.itens.filter((item: any) => {
       if (item.concluido || !item.prazo_dias) return false;
-      const prazoData = new Date(dataInicio);
+      const prazoData = dataBR(dataInicio);
       prazoData.setDate(prazoData.getDate() + item.prazo_dias);
       return new Date() > prazoData;
     }).length;
@@ -179,7 +179,7 @@ export function ChecklistTab({ employeeId, isManager = false }: ChecklistTabProp
 
                   {checklist.data_conclusao && (
                     <p className="text-xs text-muted-foreground">
-                      Concluído em: {format(new Date(checklist.data_conclusao), "dd/MM/yyyy", { locale: ptBR })}
+                      Concluído em: {format(dataBR(checklist.data_conclusao), "dd/MM/yyyy", { locale: ptBR })}
                     </p>
                   )}
 

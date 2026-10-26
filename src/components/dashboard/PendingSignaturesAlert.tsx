@@ -6,6 +6,7 @@ import { PenTool } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import SignatureCanvas from "../forms/SignatureCanvas";
 import { toast } from "sonner";
+import { dataBR } from "@/lib/date";
 
 interface PendingItem {
   id: string;
@@ -115,7 +116,7 @@ const PendingSignaturesAlert = () => {
               <div key={item.id} className="flex items-center justify-between bg-white p-2 rounded">
                 <span className="text-sm">
                   {item.tipo === "epi" ? `EPI: ${item.tipo_epi}` : `Uniforme: ${item.tipo_uniforme}`}
-                  {" "}(entregue em {new Date(item.data_entrega).toLocaleDateString("pt-BR")})
+                  {" "}(entregue em {dataBR(item.data_entrega).toLocaleDateString("pt-BR")})
                 </span>
                 <Button
                   size="sm"

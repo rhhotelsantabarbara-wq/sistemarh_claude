@@ -11,6 +11,7 @@ import { Search, Eye, Trash2, Filter, Printer, CheckCircle2 } from "lucide-react
 import { toast } from "sonner";
 import TacDetailsDialog from "./TacDetailsDialog";
 import { generateTacPDF } from "@/lib/pdfGeneratorTac";
+import { dataBR } from "@/lib/date";
 
 const tipoLabels: Record<string, string> = {
   advertencia_verbal: "Advertência Verbal",
@@ -247,7 +248,7 @@ const TacList = () => {
                       <TableCell>{tac.titulo}</TableCell>
                       <TableCell>{tipoLabels[tac.tipo] || tac.tipo}</TableCell>
                       <TableCell>
-                        {new Date(tac.data_ocorrencia).toLocaleDateString("pt-BR")}
+                        {dataBR(tac.data_ocorrencia).toLocaleDateString("pt-BR")}
                       </TableCell>
                       <TableCell>
                         <Badge className={statusColors[tac.status]}>
@@ -255,7 +256,7 @@ const TacList = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {new Date(tac.data_publicacao).toLocaleDateString("pt-BR")}
+                        {dataBR(tac.data_publicacao).toLocaleDateString("pt-BR")}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">

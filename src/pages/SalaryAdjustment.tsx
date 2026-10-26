@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { dataBR } from "@/lib/date";
 
 export default function SalaryAdjustment() {
   const navigate = useNavigate();
@@ -323,7 +324,7 @@ export default function SalaryAdjustment() {
               {adjustmentHistory?.map((record) => (
                 <TableRow key={record.id}>
                   <TableCell>
-                    {format(new Date(record.aplicado_em), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                    {format(dataBR(record.aplicado_em), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                   </TableCell>
                   <TableCell>{record.employee?.nome_completo}</TableCell>
                   <TableCell>{record.employee?.cargo}</TableCell>

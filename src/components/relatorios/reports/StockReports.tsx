@@ -11,6 +11,7 @@ import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
 import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
+import { dataBR } from "@/lib/date";
 
 const StockReports = () => {
   const [reportType, setReportType] = useState("epi-stock");
@@ -115,7 +116,7 @@ const StockReports = () => {
         const itemName = reportType === "epi-distributions" ? item.tipo_epi : item.tipo_uniforme;
         doc.text(`${index + 1}. ${item.employees?.nome_completo}`, 14, yPos);
         doc.text(`${itemName} - Qtd: ${item.quantidade}`, 20, yPos + 6);
-        doc.text(`Data: ${format(new Date(item.data_entrega), "dd/MM/yyyy")}`, 20, yPos + 12);
+        doc.text(`Data: ${format(dataBR(item.data_entrega), "dd/MM/yyyy")}`, 20, yPos + 12);
         yPos += 20;
       }
     });
@@ -158,7 +159,7 @@ const StockReports = () => {
             Funcionário: item.employees?.nome_completo,
             "Tipo EPI": item.tipo_epi,
             Quantidade: item.quantidade,
-            "Data Entrega": format(new Date(item.data_entrega), "dd/MM/yyyy"),
+            "Data Entrega": format(dataBR(item.data_entrega), "dd/MM/yyyy"),
             Assinado: item.assinatura_funcionario ? "Sim" : "Não",
           })) || [];
         break;
@@ -170,7 +171,7 @@ const StockReports = () => {
             "Tipo Uniforme": item.tipo_uniforme,
             Tamanho: item.tamanho,
             Quantidade: item.quantidade,
-            "Data Entrega": format(new Date(item.data_entrega), "dd/MM/yyyy"),
+            "Data Entrega": format(dataBR(item.data_entrega), "dd/MM/yyyy"),
             Assinado: item.assinatura_funcionario ? "Sim" : "Não",
           })) || [];
         break;
@@ -305,7 +306,7 @@ const StockReports = () => {
                           </TableCell>
                           <TableCell>{item.quantidade}</TableCell>
                           <TableCell>
-                            {format(new Date(item.data_entrega), "dd/MM/yyyy")}
+                            {format(dataBR(item.data_entrega), "dd/MM/yyyy")}
                           </TableCell>
                           <TableCell>
                             {item.assinatura_funcionario ? (

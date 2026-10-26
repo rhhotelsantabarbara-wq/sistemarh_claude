@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { dataBR } from "@/lib/date";
 
 const EpiDistributionHistory = () => {
   const [distributions, setDistributions] = useState<any[]>([]);
@@ -66,7 +67,7 @@ const EpiDistributionHistory = () => {
                 <TableCell>{item.employees?.setor || "-"}</TableCell>
                 <TableCell>{item.quantidade}</TableCell>
                 <TableCell>
-                  {format(new Date(item.data_entrega), "dd/MM/yyyy", { locale: ptBR })}
+                  {format(dataBR(item.data_entrega), "dd/MM/yyyy", { locale: ptBR })}
                 </TableCell>
               </TableRow>
             ))}

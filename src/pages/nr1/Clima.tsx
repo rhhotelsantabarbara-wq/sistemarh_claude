@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { PERGUNTAS_PADRAO, type PerguntaClima } from "@/lib/nr1/perguntasPadrao";
 import { Smile, Plus, Link2, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { dataBR } from "@/lib/date";
 
 export default function NR1Clima() {
   const [pesquisas, setPesquisas] = useState<any[]>([]);
@@ -152,7 +153,7 @@ export default function NR1Clima() {
                       <TableCell>{p.qtd_sortear ?? totalPerg}</TableCell>
                       <TableCell>{qtd}</TableCell>
                       <TableCell style={{ color: corNota(nota) }} className="font-semibold">{nota ?? "—"}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{new Date(p.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{dataBR(p.created_at).toLocaleDateString("pt-BR")}</TableCell>
                       <TableCell className="flex gap-2">
                         <Button size="sm" variant="outline" onClick={() => gerarTokens(p, 50)}>
                           <Link2 className="w-3 h-3 mr-1" />Gerar 50 links

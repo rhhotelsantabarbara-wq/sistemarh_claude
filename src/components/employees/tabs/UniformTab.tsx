@@ -6,6 +6,7 @@ import { Plus, Shirt, Trash2, FileDown, PenLine } from "lucide-react";
 import UniformForm from "@/components/forms/UniformForm";
 import { toast } from "sonner";
 import { generateUniformReceipt } from "@/lib/pdfGenerator";
+import { dataBR } from "@/lib/date";
 
 interface UniformTabProps {
   employeeId: string;
@@ -199,7 +200,7 @@ const UniformTab = ({ employeeId }: UniformTabProps) => {
                     <div>
                       <p className="text-muted-foreground">Data de Entrega</p>
                       <p className="font-medium">
-                        {new Date(uniforme.data_entrega).toLocaleDateString("pt-BR")}
+                        {dataBR(uniforme.data_entrega).toLocaleDateString("pt-BR")}
                       </p>
                     </div>
                     <div className="col-span-3">

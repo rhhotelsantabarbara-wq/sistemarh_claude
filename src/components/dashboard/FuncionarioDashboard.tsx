@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { todayISO } from "@/lib/date";
+import { todayISO, dataBR } from "@/lib/date";
 import { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -266,8 +266,8 @@ const FuncionarioDashboard = ({ user }: FuncionarioDashboardProps) => {
   const calculateVacationProgress = () => {
     if (!activeVacation) return null;
 
-    const startDate = new Date(activeVacation.periodo_gozo_inicio);
-    const endDate = new Date(activeVacation.periodo_gozo_fim);
+    const startDate = dataBR(activeVacation.periodo_gozo_inicio);
+    const endDate = dataBR(activeVacation.periodo_gozo_fim);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -400,7 +400,7 @@ const FuncionarioDashboard = ({ user }: FuncionarioDashboardProps) => {
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Retorno previsto</span>
                       <span className="font-medium">
-                        {new Date(activeVacation.periodo_gozo_fim).toLocaleDateString("pt-BR")}
+                        {dataBR(activeVacation.periodo_gozo_fim).toLocaleDateString("pt-BR")}
                       </span>
                     </div>
                     <div className="space-y-2">
@@ -491,7 +491,7 @@ const FuncionarioDashboard = ({ user }: FuncionarioDashboardProps) => {
                         {aviso.mensagem}
                         <div className="flex flex-wrap items-center gap-3 mt-3">
                           <span className="text-xs text-muted-foreground">
-                            Válido até: {new Date(aviso.data_expiracao).toLocaleDateString("pt-BR")}
+                            Válido até: {dataBR(aviso.data_expiracao).toLocaleDateString("pt-BR")}
                           </span>
                           {aviso.anexo_url && (
                             <a 
@@ -625,7 +625,7 @@ const FuncionarioDashboard = ({ user }: FuncionarioDashboardProps) => {
                         <div className="flex gap-4 text-sm text-muted-foreground mt-1">
                           <span>Qtd: {epi.quantidade}</span>
                           <span>
-                            Data: {new Date(epi.data_entrega).toLocaleDateString("pt-BR")}
+                            Data: {dataBR(epi.data_entrega).toLocaleDateString("pt-BR")}
                           </span>
                         </div>
                         {epi.observacoes && (
@@ -660,7 +660,7 @@ const FuncionarioDashboard = ({ user }: FuncionarioDashboardProps) => {
                           <span>Tamanho: {uniforme.tamanho}</span>
                           <span>Qtd: {uniforme.quantidade}</span>
                           <span>
-                            Data: {new Date(uniforme.data_entrega).toLocaleDateString("pt-BR")}
+                            Data: {dataBR(uniforme.data_entrega).toLocaleDateString("pt-BR")}
                           </span>
                         </div>
                         {uniforme.observacoes && (

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { parseDateOnly } from "@/lib/date";
+import { parseDateOnly, dataBR } from "@/lib/date";
 import { supabase } from "@/integrations/supabase/client";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -72,7 +72,7 @@ const MetricsCharts = ({ selectedEmpresa, setSelectedEmpresa, empresas, period, 
       const todayStr = now.toISOString().split("T")[0];
       const { data: vacations } = await supabase.from("ferias").select("*, employees(nome_completo)")
         .gte("periodo_gozo_inicio", todayStr)
-        .lte("periodo_gozo_inicio", new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]);
+        .lte("periodo_gozo_inicio", dataBR(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]);
 
       // Contar férias ativas HOJE
       const employeeIds = employees?.map((e: any) => e.id) || [];
@@ -168,8 +168,8 @@ const MetricsCharts = ({ selectedEmpresa, setSelectedEmpresa, empresas, period, 
       const dismissed = employees?.filter(e => e.data_desligamento && e.data_desligamento >= monthStart.split("T")[0] && e.data_desligamento <= monthEnd.split("T")[0]).length || 0;
       const total = employees?.filter(e => {
         const admDate = e.data_admissao ? (parseDateOnly(e.data_admissao) ?? new Date()) : null;
-        const dismDate = e.data_desligamento ? new Date(e.data_desligamento) : null;
-        return admDate && admDate <= new Date(monthEnd) && (!dismDate || dismDate >= new Date(monthStart));
+        const dismDate = e.data_desligamento ? dataBR(e.data_desligamento) : null;
+        return admDate && admDate <= dataBR(monthEnd) && (!dismDate || dismDate >= dataBR(monthStart));
       }).length || 0;
       
       evolutionData.push({ month: monthName, total, admissions: admitted, dismissals: dismissed });
@@ -177,12 +177,12 @@ const MetricsCharts = ({ selectedEmpresa, setSelectedEmpresa, empresas, period, 
 
     // Financial Metrics
     const currentMonthPayroll = payroll?.filter(p => {
-      const pDate = new Date(p.created_at || "");
+      const pDate = dataBR(p.created_at || "");
       return pDate.getMonth() === now.getMonth() && pDate.getFullYear() === now.getFullYear();
     }).reduce((sum, p) => sum + (p.valor_liquido || 0), 0) || 0;
 
     const previousMonthPayroll = payroll?.filter(p => {
-      const pDate = new Date(p.created_at || "");
+      const pDate = dataBR(p.created_at || "");
       const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
       return pDate.getMonth() === prevMonth.getMonth() && pDate.getFullYear() === prevMonth.getFullYear();
     }).reduce((sum, p) => sum + (p.valor_liquido || 0), 0) || 0;
@@ -207,8 +207,8 @@ const MetricsCharts = ({ selectedEmpresa, setSelectedEmpresa, empresas, period, 
       const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).toISOString();
       
       const monthTotal = payroll?.filter(p => {
-        const pDate = new Date(p.created_at || "");
-        return pDate >= new Date(monthStart) && pDate <= new Date(monthEnd);
+        const pDate = dataBR(p.created_at || "");
+        return pDate >= dataBR(monthStart) && pDate <= dataBR(monthEnd);
       }).reduce((sum, p) => sum + (p.valor_liquido || 0), 0) || 0;
       
       payrollEvolution.push({ month: monthName, value: monthTotal });
@@ -235,8 +235,8 @@ const MetricsCharts = ({ selectedEmpresa, setSelectedEmpresa, empresas, period, 
       const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).toISOString();
       
       const monthPayroll = payroll?.filter(p => {
-        const pDate = new Date(p.created_at || "");
-        return pDate >= new Date(monthStart) && pDate <= new Date(monthEnd);
+        const pDate = dataBR(p.created_at || "");
+        return pDate >= dataBR(monthStart) && pDate <= dataBR(monthEnd);
       }) || [];
 
       const fixo = monthPayroll.filter(p => {
@@ -363,13 +363,13 @@ const MetricsCharts = ({ selectedEmpresa, setSelectedEmpresa, empresas, period, 
       const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).toISOString();
       
       const monthEpisHistory = episHistory?.filter(h => {
-        const hDate = new Date(h.created_at);
-        return hDate >= new Date(monthStart) && hDate <= new Date(monthEnd);
+        const hDate = dataBR(h.created_at);
+        return hDate >= dataBR(monthStart) && hDate <= dataBR(monthEnd);
       }) || [];
 
       const monthUniformsHistory = uniformsHistory?.filter(h => {
-        const hDate = new Date(h.created_at);
-        return hDate >= new Date(monthStart) && hDate <= new Date(monthEnd);
+        const hDate = dataBR(h.created_at);
+        return hDate >= dataBR(monthStart) && hDate <= dataBR(monthEnd);
       }) || [];
 
       const entradas = [...monthEpisHistory, ...monthUniformsHistory].filter(h => h.tipo_movimentacao === "entrada").reduce((sum, h) => sum + h.quantidade, 0);

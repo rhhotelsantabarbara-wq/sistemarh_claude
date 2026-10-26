@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { addYears, differenceInDays, format, addDays } from "date-fns";
+import { dataBR } from "@/lib/date";
 
 interface VacationFormProps {
   employeeId: string;
@@ -61,7 +62,7 @@ const VacationForm = ({ employeeId, onSaved, onCancel, initialData }: VacationFo
   const handlePeriodoAquisitivoInicioChange = (dateString: string) => {
     setPeriodoAquisitivoInicio(dateString);
     if (dateString) {
-      const startDate = new Date(dateString);
+      const startDate = dataBR(dateString);
       const endDate = addYears(startDate, 1);
       const formattedEndDate = format(endDate, 'yyyy-MM-dd');
       setPeriodoAquisitivoFim(formattedEndDate);
@@ -73,8 +74,8 @@ const VacationForm = ({ employeeId, onSaved, onCancel, initialData }: VacationFo
     const fimDate = fim || periodoGozoFim;
     
     if (inicioDate && fimDate) {
-      const start = new Date(inicioDate);
-      const end = new Date(fimDate);
+      const start = dataBR(inicioDate);
+      const end = dataBR(fimDate);
       const days = differenceInDays(end, start) + 1;
       setDiasCalculados(days > 0 ? days : 0);
     } else {
@@ -91,7 +92,7 @@ const VacationForm = ({ employeeId, onSaved, onCancel, initialData }: VacationFo
     let totalDays = diasCalculados;
     
     if (usarFolgas && diasFolgas > 0) {
-      const endDate = new Date(periodoGozoFim);
+      const endDate = dataBR(periodoGozoFim);
       const newEndDate = addDays(endDate, diasFolgas);
       finalEndDate = format(newEndDate, 'yyyy-MM-dd');
       totalDays = diasCalculados + diasFolgas;
@@ -210,7 +211,7 @@ const VacationForm = ({ employeeId, onSaved, onCancel, initialData }: VacationFo
                       
                       // Auto-preencher data final 30 dias depois
                       if (novaDataInicio) {
-                        const dataInicio = new Date(novaDataInicio);
+                        const dataInicio = dataBR(novaDataInicio);
                         const dataFim = addDays(dataInicio, 29); // 30 dias incluindo o primeiro
                         const dataFimFormatada = format(dataFim, 'yyyy-MM-dd');
                         setPeriodoGozoFim(dataFimFormatada);
@@ -293,7 +294,7 @@ const VacationForm = ({ employeeId, onSaved, onCancel, initialData }: VacationFo
                         Total: {diasCalculados + diasFolgas} dias
                       </p>
                       <p className="text-xs text-muted-foreground mt-2">
-                        Nova data de retorno: {periodoGozoFim && format(addDays(new Date(periodoGozoFim), diasFolgas), 'dd/MM/yyyy')}
+                        Nova data de retorno: {periodoGozoFim && format(addDays(dataBR(periodoGozoFim), diasFolgas), 'dd/MM/yyyy')}
                       </p>
                     </div>
                   )}

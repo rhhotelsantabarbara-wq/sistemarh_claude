@@ -41,6 +41,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
+import { dataBR } from "@/lib/date";
 
 type Periodo = "30" | "90" | "180" | "365" | "all";
 
@@ -110,7 +111,7 @@ export default function NR1PainelGerencial() {
   }, [clima]);
   const riscosAltos = riscos.filter((r) => (r.probabilidade || 0) * (r.severidade || 0) >= 15).length;
   const acoesAtrasadas = acoes.filter(
-    (a) => a.prazo && new Date(a.prazo) < new Date() && a.status !== "concluida"
+    (a) => a.prazo && dataBR(a.prazo) < new Date() && a.status !== "concluida"
   ).length;
   const acoesConcluidas = acoes.filter((a) => a.status === "concluida").length;
   const taxaConclusao = acoes.length ? Math.round((acoesConcluidas / acoes.length) * 100) : 0;
@@ -133,7 +134,7 @@ export default function NR1PainelGerencial() {
   const denunciasPorMes = useMemo(() => {
     const m: Record<string, number> = {};
     denuncias.forEach((d) => {
-      const mes = new Date(d.created_at).toISOString().slice(0, 7);
+      const mes = dataBR(d.created_at).toISOString().slice(0, 7);
       m[mes] = (m[mes] || 0) + 1;
     });
     return Object.entries(m).sort().map(([mes, total]) => ({ mes, total }));
@@ -142,7 +143,7 @@ export default function NR1PainelGerencial() {
   const climaEvolucao = useMemo(() => {
     const m: Record<string, number[]> = {};
     clima.forEach((r) => {
-      const mes = new Date(r.created_at).toISOString().slice(0, 7);
+      const mes = dataBR(r.created_at).toISOString().slice(0, 7);
       (r.respostas || []).forEach((x: any) => typeof x.valor === "number" && (m[mes] = m[mes] || []).push(x.valor));
     });
     return Object.entries(m).sort().map(([mes, arr]) => ({ mes, nota: +(arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2) }));
@@ -493,7 +494,7 @@ export default function NR1PainelGerencial() {
                 <TableHeader><TableRow><TableHead>Título</TableHead><TableHead>Prioridade</TableHead><TableHead>Prazo</TableHead></TableRow></TableHeader>
                 <TableBody>
                   {acoes
-                    .filter((a) => a.prazo && new Date(a.prazo) < new Date() && a.status !== "concluida")
+                    .filter((a) => a.prazo && dataBR(a.prazo) < new Date() && a.status !== "concluida")
                     .slice(0, 8)
                     .map((a) => (
                       <TableRow key={a.id}>

@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import EditAvisoDialog from "./EditAvisoDialog";
 import AvisoLeiturasDialog from "./AvisoLeiturasDialog";
+import { dataBR } from "@/lib/date";
 
 interface ManageAvisosDialogProps {
   open: boolean;
@@ -99,12 +100,12 @@ const ManageAvisosDialog = ({ open, onOpenChange }: ManageAvisosDialogProps) => 
   };
 
   const isExpired = (dataExpiracao: string) => {
-    return new Date(dataExpiracao) < new Date();
+    return dataBR(dataExpiracao) < new Date();
   };
 
   const isScheduled = (dataPublicacao: string | null) => {
     if (!dataPublicacao) return false;
-    return new Date(dataPublicacao) > new Date();
+    return dataBR(dataPublicacao) > new Date();
   };
 
   const getDestinatarioLabel = (aviso: any) => {
@@ -223,14 +224,14 @@ const ManageAvisosDialog = ({ open, onOpenChange }: ManageAvisosDialogProps) => 
                       <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
                         {aviso.data_publicacao && (
                           <span>
-                            Publicação: {new Date(aviso.data_publicacao).toLocaleDateString("pt-BR")}
+                            Publicação: {dataBR(aviso.data_publicacao).toLocaleDateString("pt-BR")}
                           </span>
                         )}
                         <span>
-                          Válido até: {new Date(aviso.data_expiracao).toLocaleDateString("pt-BR")}
+                          Válido até: {dataBR(aviso.data_expiracao).toLocaleDateString("pt-BR")}
                         </span>
                         <span>
-                          Criado em: {new Date(aviso.created_at).toLocaleDateString("pt-BR")}
+                          Criado em: {dataBR(aviso.created_at).toLocaleDateString("pt-BR")}
                         </span>
                       </div>
                     </CardContent>

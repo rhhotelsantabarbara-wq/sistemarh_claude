@@ -1,5 +1,5 @@
 import jsPDF from "jspdf";
-import { parseDateOnly } from "@/lib/date";
+import { parseDateOnly, dataBR } from "@/lib/date";
 import { saveAndBackup } from "./pdfBackupHelper";
 
 export const generateEncaminhamentoPDF = async (encaminhamento: any) => {
@@ -184,7 +184,7 @@ export const generateEncaminhamentoPDF = async (encaminhamento: any) => {
   yPos += 15;
   doc.setFontSize(9);
   doc.text(
-    `Data de Emissao: ${new Date(encaminhamento.data_encaminhamento).toLocaleDateString("pt-BR")}`,
+    `Data de Emissao: ${dataBR(encaminhamento.data_encaminhamento).toLocaleDateString("pt-BR")}`,
     20,
     yPos
   );

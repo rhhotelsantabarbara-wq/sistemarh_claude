@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
+import { dataBR } from "@/lib/date";
 
 interface TreinamentosCardProps {
   employeeId: string;
@@ -300,7 +301,7 @@ export function TreinamentosCard({ employeeId }: TreinamentosCardProps) {
       }
 
       // Data de conclusão - logo abaixo do nome da empresa
-      const dataFormatada = new Date(certificado.data_conclusao).toLocaleDateString(
+      const dataFormatada = dataBR(certificado.data_conclusao).toLocaleDateString(
         "pt-BR",
         { day: "2-digit", month: "long", year: "numeric" }
       );
@@ -358,7 +359,7 @@ export function TreinamentosCard({ employeeId }: TreinamentosCardProps) {
                         {cert.curso?.titulo}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Concluído em {new Date(cert.data_conclusao).toLocaleDateString("pt-BR")}
+                        Concluído em {dataBR(cert.data_conclusao).toLocaleDateString("pt-BR")}
                       </p>
                     </div>
                     <Button

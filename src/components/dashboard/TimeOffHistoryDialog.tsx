@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { History } from "lucide-react";
+import { dataBR } from "@/lib/date";
 
 interface TimeOffHistoryDialogProps {
   open: boolean;
@@ -108,7 +109,7 @@ const TimeOffHistoryDialog = ({
                       </TableCell>
                     )}
                     <TableCell>
-                      {new Date(item.alterado_em).toLocaleString("pt-BR")}
+                      {dataBR(item.alterado_em).toLocaleString("pt-BR")}
                     </TableCell>
                     <TableCell>{item.quantidade_anterior}</TableCell>
                     <TableCell>{item.quantidade_nova}</TableCell>

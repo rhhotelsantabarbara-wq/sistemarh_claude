@@ -17,6 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { dataBR } from "@/lib/date";
 
 interface VacationTabProps {
   employeeId: string;
@@ -101,8 +102,8 @@ const VacationTab = ({ employeeId, isManager = false }: VacationTabProps) => {
   };
 
   const calculateProgress = (inicio: string, fim: string, diasTotais: number) => {
-    const startDate = new Date(inicio);
-    const endDate = new Date(fim);
+    const startDate = dataBR(inicio);
+    const endDate = dataBR(fim);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
@@ -176,13 +177,13 @@ const VacationTab = ({ employeeId, isManager = false }: VacationTabProps) => {
                     <div>
                       <p className="text-muted-foreground">Data de Início</p>
                       <p className="font-medium">
-                        {new Date(feria.periodo_gozo_inicio).toLocaleDateString("pt-BR")}
+                        {dataBR(feria.periodo_gozo_inicio).toLocaleDateString("pt-BR")}
                       </p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">Data de Retorno</p>
                       <p className="font-medium">
-                        {new Date(feria.periodo_gozo_fim).toLocaleDateString("pt-BR")}
+                        {dataBR(feria.periodo_gozo_fim).toLocaleDateString("pt-BR")}
                       </p>
                     </div>
                   </div>

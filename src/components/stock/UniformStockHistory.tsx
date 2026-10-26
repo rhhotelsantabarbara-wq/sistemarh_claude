@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowUp, ArrowDown } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { dataBR } from "@/lib/date";
 
 const UniformStockHistory = () => {
   const [movements, setMovements] = useState<any[]>([]);
@@ -62,7 +63,7 @@ const UniformStockHistory = () => {
                   {movement.estoque_uniformes?.cor && ` - ${movement.estoque_uniformes.cor}`}
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  {format(new Date(movement.created_at), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}
+                  {format(dataBR(movement.created_at), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}
                 </p>
               </div>
               <Badge variant={movement.tipo_movimentacao === "entrada" ? "default" : "secondary"}>

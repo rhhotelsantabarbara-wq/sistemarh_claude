@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Calendar } from "lucide-react";
 import TimeOffForm from "@/components/forms/TimeOffForm";
+import { dataBR } from "@/lib/date";
 
 interface TimeOffTabProps {
   employeeId: string;
@@ -63,7 +64,7 @@ const TimeOffTab = ({ employeeId }: TimeOffTabProps) => {
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
-                  {new Date(folga.data).toLocaleDateString("pt-BR")}
+                  {dataBR(folga.data).toLocaleDateString("pt-BR")}
                 </CardTitle>
               </CardHeader>
               <CardContent>

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Download, Calculator, Pencil } from "lucide-react";
 import { GerarHoleriteDiferencaDialog } from "./GerarHoleriteDiferencaDialog";
 import { EditarHoleriteDiferencaDialog } from "./EditarHoleriteDiferencaDialog";
+import { dataBR } from "@/lib/date";
 
 
 
@@ -144,7 +145,7 @@ const HoleriteDialog = ({ open, onOpenChange, pagamento, empresaId }: HoleriteDi
 
   const formatDate = (date: string | null) => {
     if (!date) return "-";
-    return new Date(date).toLocaleDateString("pt-BR");
+    return dataBR(date).toLocaleDateString("pt-BR");
   };
 
   const getMesAnoStr = () => {

@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Download, Eye, ShieldCheck, FileWarning, Package, History } from "lucide-react";
 import { toast } from "sonner";
 import { AuditoriaHoleriteDialog } from "@/components/holerites-assinatura/AuditoriaHoleriteDialog";
+import { dataBR } from "@/lib/date";
 
 interface Props {
   empresaIdInicial?: string;
@@ -340,7 +341,7 @@ export function AuditoriaHoleritesTab({ empresaIdInicial }: Props) {
                       <TableCell>{statusBadge(r.status)}</TableCell>
                       <TableCell className="font-mono text-xs">{r.protocolo || "—"}</TableCell>
                       <TableCell className="text-xs">
-                        {r.data_assinatura ? new Date(r.data_assinatura).toLocaleString("pt-BR") : "—"}
+                        {r.data_assinatura ? dataBR(r.data_assinatura).toLocaleString("pt-BR") : "—"}
                       </TableCell>
                       <TableCell className="text-xs">{r.ip || "—"}</TableCell>
                       <TableCell className="text-right">
@@ -427,7 +428,7 @@ function HistoricoExportacoes() {
             <TableBody>
               {(data || []).map((r: any) => (
                 <TableRow key={r.id}>
-                  <TableCell className="text-xs">{new Date(r.created_at).toLocaleString("pt-BR")}</TableCell>
+                  <TableCell className="text-xs">{dataBR(r.created_at).toLocaleString("pt-BR")}</TableCell>
                   <TableCell className="text-xs">
                     {r.nome_exportador}
                     <div className="text-muted-foreground">{r.email_exportador}</div>

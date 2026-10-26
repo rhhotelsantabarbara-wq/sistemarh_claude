@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { parseDateOnly } from "@/lib/date";
+import { parseDateOnly, dataBR } from "@/lib/date";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -122,10 +122,10 @@ const AttendanceReports = () => {
         );
         doc.text(`Dias: ${item.dias_totais}`, 20, yPos + 18);
       } else if (reportType === "timeoff") {
-        doc.text(`Data: ${format(new Date(item.data), "dd/MM/yyyy")}`, 20, yPos + 12);
+        doc.text(`Data: ${format(dataBR(item.data), "dd/MM/yyyy")}`, 20, yPos + 12);
         doc.text(`Motivo: ${item.motivo}`, 20, yPos + 18);
       } else if (reportType === "faults") {
-        doc.text(`Data: ${format(new Date(item.data), "dd/MM/yyyy")}`, 20, yPos + 12);
+        doc.text(`Data: ${format(dataBR(item.data), "dd/MM/yyyy")}`, 20, yPos + 12);
         doc.text(`Justificada: ${item.justificada ? "Sim" : "Não"}`, 20, yPos + 18);
       }
 
@@ -170,7 +170,7 @@ const AttendanceReports = () => {
           timeOff?.map((item) => ({
             Funcionário: item.employees?.nome_completo,
             Cargo: item.employees?.cargo,
-            Data: format(new Date(item.data), "dd/MM/yyyy"),
+            Data: format(dataBR(item.data), "dd/MM/yyyy"),
             Motivo: item.motivo,
           })) || [];
         break;
@@ -180,7 +180,7 @@ const AttendanceReports = () => {
           faults?.map((item) => ({
             Funcionário: item.employees?.nome_completo,
             Cargo: item.employees?.cargo,
-            Data: format(new Date(item.data), "dd/MM/yyyy"),
+            Data: format(dataBR(item.data), "dd/MM/yyyy"),
             Justificada: item.justificada ? "Sim" : "Não",
             Motivo: item.motivo || "-",
           })) || [];
@@ -323,13 +323,13 @@ const AttendanceReports = () => {
                       )}
                       {reportType === "timeoff" && (
                         <>
-                          <TableCell>{format(new Date(item.data), "dd/MM/yyyy")}</TableCell>
+                          <TableCell>{format(dataBR(item.data), "dd/MM/yyyy")}</TableCell>
                           <TableCell>{item.motivo}</TableCell>
                         </>
                       )}
                       {reportType === "faults" && (
                         <>
-                          <TableCell>{format(new Date(item.data), "dd/MM/yyyy")}</TableCell>
+                          <TableCell>{format(dataBR(item.data), "dd/MM/yyyy")}</TableCell>
                           <TableCell>{item.justificada ? "Sim" : "Não"}</TableCell>
                         </>
                       )}

@@ -3,6 +3,7 @@ import autoTable from "jspdf-autotable";
 import QRCode from "qrcode";
 import { backupPdfToDrive } from "@/hooks/useDriveBackup";
 import { saveAndBackup } from "./pdfBackupHelper";
+import { dataBR } from "@/lib/date";
 
 export interface HoleriteAssinaturaInfo {
   protocolo: string;
@@ -87,7 +88,7 @@ const formatCPF = (cpf: string | null) => {
 
 const formatDate = (date: string | null) => {
   if (!date) return "-";
-  return new Date(date).toLocaleDateString("pt-BR");
+  return dataBR(date).toLocaleDateString("pt-BR");
 };
 
 function getSalarioBase(employee: HoleriteEmployee) {
@@ -187,7 +188,7 @@ export async function gerarHoleritePdf(
   }
   const formatDateTime = (iso: string) => {
     try {
-      return new Date(iso).toLocaleString("pt-BR", {
+      return dataBR(iso).toLocaleString("pt-BR", {
         day: "2-digit", month: "2-digit", year: "numeric",
         hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo",
       });

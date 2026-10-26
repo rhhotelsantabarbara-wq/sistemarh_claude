@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Mail, Phone, Calendar, Star } from "lucide-react";
 import CandidaturaDetailsDialog from "@/components/recrutamento/CandidaturaDetailsDialog";
+import { dataBR } from "@/lib/date";
 
 interface Candidatura {
   id: string;
@@ -207,7 +208,7 @@ function CandidaturaCard({ candidatura, onView, getStatusBadge }: CandidaturaCar
               </div>
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
-                <span>{new Date(candidatura.data_candidatura).toLocaleDateString('pt-BR')}</span>
+                <span>{dataBR(candidatura.data_candidatura).toLocaleDateString('pt-BR')}</span>
               </div>
             </CardDescription>
           </div>

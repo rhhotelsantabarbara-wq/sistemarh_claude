@@ -16,6 +16,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { dataBR } from "@/lib/date";
 
 interface Employee {
   id: string;
@@ -383,7 +384,7 @@ export default function ConsultaJudicial() {
                     <TableCell>
                       {consulta ? (
                         <span className="text-xs text-muted-foreground">
-                          {format(new Date(consulta.data_consulta), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                          {format(dataBR(consulta.data_consulta), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                         </span>
                       ) : (
                         <span className="text-xs text-muted-foreground">Nunca</span>
@@ -620,7 +621,7 @@ export default function ConsultaJudicial() {
                 <div>
                   <p className="text-sm text-muted-foreground">Data</p>
                   <p className="font-medium">
-                    {format(new Date(detailDialog.data_consulta), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                    {format(dataBR(detailDialog.data_consulta), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                   </p>
                 </div>
                 <div>

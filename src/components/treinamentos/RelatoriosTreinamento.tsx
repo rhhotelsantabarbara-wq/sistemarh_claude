@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Award, Download, Unlock, Check } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
+import { dataBR } from "@/lib/date";
 
 export function RelatoriosTreinamento() {
   const queryClient = useQueryClient();
@@ -101,7 +102,7 @@ export function RelatoriosTreinamento() {
           );
           const dataConclusao = progressoCurso
             ?.filter((p: any) => p.employee_id === employeeId && p.concluida)
-            .map((p: any) => new Date(p.data_conclusao))
+            .map((p: any) => dataBR(p.data_conclusao))
             .sort((a: Date, b: Date) => b.getTime() - a.getTime())[0];
           
           return {
@@ -258,7 +259,7 @@ export function RelatoriosTreinamento() {
       }
 
       // Data de conclusão - logo abaixo do nome da empresa
-      const dataFormatada = new Date(funcionario.dataConclusao).toLocaleDateString(
+      const dataFormatada = dataBR(funcionario.dataConclusao).toLocaleDateString(
         "pt-BR",
         { day: "2-digit", month: "long", year: "numeric" }
       );
@@ -349,7 +350,7 @@ export function RelatoriosTreinamento() {
                                 </p>
                                 <p className="text-xs text-muted-foreground">
                                   Concluído em:{" "}
-                                  {new Date(func.dataConclusao).toLocaleDateString(
+                                  {dataBR(func.dataConclusao).toLocaleDateString(
                                     "pt-BR"
                                   )}
                                 </p>

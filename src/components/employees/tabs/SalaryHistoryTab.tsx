@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useCanViewSalary } from "@/hooks/useCanViewSalary";
+import { dataBR } from "@/lib/date";
 
 interface SalaryHistoryTabProps {
   employeeId: string;
@@ -68,7 +69,7 @@ export function SalaryHistoryTab({ employeeId }: SalaryHistoryTabProps) {
             {history.map((record) => (
               <TableRow key={record.id}>
                 <TableCell>
-                  {format(new Date(record.aplicado_em), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                  {format(dataBR(record.aplicado_em), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                 </TableCell>
                 <TableCell>R$ {record.salario_anterior.toFixed(2)}</TableCell>
                 <TableCell className="font-semibold text-green-600">

@@ -12,6 +12,7 @@ import { Loader2, CheckCircle2, XCircle, RefreshCw, Upload, ExternalLink, HardDr
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { RetroactiveBackup } from "./RetroactiveBackup";
+import { dataBR } from "@/lib/date";
 
 
 interface Config {
@@ -228,7 +229,7 @@ export const DriveBackupSettings = () => {
                 <TableBody>
                   {logs.map((l) => (
                     <TableRow key={l.id}>
-                      <TableCell className="text-xs">{format(new Date(l.created_at), "dd/MM/yy HH:mm", { locale: ptBR })}</TableCell>
+                      <TableCell className="text-xs">{format(dataBR(l.created_at), "dd/MM/yy HH:mm", { locale: ptBR })}</TableCell>
                       <TableCell><Badge variant="outline">{l.tipo}</Badge></TableCell>
                       <TableCell className="max-w-xs truncate text-xs" title={l.nome_arquivo}>{l.nome_arquivo}</TableCell>
                       <TableCell>

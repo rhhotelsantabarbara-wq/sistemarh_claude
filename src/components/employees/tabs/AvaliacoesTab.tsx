@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Star, Send } from "lucide-react";
 import { toast } from "sonner";
+import { dataBR } from "@/lib/date";
 
 interface AvaliacoesTabProps {
   employeeId: string;
@@ -141,8 +142,8 @@ export default function AvaliacoesTab({ employeeId }: AvaliacoesTabProps) {
                 <div>
                   <h3 className="font-semibold text-lg">Auto-avaliação Pendente</h3>
                   <p className="text-sm text-muted-foreground">
-                    Período: {new Date(avaliacao.periodo_inicio).toLocaleDateString()} até{" "}
-                    {new Date(avaliacao.periodo_fim).toLocaleDateString()}
+                    Período: {dataBR(avaliacao.periodo_inicio).toLocaleDateString()} até{" "}
+                    {dataBR(avaliacao.periodo_fim).toLocaleDateString()}
                   </p>
                 </div>
 
@@ -220,7 +221,7 @@ export default function AvaliacoesTab({ employeeId }: AvaliacoesTabProps) {
                   )}
                   {meta.prazo && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      Prazo: {new Date(meta.prazo).toLocaleDateString()}
+                      Prazo: {dataBR(meta.prazo).toLocaleDateString()}
                     </p>
                   )}
                 </div>

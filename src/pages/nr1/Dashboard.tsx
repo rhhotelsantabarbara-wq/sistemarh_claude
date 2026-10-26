@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { todayISO } from "@/lib/date";
+import { todayISO, dataBR } from "@/lib/date";
 import { supabase } from "@/integrations/supabase/client";
 import { KpiCard } from "@/components/nr1/KpiCard";
 import { AlertaCard } from "@/components/nr1/AlertaCard";
@@ -63,7 +63,7 @@ export default function NR1Dashboard() {
 
       const porMes: Record<string, number[]> = {};
       respostas.forEach((r: any) => {
-        const mes = new Date(r.created_at).toISOString().slice(0, 7);
+        const mes = dataBR(r.created_at).toISOString().slice(0, 7);
         (r.respostas || []).forEach((x: any) => {
           if (typeof x.valor === "number") (porMes[mes] = porMes[mes] || []).push(x.valor);
         });

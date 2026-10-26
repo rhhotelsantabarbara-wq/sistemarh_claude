@@ -10,6 +10,7 @@ import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { EncaminhamentoForm } from "@/components/saude-ocupacional/EncaminhamentoForm";
 import { generateEncaminhamentoPDF } from "@/lib/pdfGeneratorEncaminhamento";
+import { dataBR } from "@/lib/date";
 
 interface ExamesMedicosTabProps {
   employeeId: string;
@@ -156,18 +157,18 @@ const ExamesMedicosTab = ({ employeeId }: ExamesMedicosTabProps) => {
                 <div className="text-sm space-y-1">
                   <p>
                     <strong>Data de Encaminhamento:</strong>{" "}
-                    {format(new Date(enc.data_encaminhamento), "dd/MM/yyyy", { locale: ptBR })}
+                    {format(dataBR(enc.data_encaminhamento), "dd/MM/yyyy", { locale: ptBR })}
                   </p>
                   {enc.data_agendamento && (
                     <p>
                       <strong>Data Agendada:</strong>{" "}
-                      {format(new Date(enc.data_agendamento), "dd/MM/yyyy", { locale: ptBR })}
+                      {format(dataBR(enc.data_agendamento), "dd/MM/yyyy", { locale: ptBR })}
                     </p>
                   )}
                   {enc.data_realizacao && (
                     <p>
                       <strong>Data de Realização:</strong>{" "}
-                      {format(new Date(enc.data_realizacao), "dd/MM/yyyy", { locale: ptBR })}
+                      {format(dataBR(enc.data_realizacao), "dd/MM/yyyy", { locale: ptBR })}
                     </p>
                   )}
                   <p>

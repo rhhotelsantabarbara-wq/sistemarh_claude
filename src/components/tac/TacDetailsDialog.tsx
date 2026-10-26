@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { FileWarning, User, Calendar, Clock, CheckCircle2, Eye, Printer } from "lucide-react";
 import { generateTacPDF } from "@/lib/pdfGeneratorTac";
+import { dataBR } from "@/lib/date";
 
 interface TacDetailsDialogProps {
   tac: any;
@@ -50,7 +51,7 @@ const TacDetailsDialog = ({ tac, open, onOpenChange }: TacDetailsDialogProps) =>
               {statusLabels[tac.status]}
             </Badge>
             <span className="text-sm text-muted-foreground">
-              Publicado em {new Date(tac.data_publicacao).toLocaleDateString("pt-BR")}
+              Publicado em {dataBR(tac.data_publicacao).toLocaleDateString("pt-BR")}
             </span>
           </div>
 
@@ -86,7 +87,7 @@ const TacDetailsDialog = ({ tac, open, onOpenChange }: TacDetailsDialogProps) =>
               <Calendar className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">Data da Ocorrência:</span>
               <span className="font-medium">
-                {new Date(tac.data_ocorrencia).toLocaleDateString("pt-BR")}
+                {dataBR(tac.data_ocorrencia).toLocaleDateString("pt-BR")}
               </span>
             </div>
           </div>
@@ -124,7 +125,7 @@ const TacDetailsDialog = ({ tac, open, onOpenChange }: TacDetailsDialogProps) =>
                 <div>
                   <p className="font-medium">Publicado</p>
                   <p className="text-sm text-muted-foreground">
-                    {new Date(tac.data_publicacao).toLocaleString("pt-BR")}
+                    {dataBR(tac.data_publicacao).toLocaleString("pt-BR")}
                   </p>
                 </div>
               </div>
@@ -137,7 +138,7 @@ const TacDetailsDialog = ({ tac, open, onOpenChange }: TacDetailsDialogProps) =>
                   <div>
                     <p className="font-medium">Visualizado pelo funcionário</p>
                     <p className="text-sm text-muted-foreground">
-                      {new Date(tac.lido_em).toLocaleString("pt-BR")}
+                      {dataBR(tac.lido_em).toLocaleString("pt-BR")}
                     </p>
                   </div>
                 </div>
@@ -151,7 +152,7 @@ const TacDetailsDialog = ({ tac, open, onOpenChange }: TacDetailsDialogProps) =>
                   <div>
                     <p className="font-medium">Ciência confirmada</p>
                     <p className="text-sm text-muted-foreground">
-                      {new Date(tac.confirmado_em).toLocaleString("pt-BR")}
+                      {dataBR(tac.confirmado_em).toLocaleString("pt-BR")}
                     </p>
                   </div>
                 </div>

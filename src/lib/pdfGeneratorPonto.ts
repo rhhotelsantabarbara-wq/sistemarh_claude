@@ -3,6 +3,7 @@ import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { saveAndBackup } from "./pdfBackupHelper";
+import { dataBR } from "@/lib/date";
 
 function formatDecimalToHoursMinutes(decimal: number): string {
   const isNegative = decimal < 0;
@@ -117,7 +118,7 @@ function addEmployeeReportToDoc(doc: jsPDF, data: ReportData, isFirstPage: boole
 
   // Tabela de registros
   const tableData = data.registros.map((reg) => {
-    const dataFormatada = format(new Date(reg.data + "T00:00:00"), "dd/MM/yyyy (EEE)", { locale: ptBR });
+    const dataFormatada = format(dataBR(reg.data + "T00:00:00"), "dd/MM/yyyy (EEE)", { locale: ptBR });
     const intervalo =
       reg.hora_inicio_intervalo && reg.hora_fim_intervalo
         ? `${reg.hora_inicio_intervalo} - ${reg.hora_fim_intervalo}`

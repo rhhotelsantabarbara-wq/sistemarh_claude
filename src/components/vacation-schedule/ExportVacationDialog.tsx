@@ -22,6 +22,7 @@ import { ptBR } from "date-fns/locale";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import { dataBR } from "@/lib/date";
 
 interface ExportVacationDialogProps {
   open: boolean;
@@ -171,8 +172,8 @@ export function ExportVacationDialog({ open, onOpenChange, filters }: ExportVaca
     (confirmedData || []).forEach((item: any) => {
       const emp = employeesById[item.employee_id];
       if (!emp) return;
-      const start = new Date(item.periodo_gozo_inicio);
-      const end = new Date(item.periodo_gozo_fim);
+      const start = dataBR(item.periodo_gozo_inicio);
+      const end = dataBR(item.periodo_gozo_fim);
       let status: string;
       if (now < start) status = "Aprovado";
       else if (now > end) status = "Concluído";
@@ -191,7 +192,7 @@ export function ExportVacationDialog({ open, onOpenChange, filters }: ExportVaca
     });
 
     allVacations.sort((a, b) => 
-      new Date(a.periodo_inicio).getTime() - new Date(b.periodo_inicio).getTime()
+      dataBR(a.periodo_inicio).getTime() - dataBR(b.periodo_inicio).getTime()
     );
 
     return allVacations;
@@ -199,7 +200,7 @@ export function ExportVacationDialog({ open, onOpenChange, filters }: ExportVaca
 
   const formatDate = (dateStr: string) => {
     try {
-      return format(new Date(dateStr), "dd/MM/yyyy", { locale: ptBR });
+      return format(dataBR(dateStr), "dd/MM/yyyy", { locale: ptBR });
     } catch {
       return dateStr;
     }

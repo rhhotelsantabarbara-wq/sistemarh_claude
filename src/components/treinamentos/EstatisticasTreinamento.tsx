@@ -43,6 +43,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { dataBR } from "@/lib/date";
 
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
@@ -118,7 +119,7 @@ export function EstatisticasTreinamento() {
         // Último acesso ao curso
         const ultimoAcesso = progressoCurso
           .filter(p => p.ultimo_acesso)
-          .map(p => new Date(p.ultimo_acesso))
+          .map(p => dataBR(p.ultimo_acesso))
           .sort((a, b) => b.getTime() - a.getTime())[0];
 
         return {
@@ -151,7 +152,7 @@ export function EstatisticasTreinamento() {
 
         const ultimoAcesso = progressoFunc
           .filter(p => p.ultimo_acesso)
-          .map(p => new Date(p.ultimo_acesso))
+          .map(p => dataBR(p.ultimo_acesso))
           .sort((a, b) => b.getTime() - a.getTime())[0];
 
         // Calcular progresso geral do funcionário
@@ -198,7 +199,7 @@ export function EstatisticasTreinamento() {
 
         const conclusoesMes = progresso?.filter((p) => {
           if (!p.data_conclusao || !p.concluida) return false;
-          const dataConclusao = new Date(p.data_conclusao);
+          const dataConclusao = dataBR(p.data_conclusao);
           return (
             dataConclusao.getMonth() === data.getMonth() &&
             dataConclusao.getFullYear() === data.getFullYear()
@@ -207,7 +208,7 @@ export function EstatisticasTreinamento() {
 
         const acessosMes = progresso?.filter((p) => {
           if (!p.ultimo_acesso) return false;
-          const dataAcesso = new Date(p.ultimo_acesso);
+          const dataAcesso = dataBR(p.ultimo_acesso);
           return (
             dataAcesso.getMonth() === data.getMonth() &&
             dataAcesso.getFullYear() === data.getFullYear()

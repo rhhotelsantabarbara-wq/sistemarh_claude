@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { dataBR } from "@/lib/date";
 
 interface Props {
   open: boolean;
@@ -107,7 +108,7 @@ export function AuditoriaHoleriteDialog({ open, onOpenChange, assinaturaId }: Pr
                 <div className="text-xs text-muted-foreground">Data/Hora</div>
                 <div>
                   {data.a.data_assinatura
-                    ? new Date(data.a.data_assinatura).toLocaleString("pt-BR")
+                    ? dataBR(data.a.data_assinatura).toLocaleString("pt-BR")
                     : "-"}
                 </div>
               </div>
@@ -162,7 +163,7 @@ export function AuditoriaHoleriteDialog({ open, onOpenChange, assinaturaId }: Pr
                 {data.eventos.map((ev: any) => (
                   <div key={ev.id} className="flex justify-between text-xs border-b py-1">
                     <span className="font-medium">{ev.tipo_evento}</span>
-                    <span>{new Date(ev.created_at).toLocaleString("pt-BR")}</span>
+                    <span>{dataBR(ev.created_at).toLocaleString("pt-BR")}</span>
                     <span className="text-muted-foreground">{ev.ip || "-"}</span>
                   </div>
                 ))}

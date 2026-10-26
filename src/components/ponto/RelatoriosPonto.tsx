@@ -17,6 +17,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
+import { dataBR } from "@/lib/date";
 
 const TIPO_DIA_LABELS: Record<string, string> = {
   normal: "Normal",
@@ -402,7 +403,7 @@ export function RelatoriosPonto() {
       const tableHeader = [["Data", "Tipo", "Entrada", "Saída", "Início Intervalo", "Fim Intervalo", "Horas", "Observações"]];
       
       const tableData = report.registros.map((reg) => {
-        const dataFormatada = format(new Date(reg.data + "T00:00:00"), "dd/MM/yyyy (EEE)", { locale: ptBR });
+        const dataFormatada = format(dataBR(reg.data + "T00:00:00"), "dd/MM/yyyy (EEE)", { locale: ptBR });
         return [
           dataFormatada,
           TIPO_DIA_LABELS[reg.tipo_dia] || reg.tipo_dia,
@@ -652,7 +653,7 @@ export function RelatoriosPonto() {
                     {report.registros.map((reg) => (
                       <TableRow key={reg.id}>
                         <TableCell className="font-medium">
-                          {format(new Date(reg.data + "T00:00:00"), "dd/MM/yyyy (EEE)", { locale: ptBR })}
+                          {format(dataBR(reg.data + "T00:00:00"), "dd/MM/yyyy (EEE)", { locale: ptBR })}
                         </TableCell>
                         <TableCell>
                           <Badge variant={reg.tipo_dia === "falta" ? "destructive" : "secondary"}>

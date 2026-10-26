@@ -7,6 +7,7 @@ import { Star, TrendingUp, TrendingDown, Download, BarChart3 } from "lucide-reac
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from "recharts";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
+import { dataBR } from "@/lib/date";
 
 interface HistoricoAvaliacoesProps {
   employeeId: string;
@@ -61,7 +62,7 @@ export default function HistoricoAvaliacoes({ employeeId }: HistoricoAvaliacoesP
   });
 
   const chartData = avaliacoes?.map((av) => ({
-    periodo: new Date(av.periodo_fim).toLocaleDateString("pt-BR", { month: "short", year: "numeric" }),
+    periodo: dataBR(av.periodo_fim).toLocaleDateString("pt-BR", { month: "short", year: "numeric" }),
     nota: Number(av.nota_final || 0),
   })) || [];
 
@@ -133,7 +134,7 @@ export default function HistoricoAvaliacoes({ employeeId }: HistoricoAvaliacoesP
         }
         
         const tipo = tipoLabels[av.tipo as keyof typeof tipoLabels];
-        const periodo = `${new Date(av.periodo_inicio).toLocaleDateString()} - ${new Date(av.periodo_fim).toLocaleDateString()}`;
+        const periodo = `${dataBR(av.periodo_inicio).toLocaleDateString()} - ${dataBR(av.periodo_fim).toLocaleDateString()}`;
         
         doc.text(`${index + 1}. ${tipo} - ${periodo}`, 25, yPos);
         doc.text(`Nota: ${av.nota_final || "N/A"}`, 25, yPos + 5);
@@ -308,8 +309,8 @@ export default function HistoricoAvaliacoes({ employeeId }: HistoricoAvaliacoesP
                     Avaliação {tipoLabels[avaliacao.tipo as keyof typeof tipoLabels]}
                   </CardTitle>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {new Date(avaliacao.periodo_inicio).toLocaleDateString()} até{" "}
-                    {new Date(avaliacao.periodo_fim).toLocaleDateString()}
+                    {dataBR(avaliacao.periodo_inicio).toLocaleDateString()} até{" "}
+                    {dataBR(avaliacao.periodo_fim).toLocaleDateString()}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">

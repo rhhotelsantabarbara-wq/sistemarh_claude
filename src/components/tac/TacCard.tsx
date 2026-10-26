@@ -8,6 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { FileWarning, Eye, CheckCircle2, AlertTriangle, Calendar } from "lucide-react";
 import { toast } from "sonner";
+import { dataBR } from "@/lib/date";
 
 interface TacCardProps {
   employeeId: string;
@@ -151,7 +152,7 @@ const TacCard = ({ employeeId }: TacCardProps) => {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">
-                  {new Date(tac.data_publicacao).toLocaleDateString("pt-BR")}
+                  {dataBR(tac.data_publicacao).toLocaleDateString("pt-BR")}
                 </span>
                 <Button
                   variant={tac.status === "pendente" ? "default" : "outline"}
@@ -186,7 +187,7 @@ const TacCard = ({ employeeId }: TacCardProps) => {
                 <span>•</span>
                 <div className="flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
-                  Data da ocorrência: {new Date(selectedTac.data_ocorrencia).toLocaleDateString("pt-BR")}
+                  Data da ocorrência: {dataBR(selectedTac.data_ocorrencia).toLocaleDateString("pt-BR")}
                 </div>
               </div>
 
@@ -228,7 +229,7 @@ const TacCard = ({ employeeId }: TacCardProps) => {
             ) : (
               <div className="flex items-center gap-2 text-secondary">
                 <CheckCircle2 className="w-5 h-5" />
-                <span>Ciência confirmada em {new Date(selectedTac.confirmado_em).toLocaleDateString("pt-BR")}</span>
+                <span>Ciência confirmada em {dataBR(selectedTac.confirmado_em).toLocaleDateString("pt-BR")}</span>
               </div>
             )}
           </DialogFooter>

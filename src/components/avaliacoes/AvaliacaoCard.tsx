@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { dataBR } from "@/lib/date";
 
 interface AvaliacaoCardProps {
   avaliacao: any;
@@ -140,7 +141,7 @@ export default function AvaliacaoCard({ avaliacao, onEdit, onDelete, onRefresh }
       doc.setFont(undefined, "normal");
       doc.text(`Tipo: ${tipoLabels[avaliacao.tipo as keyof typeof tipoLabels]}`, 25, yPos);
       yPos += 7;
-      doc.text(`Período: ${new Date(avaliacao.periodo_inicio).toLocaleDateString("pt-BR")} até ${new Date(avaliacao.periodo_fim).toLocaleDateString("pt-BR")}`, 25, yPos);
+      doc.text(`Período: ${dataBR(avaliacao.periodo_inicio).toLocaleDateString("pt-BR")} até ${dataBR(avaliacao.periodo_fim).toLocaleDateString("pt-BR")}`, 25, yPos);
       yPos += 7;
       doc.text(`Status: ${statusLabels[avaliacao.status as keyof typeof statusLabels]}`, 25, yPos);
       yPos += 7;
@@ -258,7 +259,7 @@ export default function AvaliacaoCard({ avaliacao, onEdit, onDelete, onRefresh }
         );
       }
 
-      const fileName = `avaliacao_${avaliacao.employee?.nome_completo?.replace(/\s+/g, "_") || "funcionario"}_${new Date(avaliacao.periodo_fim).toISOString().split("T")[0]}.pdf`;
+      const fileName = `avaliacao_${avaliacao.employee?.nome_completo?.replace(/\s+/g, "_") || "funcionario"}_${dataBR(avaliacao.periodo_fim).toISOString().split("T")[0]}.pdf`;
       doc.save(fileName);
       toast.success("PDF da avaliação gerado com sucesso!");
     } catch (error) {
@@ -347,8 +348,8 @@ export default function AvaliacaoCard({ avaliacao, onEdit, onDelete, onRefresh }
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Período:</span>
               <span className="font-medium">
-                {new Date(avaliacao.periodo_inicio).toLocaleDateString()} até{" "}
-                {new Date(avaliacao.periodo_fim).toLocaleDateString()}
+                {dataBR(avaliacao.periodo_inicio).toLocaleDateString()} até{" "}
+                {dataBR(avaliacao.periodo_fim).toLocaleDateString()}
               </span>
             </div>
 

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { addYears, differenceInDays, format } from "date-fns";
+import { dataBR } from "@/lib/date";
 
 interface EditVacationDialogProps {
   vacation: any;
@@ -46,7 +47,7 @@ const EditVacationDialog = ({
   const handlePeriodoAquisitivoInicioChange = (dateString: string) => {
     setPeriodoAquisitivoInicio(dateString);
     if (dateString) {
-      const startDate = new Date(dateString);
+      const startDate = dataBR(dateString);
       const endDate = addYears(startDate, 1);
       const formattedEndDate = format(endDate, "yyyy-MM-dd");
       setPeriodoAquisitivoFim(formattedEndDate);
@@ -58,8 +59,8 @@ const EditVacationDialog = ({
     const fimDate = fim || periodoGozoFim;
 
     if (inicioDate && fimDate) {
-      const start = new Date(inicioDate);
-      const end = new Date(fimDate);
+      const start = dataBR(inicioDate);
+      const end = dataBR(fimDate);
       const days = differenceInDays(end, start) + 1;
       setDiasCalculados(days > 0 ? days : 0);
     } else {

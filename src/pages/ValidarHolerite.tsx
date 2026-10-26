@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { dataBR } from "@/lib/date";
 
 export default function ValidarHolerite() {
   const { protocolo } = useParams();
@@ -60,7 +61,7 @@ export default function ValidarHolerite() {
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">Data/Hora</dt>
-                  <dd>{new Date(data.data_assinatura).toLocaleString("pt-BR")}</dd>
+                  <dd>{dataBR(data.data_assinatura).toLocaleString("pt-BR")}</dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">Empresa</dt>

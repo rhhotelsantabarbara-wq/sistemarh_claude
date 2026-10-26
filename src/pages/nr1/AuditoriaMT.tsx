@@ -32,6 +32,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
+import { dataBR } from "@/lib/date";
 
 type Empresa = { id: string; nome: string; cnpj?: string | null };
 
@@ -679,7 +680,7 @@ export default function NR1AuditoriaMT() {
               {history.map((h) => (
                 <TableRow key={h.id}>
                   <TableCell>
-                    {new Date(h.created_at).toLocaleString("pt-BR")}
+                    {dataBR(h.created_at).toLocaleString("pt-BR")}
                   </TableCell>
                   <TableCell>
                     {h.periodo_inicio} a {h.periodo_fim}

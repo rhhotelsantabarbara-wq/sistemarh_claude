@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { format, addDays, addWeeks, addMonths, addYears } from "date-fns";
 import { useGoogleCalendar } from "@/hooks/useGoogleCalendar";
 import { Loader2, Repeat } from "lucide-react";
+import { dataBR } from "@/lib/date";
 
 interface Employee {
   id: string;
@@ -150,7 +151,7 @@ const EventoForm = ({ evento, onSaved, onCancel, initialDate }: EventoFormProps)
     } else if (isRecorrente && quantidadeRecorrencias > 1) {
       // Create recurring events
       const eventosParaInserir = [];
-      let currentDate = new Date(baseDate);
+      let currentDate = dataBR(baseDate);
       
       for (let i = 0; i < quantidadeRecorrencias; i++) {
         const dateStr = format(currentDate, "yyyy-MM-dd");
@@ -224,7 +225,7 @@ const EventoForm = ({ evento, onSaved, onCancel, initialDate }: EventoFormProps)
     emp.nome_completo.toLowerCase().includes(searchEmployee.toLowerCase())
   );
 
-  const eventoDataInicio = evento ? new Date(evento.data_inicio) : null;
+  const eventoDataInicio = evento ? dataBR(evento.data_inicio) : null;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -264,7 +265,7 @@ const EventoForm = ({ evento, onSaved, onCancel, initialDate }: EventoFormProps)
             <Input
               name="hora_fim"
               type="time"
-              defaultValue={evento ? format(new Date(evento.data_fim), "HH:mm") : "10:00"}
+              defaultValue={evento ? format(dataBR(evento.data_fim), "HH:mm") : "10:00"}
               required
             />
           </div>

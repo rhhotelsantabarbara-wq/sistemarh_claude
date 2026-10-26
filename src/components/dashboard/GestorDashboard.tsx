@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { parseDateOnly, todayISO, toISODateLocal} from "@/lib/date";
+import { parseDateOnly, todayISO, toISODateLocal, dataBR } from "@/lib/date";
 import { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -233,8 +233,8 @@ const GestorDashboard = ({ user }: GestorDashboardProps) => {
   };
 
   const calculateVacationProgress = (inicio: string, fim: string, diasTotais: number) => {
-    const startDate = new Date(inicio);
-    const endDate = new Date(fim);
+    const startDate = dataBR(inicio);
+    const endDate = dataBR(fim);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -366,8 +366,8 @@ const GestorDashboard = ({ user }: GestorDashboardProps) => {
         const dismissed = employees?.filter(e => e.data_desligamento && e.data_desligamento >= monthStart.split("T")[0] && e.data_desligamento <= monthEnd.split("T")[0]).length || 0;
         const total = employees?.filter(e => {
           const admDate = e.data_admissao ? (parseDateOnly(e.data_admissao) ?? new Date()) : null;
-          const dismDate = e.data_desligamento ? new Date(e.data_desligamento) : null;
-          return admDate && admDate <= new Date(monthEnd) && (!dismDate || dismDate >= new Date(monthStart));
+          const dismDate = e.data_desligamento ? dataBR(e.data_desligamento) : null;
+          return admDate && admDate <= dataBR(monthEnd) && (!dismDate || dismDate >= dataBR(monthStart));
         }).length || 0;
         
         monthsEvolution.push({
@@ -380,12 +380,12 @@ const GestorDashboard = ({ user }: GestorDashboardProps) => {
 
       // Financial metrics
       const currentMonthPayroll = payroll?.filter(p => {
-        const pDate = new Date(p.created_at || "");
+        const pDate = dataBR(p.created_at || "");
         return pDate.getMonth() === now.getMonth() && pDate.getFullYear() === now.getFullYear();
       }).reduce((sum, p) => sum + (p.valor_liquido || 0), 0) || 0;
 
       const previousMonthPayroll = payroll?.filter(p => {
-        const pDate = new Date(p.created_at || "");
+        const pDate = dataBR(p.created_at || "");
         const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         return pDate.getMonth() === prevMonth.getMonth() && pDate.getFullYear() === prevMonth.getFullYear();
       }).reduce((sum, p) => sum + (p.valor_liquido || 0), 0) || 0;
@@ -410,8 +410,8 @@ const GestorDashboard = ({ user }: GestorDashboardProps) => {
         const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).toISOString();
         
         const monthTotal = payroll?.filter(p => {
-          const pDate = new Date(p.created_at || "");
-          return pDate >= new Date(monthStart) && pDate <= new Date(monthEnd);
+          const pDate = dataBR(p.created_at || "");
+          return pDate >= dataBR(monthStart) && pDate <= dataBR(monthEnd);
         }).reduce((sum, p) => sum + (p.valor_liquido || 0), 0) || 0;
         
         payrollEvolution.push({ month: monthName, value: monthTotal });

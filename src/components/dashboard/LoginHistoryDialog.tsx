@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
+import { dataBR } from "@/lib/date";
 
 interface LoginHistoryDialogProps {
   open: boolean;
@@ -107,7 +108,7 @@ const LoginHistoryDialog = ({ open, onOpenChange }: LoginHistoryDialogProps) => 
                     {record.employee_name}
                   </TableCell>
                   <TableCell>
-                    {new Date(record.login_at).toLocaleString("pt-BR", {
+                    {dataBR(record.login_at).toLocaleString("pt-BR", {
                       day: "2-digit",
                       month: "2-digit",
                       year: "numeric",

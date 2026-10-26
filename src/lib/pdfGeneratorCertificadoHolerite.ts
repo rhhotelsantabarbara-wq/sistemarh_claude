@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
+import { dataBR } from "@/lib/date";
 
 export interface CertificadoData {
   protocolo: string;
@@ -37,7 +38,7 @@ function formatCnpj(cnpj: string | null) {
   return `${c.slice(0, 2)}.${c.slice(2, 5)}.${c.slice(5, 8)}/${c.slice(8, 12)}-${c.slice(12)}`;
 }
 function formatDateTime(iso: string) {
-  const d = new Date(iso);
+  const d = dataBR(iso);
   return d.toLocaleString("pt-BR", {
     day: "2-digit",
     month: "2-digit",

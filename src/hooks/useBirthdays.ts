@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { parseDateOnly } from "@/lib/date";
+import { parseDateOnly, dataBR } from "@/lib/date";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Employee {
@@ -56,7 +56,7 @@ export const useBirthdays = (empresaId?: string, setorId?: string) => {
   };
 
   const calculateAge = (birthDate: string): number => {
-    const birth = new Date(birthDate);
+    const birth = dataBR(birthDate);
     const today = new Date();
     let age = today.getFullYear() - birth.getFullYear();
     const monthDiff = today.getMonth() - birth.getMonth();
@@ -109,7 +109,7 @@ export const useBirthdays = (empresaId?: string, setorId?: string) => {
 
   const birthdaysNext7Days = useMemo(() => {
     const today = new Date();
-    const next7Days = new Date(today);
+    const next7Days = dataBR(today);
     next7Days.setDate(today.getDate() + 7);
 
     return employees

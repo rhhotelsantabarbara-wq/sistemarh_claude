@@ -11,6 +11,7 @@ import { NovaDenunciaForm } from "@/components/nr1/denuncias/NovaDenunciaForm";
 import { DenunciaDetailsDialog } from "@/components/nr1/denuncias/DenunciaDetailsDialog";
 import { CATEGORIAS_DENUNCIA, STATUS_DENUNCIA } from "@/lib/nr1/perguntasPadrao";
 import { Megaphone } from "lucide-react";
+import { dataBR } from "@/lib/date";
 
 export default function NR1Denuncias() {
   const [denuncias, setDenuncias] = useState<any[]>([]);
@@ -92,7 +93,7 @@ export default function NR1Denuncias() {
                       <TableCell>{labelCat(d.categoria)}</TableCell>
                       <TableCell>{d.setor || "—"}</TableCell>
                       <TableCell><Badge variant="outline" className={si?.color}>{si?.label}</Badge></TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{new Date(d.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{dataBR(d.created_at).toLocaleDateString("pt-BR")}</TableCell>
                       <TableCell><Button size="sm" variant="outline" onClick={() => setSelecionada(d)}>Detalhes</Button></TableCell>
                     </TableRow>
                   );

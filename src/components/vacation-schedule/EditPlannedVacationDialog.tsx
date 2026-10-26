@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { differenceInDays, format, addDays } from "date-fns";
+import { dataBR } from "@/lib/date";
 
 interface EditPlannedVacationDialogProps {
   vacation: any;
@@ -45,8 +46,8 @@ const EditPlannedVacationDialog = ({
   // Calcular dias totais
   const diasCalculados = useMemo(() => {
     if (periodoInicio && periodoFim) {
-      const start = new Date(periodoInicio);
-      const end = new Date(periodoFim);
+      const start = dataBR(periodoInicio);
+      const end = dataBR(periodoFim);
       const days = differenceInDays(end, start) + 1;
       return days > 0 ? days : 0;
     }
@@ -56,7 +57,7 @@ const EditPlannedVacationDialog = ({
   const handleStartDateChange = (newStartDate: string) => {
     setPeriodoInicio(newStartDate);
     if (newStartDate) {
-      const start = new Date(newStartDate);
+      const start = dataBR(newStartDate);
       const end = addDays(start, 29); // 30 dias incluindo o primeiro
       setPeriodoFim(format(end, "yyyy-MM-dd"));
     }

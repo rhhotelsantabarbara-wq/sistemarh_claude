@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import { saveAndBackup } from "./pdfBackupHelper";
+import { dataBR } from "@/lib/date";
 
 const tipoLabels: Record<string, string> = {
   advertencia_verbal: "Advertência Verbal",
@@ -66,9 +67,9 @@ export const generateTacPDF = async (tac: any) => {
   y += 6;
   doc.text(`Tipo: ${tipoLabels[tac.tipo] || tac.tipo}`, margin, y);
   y += 6;
-  doc.text(`Data da Ocorrência: ${new Date(tac.data_ocorrencia).toLocaleDateString("pt-BR")}`, margin, y);
+  doc.text(`Data da Ocorrência: ${dataBR(tac.data_ocorrencia).toLocaleDateString("pt-BR")}`, margin, y);
   y += 6;
-  doc.text(`Data de Publicação: ${new Date(tac.data_publicacao).toLocaleDateString("pt-BR")}`, margin, y);
+  doc.text(`Data de Publicação: ${dataBR(tac.data_publicacao).toLocaleDateString("pt-BR")}`, margin, y);
   y += 10;
 
   // Description
@@ -158,6 +159,6 @@ export const generateTacPDF = async (tac: any) => {
   doc.text("Testemunha 2", margin + sigWidth + 20, y);
 
   // Save
-  const fileName = `TAC_${employeeName.replace(/\s+/g, "_")}_${new Date(tac.data_ocorrencia).toLocaleDateString("pt-BR").replace(/\//g, "-")}.pdf`;
+  const fileName = `TAC_${employeeName.replace(/\s+/g, "_")}_${dataBR(tac.data_ocorrencia).toLocaleDateString("pt-BR").replace(/\//g, "-")}.pdf`;
   saveAndBackup(doc, fileName, "TACs", { employee_id: tac.employee_id });
 };

@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { dataBR } from "@/lib/date";
 
 interface Pagamento {
   id: string;
@@ -80,7 +81,7 @@ const RelatorioDetalhadoDialog = ({
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("pt-BR");
+    return dataBR(dateString).toLocaleDateString("pt-BR");
   };
 
   const getTipoContratoLabel = (tipo: string) => {

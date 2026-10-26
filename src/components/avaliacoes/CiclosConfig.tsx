@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { parseDateOnly } from "@/lib/date";
+import { parseDateOnly, dataBR } from "@/lib/date";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -305,7 +305,7 @@ export const CiclosConfig = () => {
                   </CardTitle>
                   <CardDescription>
                     {ciclo.tipo.charAt(0).toUpperCase() + ciclo.tipo.slice(1)} •{" "}
-                    Próxima execução: {format(new Date(ciclo.data_proxima_execucao), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                    Próxima execução: {format(dataBR(ciclo.data_proxima_execucao), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">
@@ -361,7 +361,7 @@ export const CiclosConfig = () => {
                   <div className="flex justify-between items-start">
                     <div>
                       <p className="font-medium">
-                        {format(new Date(exec.data_execucao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                        {format(dataBR(exec.data_execucao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {exec.avaliacoes_criadas} avaliações criadas

@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { STATUS_DENUNCIA } from "@/lib/nr1/perguntasPadrao";
 import { toast } from "sonner";
 import { Paperclip, Loader2 } from "lucide-react";
+import { dataBR } from "@/lib/date";
 
 interface Props {
   denuncia: any;
@@ -88,7 +89,7 @@ export function DenunciaDetailsDialog({ denuncia, open, onOpenChange, onUpdated 
             </div>
             <div>
               <Label className="text-xs text-muted-foreground">Recebida em</Label>
-              <p className="font-medium">{new Date(denuncia.created_at).toLocaleString("pt-BR")}</p>
+              <p className="font-medium">{dataBR(denuncia.created_at).toLocaleString("pt-BR")}</p>
             </div>
             <div>
               <Label className="text-xs text-muted-foreground">Status</Label>
@@ -136,7 +137,7 @@ export function DenunciaDetailsDialog({ denuncia, open, onOpenChange, onUpdated 
                 {apuracoes.map((ap) => (
                   <Card key={ap.id} className="p-3 text-sm">
                     <p className="whitespace-pre-wrap">{ap.nota}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{new Date(ap.created_at).toLocaleString("pt-BR")}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{dataBR(ap.created_at).toLocaleString("pt-BR")}</p>
                   </Card>
                 ))}
               </div>

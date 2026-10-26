@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { parseDateOnly } from "@/lib/date";
+import { parseDateOnly, dataBR } from "@/lib/date";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -291,7 +291,7 @@ export function ChecklistExecucao({ checklistId, onUpdate }: ChecklistExecucaoPr
                   {item.concluido && item.data_conclusao && (
                     <p className="text-xs text-muted-foreground">
                       Concluído em:{" "}
-                      {format(new Date(item.data_conclusao), "dd/MM/yyyy 'às' HH:mm", {
+                      {format(dataBR(item.data_conclusao), "dd/MM/yyyy 'às' HH:mm", {
                         locale: ptBR,
                       })}
                     </p>

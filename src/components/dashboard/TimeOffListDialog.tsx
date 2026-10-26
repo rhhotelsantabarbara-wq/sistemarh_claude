@@ -8,6 +8,7 @@ import { Loader2, Download, FileText } from "lucide-react";
 import { toast } from "sonner";
 import EditTimeOffDialog from "./EditTimeOffDialog";
 import jsPDF from "jspdf";
+import { dataBR } from "@/lib/date";
 
 interface TimeOffListDialogProps {
   open: boolean;
@@ -243,7 +244,7 @@ const TimeOffListDialog = ({ open, onOpenChange }: TimeOffListDialogProps) => {
                             </p>
                             {employee.ultima_alteracao_folgas && (
                               <p className="text-xs text-muted-foreground mt-1">
-                                Alterado em: {new Date(employee.ultima_alteracao_folgas).toLocaleString("pt-BR", {
+                                Alterado em: {dataBR(employee.ultima_alteracao_folgas).toLocaleString("pt-BR", {
                                   day: "2-digit",
                                   month: "2-digit",
                                   year: "numeric",

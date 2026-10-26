@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageCropper } from "./ImageCropper";
+import { dataBR } from "@/lib/date";
 interface FilesTabProps {
   employeeId: string;
 }
@@ -364,7 +365,7 @@ const FilesTab = ({ employeeId }: FilesTabProps) => {
                         </p>
                       )}
                       <p className="text-xs text-muted-foreground">
-                        {format(new Date(file.created_at), "dd/MM/yyyy HH:mm")} •{" "}
+                        {format(dataBR(file.created_at), "dd/MM/yyyy HH:mm")} •{" "}
                         {formatFileSize(file.file_size)}
                       </p>
                     </div>

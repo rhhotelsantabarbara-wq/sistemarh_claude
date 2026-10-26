@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { parseDateOnly } from "@/lib/date";
+import { parseDateOnly, dataBR } from "@/lib/date";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,7 +41,7 @@ export function PendingChecklistsAlert() {
         checklist.itens?.forEach((item: any) => {
           if (!item.concluido && item.prazo_dias) {
             const dataInicio = (parseDateOnly(checklist.data_inicio) ?? new Date());
-            const prazoData = new Date(dataInicio);
+            const prazoData = dataBR(dataInicio);
             prazoData.setDate(prazoData.getDate() + item.prazo_dias);
             if (new Date() > prazoData) atrasadosCount++;
           }

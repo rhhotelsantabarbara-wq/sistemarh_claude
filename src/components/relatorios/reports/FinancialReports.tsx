@@ -10,6 +10,7 @@ import ExportButtons from "../ExportButtons";
 import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { dataBR } from "@/lib/date";
 
 const FinancialReports = () => {
   const [reportType, setReportType] = useState("payroll");
@@ -114,7 +115,7 @@ const FinancialReports = () => {
           "Salário Novo": Number(item.salario_novo),
           "Percentual Reajuste": item.percentual_reajuste,
           Justificativa: item.justificativa,
-          Data: new Date(item.aplicado_em).toLocaleDateString(),
+          Data: dataBR(item.aplicado_em).toLocaleDateString(),
         })) || [];
     }
 

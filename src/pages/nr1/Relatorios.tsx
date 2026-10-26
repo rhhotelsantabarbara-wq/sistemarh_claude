@@ -8,6 +8,7 @@ import { FileBarChart, Download } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import { dataBR } from "@/lib/date";
 
 type Section = { titulo: string; rows: any[]; head: string[]; mapRow: (r: any) => any[] };
 
@@ -35,7 +36,7 @@ export default function NR1Relatorios() {
   }, []);
 
   const sections: Section[] = [
-    { titulo: "Denúncias", rows: data.denuncias || [], head: ["Protocolo", "Categoria", "Status", "Data"], mapRow: (r) => [r.protocolo, r.categoria, r.status, new Date(r.created_at).toLocaleDateString("pt-BR")] },
+    { titulo: "Denúncias", rows: data.denuncias || [], head: ["Protocolo", "Categoria", "Status", "Data"], mapRow: (r) => [r.protocolo, r.categoria, r.status, dataBR(r.created_at).toLocaleDateString("pt-BR")] },
     { titulo: "Riscos Psicossociais", rows: data.riscos || [], head: ["Categoria", "Prob.", "Sev.", "Status"], mapRow: (r) => [r.categoria, r.probabilidade, r.severidade, r.status] },
     { titulo: "Treinamentos", rows: data.treinamentos || [], head: ["Título", "Categoria", "Carga", "Obrigatório"], mapRow: (r) => [r.titulo, r.categoria, r.carga_horaria + "h", r.obrigatorio ? "Sim" : "Não"] },
     { titulo: "Ações Preventivas", rows: data.acoes || [], head: ["Título", "Prioridade", "Status", "Prazo"], mapRow: (r) => [r.titulo, r.prioridade, r.status, r.prazo || "—"] },

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { todayISO } from "@/lib/date";
+import { todayISO, dataBR } from "@/lib/date";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -65,7 +65,7 @@ const EmployeeInfo = ({ employee }: EmployeeInfoProps) => {
 
   const formatDate = (date: string | null) => {
     if (!date) return "—";
-    return new Date(date).toLocaleDateString("pt-BR");
+    return dataBR(date).toLocaleDateString("pt-BR");
   };
 
   const formatCurrency = (value: number | null) => {
