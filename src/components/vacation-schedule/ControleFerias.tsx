@@ -58,6 +58,16 @@ const fmtCurto = (d?: Date | null) => (d ? format(d, "dd/MM/yy", { locale: ptBR 
 
 const SEM_FERIAS = ["intermitente", "prestador_servico"];
 
+// Uma pessoa pode estar em mais de uma situação (ex.: vencida e com férias programadas)
+function etiquetas(r: ResumoFerias): SituacaoFerias[] {
+  const t = new Set<SituacaoFerias>([r.situacao]);
+  if (r.periodosVencidos > 0) t.add("vencida");
+  if (r.programada) t.add("programada");
+  if (r.proximaAprovada) t.add("aprovada");
+  if (r.emCurso) t.add("de_ferias");
+  return Array.from(t);
+}
+
 const ORDEM_CHIPS: SituacaoFerias[] = ["vencida", "vence_breve", "programada", "pode_tirar", "aprovada", "de_ferias", "em_dia", "em_aquisicao", "sem_admissao"];
 
 export function ControleFerias({ filters, onFiltersChange, onProgramar, onAprovar }: ControleFeriasProps) {
@@ -144,12 +154,12 @@ export function ControleFerias({ filters, onFiltersChange, onProgramar, onAprova
 
   const contagem = useMemo(() => {
     const c: Partial<Record<SituacaoFerias, number>> = {};
-    for (const l of filtradas) c[l.resumo.situacao] = (c[l.resumo.situacao] || 0) + 1;
+    for (const l of filtradas) for (const t of etiquetas(l.resumo)) c[t] = (c[t] || 0) + 1;
     return c;
   }, [filtradas]);
 
   const visiveis = useMemo(() => {
-    const lista = situacao === "todas" ? filtradas : filtradas.filter((l) => l.resumo.situacao === situacao);
+    const lista = situacao === "todas" ? filtradas : filtradas.filter((l) => etiquetas(l.resumo).includes(situacao));
     return [...lista].sort((a, b) => {
       const oa = SITUACOES[a.resumo.situacao].ordem;
       const ob = SITUACOES[b.resumo.situacao].ordem;
@@ -253,6 +263,11 @@ export function ControleFerias({ filters, onFiltersChange, onProgramar, onAprova
                           <span title={SITUACOES[r.situacao].descricao} className={`inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${SITUACOES[r.situacao].classe}`}>
                             {SITUACOES[r.situacao].rotulo}
                           </span>
+                          {etiquetas(r).filter((t) => t !== r.situacao).map((t) => (
+                            <span key={t} className={`ml-1 mt-1 inline-flex whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-semibold ${SITUACOES[t].classe}`}>
+                              {SITUACOES[t].rotulo}
+                            </span>
+                          ))}
                           {r.periodosVencidos > 1 && (
                             <div className="mt-1 text-xs text-red-700 dark:text-red-300">{r.periodosVencidos} períodos vencidos</div>
                           )}
