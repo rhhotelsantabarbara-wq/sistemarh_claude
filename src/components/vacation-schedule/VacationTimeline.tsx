@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { addDays, differenceInCalendarDays, format, startOfWeek } from "date-fns";
+import { addDays, differenceInCalendarDays, endOfMonth, format, startOfMonth, startOfWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { AlertCircle, Check, ChevronLeft, ChevronRight, Clock, Search, Sun } from "lucide-react";
+import { AlertCircle, Check, ChevronLeft, ChevronRight, Clock, Search, Sun, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import {
   type RegistroFerias,
 } from "@/lib/feriasCalculo";
 import type { VacationFiltersType } from "./types";
+import { SeletorMes } from "./SeletorMes";
 
 interface VacationTimelineProps {
   filters: VacationFiltersType;
@@ -79,6 +80,14 @@ function IconeBarra({ tipo }: { tipo: TipoBarra }) {
 export function VacationTimeline({ filters }: VacationTimelineProps) {
   const hoje = hojeLocal();
   const [inicioJanela, setInicioJanela] = useState(() => addDays(startOfWeek(hoje, { weekStartsOn: 1 }), -7));
+  const [mesFiltro, setMesFiltro] = useState<Date | null>(null); // mostra só quem tem algo neste mês
+
+  const escolherMes = (m: Date) => {
+    setMesFiltro(m);
+    setInicioJanela(startOfWeek(startOfMonth(m), { weekStartsOn: 1 }));
+    requestAnimationFrame(() => { if (rolagem.current) rolagem.current.scrollLeft = 0; });
+  };
+  const andar = (dias: number) => { setMesFiltro(null); setInicioJanela(addDays(inicioJanela, dias)); };
   const [linhas, setLinhas] = useState<Linha[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [filtro, setFiltro] = useState<"todos" | TipoBarra>("todos");
@@ -165,7 +174,9 @@ export function VacationTimeline({ filters }: VacationTimelineProps) {
     const visiveis: (Linha & { barrasJanela: Barra[] })[] = [];
     for (const l of linhas) {
       if (termo && !l.nome.toLowerCase().includes(termo) && !l.setor.toLowerCase().includes(termo)) continue;
-      const naJanela = l.barras.filter((b) => b.inicio <= fimJanela && b.fim >= inicioJanela);
+      const ini = mesFiltro ? startOfMonth(mesFiltro) : inicioJanela;
+      const fim = mesFiltro ? endOfMonth(mesFiltro) : fimJanela;
+      const naJanela = l.barras.filter((b) => b.inicio <= fim && b.fim >= ini);
       if (!naJanela.length) continue;
       contagem.todos++;
       new Set(naJanela.map((b) => b.tipo)).forEach((t) => { contagem[t] = (contagem[t] || 0) + 1; });
@@ -174,7 +185,7 @@ export function VacationTimeline({ filters }: VacationTimelineProps) {
     }
     visiveis.sort((a, b) => Math.min(...a.barrasJanela.map((x) => x.inicio.getTime())) - Math.min(...b.barrasJanela.map((x) => x.inicio.getTime())));
     return { visiveis, contagem };
-  }, [linhas, busca, filtro, inicioJanela, fimJanela]);
+  }, [linhas, busca, filtro, inicioJanela, fimJanela, mesFiltro]);
 
   // Rola até hoje ao abrir
   useEffect(() => {
@@ -185,6 +196,7 @@ export function VacationTimeline({ filters }: VacationTimelineProps) {
   }, [carregando]);
 
   const irParaHoje = () => {
+    setMesFiltro(null);
     setInicioJanela(addDays(startOfWeek(hoje, { weekStartsOn: 1 }), -7));
     requestAnimationFrame(() => { if (rolagem.current) rolagem.current.scrollLeft = 0; });
   };
@@ -232,14 +244,21 @@ export function VacationTimeline({ filters }: VacationTimelineProps) {
 
       {/* Navegação */}
       <div className="flex flex-wrap items-center gap-2 px-4 py-3">
-        <Button variant="outline" size="icon" className="h-10 w-10 rounded-full" onClick={() => setInicioJanela(addDays(inicioJanela, -28))} aria-label="Semanas anteriores">
+        <Button variant="outline" size="icon" className="h-10 w-10 rounded-full" onClick={() => andar(-28)} aria-label="Semanas anteriores">
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <Button variant="outline" className="h-10 rounded-full px-6" onClick={irParaHoje}>Hoje</Button>
-        <Button variant="outline" size="icon" className="h-10 w-10 rounded-full" onClick={() => setInicioJanela(addDays(inicioJanela, 28))} aria-label="Próximas semanas">
+        <Button variant="outline" size="icon" className="h-10 w-10 rounded-full" onClick={() => andar(28)} aria-label="Próximas semanas">
           <ChevronRight className="h-4 w-4" />
         </Button>
-        <span className="ml-2 text-sm text-muted-foreground">{dmy(inicioJanela)} a {dmy(fimJanela)}</span>
+        <SeletorMes id="mes-linha" valor={mesFiltro} onChange={escolherMes} placeholder="Filtrar mês" />
+        {mesFiltro ? (
+          <button type="button" onClick={() => setMesFiltro(null)} className="flex min-h-10 items-center gap-1.5 rounded-full bg-primary/10 px-3 text-sm font-medium text-primary hover:bg-primary/15">
+            Só {format(mesFiltro, "MMMM", { locale: ptBR })} <X className="h-3.5 w-3.5" aria-hidden="true" /><span className="sr-only">Limpar filtro de mês</span>
+          </button>
+        ) : (
+          <span className="ml-1 text-sm text-muted-foreground">{dmy(inicioJanela)} a {dmy(fimJanela)}</span>
+        )}
         <div className="ml-auto flex flex-wrap gap-3 text-xs text-muted-foreground">
           {(["em_ferias", "aprovada", "aguardando", "prazo"] as TipoBarra[]).map((t) => (
             <span key={t} className="flex items-center gap-1.5">

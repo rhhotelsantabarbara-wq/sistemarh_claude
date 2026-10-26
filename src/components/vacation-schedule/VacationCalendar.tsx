@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { dataLocal, diasEntre, hojeLocal } from "@/lib/feriasCalculo";
 import { AddVacationDialog } from "./AddVacationDialog";
+import { SeletorMes } from "./SeletorMes";
 import type { VacationFiltersType } from "./types";
 
 interface VacationCalendarProps {
@@ -133,7 +134,8 @@ export function VacationCalendar({ filters, onRefresh }: VacationCalendarProps) 
           <Button variant="outline" size="icon" className="h-10 w-10 rounded-full" onClick={() => setMes(addMonths(mes, -1))} aria-label="Mês anterior">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <h3 className="min-w-[170px] text-center text-lg font-semibold">{tituloMes.charAt(0).toUpperCase() + tituloMes.slice(1)}</h3>
+          <h3 className="sr-only">{tituloMes}</h3>
+          <SeletorMes id="mes-calendario" valor={mes} onChange={(m) => { setMes(m); setSelecionado(m); }} />
           <Button variant="outline" size="icon" className="h-10 w-10 rounded-full" onClick={() => setMes(addMonths(mes, 1))} aria-label="Próximo mês">
             <ChevronRight className="h-4 w-4" />
           </Button>
