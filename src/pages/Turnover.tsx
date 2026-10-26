@@ -106,7 +106,7 @@ export default function Turnover() {
   }).filter(s => s.averageEmployees && s.averageEmployees > 0);
 
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
+    <div className="container mx-auto p-0 sm:p-2 lg:p-4 max-w-6xl">
       <Button
         variant="ghost"
         onClick={() => navigate("/dashboard")}

@@ -525,7 +525,7 @@ export default function NR1AuditoriaMT() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-0 sm:p-2 lg:p-4 space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">

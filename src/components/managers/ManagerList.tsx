@@ -107,12 +107,12 @@ export default function ManagerList() {
         {managers?.map((manager) => (
           <Card key={manager.user_id}>
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="min-w-0">
                   <h3 className="font-semibold">
                     {manager.profiles?.nome_completo}
                   </h3>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground break-all">
                     {manager.profiles?.email}
                   </p>
                 </div>
@@ -122,6 +122,7 @@ export default function ManagerList() {
                     variant="outline"
                     size="sm"
                     onClick={() => setEditingManager(manager)}
+                    aria-label="Editar gestor"
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
@@ -129,6 +130,7 @@ export default function ManagerList() {
                     variant="outline"
                     size="sm"
                     onClick={() => setDeletingManager(manager)}
+                    aria-label="Excluir gestor"
                   >
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>

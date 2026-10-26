@@ -7,7 +7,7 @@ import { Star, TrendingUp, TrendingDown, Download, BarChart3 } from "lucide-reac
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from "recharts";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
-import { dataBR } from "@/lib/date";
+import { dataBR, todayISO } from "@/lib/date";
 
 interface HistoricoAvaliacoesProps {
   employeeId: string;
@@ -147,7 +147,7 @@ export default function HistoricoAvaliacoes({ employeeId }: HistoricoAvaliacoesP
         }
       });
       
-      doc.save(`avaliacao-${employee?.nome_completo || "funcionario"}-${new Date().toISOString().split("T")[0]}.pdf`);
+      doc.save(`avaliacao-${employee?.nome_completo || "funcionario"}-${todayISO()}.pdf`);
       toast.success("PDF gerado com sucesso!");
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
@@ -235,7 +235,7 @@ export default function HistoricoAvaliacoes({ employeeId }: HistoricoAvaliacoesP
                 <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="periodo" />
-                  <YAxis domain={[0, 5]} />
+                  <YAxis domain={[0, 10]} />
                   <Tooltip />
                   <Legend />
                   <Line
@@ -266,7 +266,7 @@ export default function HistoricoAvaliacoes({ employeeId }: HistoricoAvaliacoesP
                 <BarChart data={criteriosData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="criterio" />
-                  <YAxis domain={[0, 5]} />
+                  <YAxis domain={[0, 10]} />
                   <Tooltip />
                   <Legend />
                   <Bar dataKey="media" fill="hsl(var(--primary))" name="Média" />
@@ -288,7 +288,7 @@ export default function HistoricoAvaliacoes({ employeeId }: HistoricoAvaliacoesP
               <RadarChart data={criteriosData}>
                 <PolarGrid />
                 <PolarAngleAxis dataKey="criterio" />
-                <PolarRadiusAxis domain={[0, 5]} />
+                <PolarRadiusAxis domain={[0, 10]} />
                 <Radar name="Média" dataKey="media" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.6} />
                 <Legend />
               </RadarChart>

@@ -122,12 +122,12 @@ const EmployeeDetails = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <Button variant="ghost" onClick={() => navigate("/dashboard")}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Voltar
           </Button>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {employee.status === "demitido" && (
               <Button variant="outline" onClick={() => setShowReadmitDialog(true)}>
                 <RotateCcw className="w-4 h-4 mr-2" />

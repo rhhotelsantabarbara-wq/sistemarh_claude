@@ -538,7 +538,7 @@ const CrachaEmployeeList = () => {
               <Users className="h-5 w-5" />
               Funcionários ({filteredEmployees.length})
             </CardTitle>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4">
               <Badge variant="secondary">{selectedEmployees.size} selecionado(s)</Badge>
               <Button variant="outline" size="sm" onClick={handleSelectAll}>
                 {allSelected ? "Desmarcar Todos" : "Selecionar Todos"}

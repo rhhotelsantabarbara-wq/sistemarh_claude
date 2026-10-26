@@ -75,7 +75,7 @@ export function PendingChecklistsAlert() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           {admissoes > 0 && (
             <div className="flex items-center gap-2 text-sm">
               <UserPlus className="h-4 w-4 text-green-600" />

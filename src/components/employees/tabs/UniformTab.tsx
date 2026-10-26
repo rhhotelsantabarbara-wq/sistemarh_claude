@@ -123,7 +123,7 @@ const UniformTab = ({ employeeId }: UniformTabProps) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap justify-between items-center gap-2">
         <h3 className="text-lg font-semibold">Uniformes Entregues</h3>
         <Button onClick={() => setShowForm(!showForm)}>
           <Plus className="w-4 h-4 mr-2" />
@@ -152,12 +152,12 @@ const UniformTab = ({ employeeId }: UniformTabProps) => {
             return (
               <Card key={uniforme.id}>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <CardTitle className="text-base flex items-center gap-2">
                       <Shirt className="w-4 h-4" />
                       {uniforme.tipo_uniforme}
                     </CardTitle>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       {!signatureStatus.signed && (
                         <Button
                           variant="outline"

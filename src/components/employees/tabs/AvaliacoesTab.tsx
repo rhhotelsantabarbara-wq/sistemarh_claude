@@ -234,7 +234,7 @@ export default function AvaliacoesTab({ employeeId }: AvaliacoesTabProps) {
                   <div className="w-full bg-secondary rounded-full h-2">
                     <div
                       className="bg-primary h-2 rounded-full transition-all"
-                      style={{ width: `${meta.percentual_conclusao}%` }}
+                      style={{ width: `${Math.min(100, Number(meta.percentual_conclusao) || 0)}%` }}
                     />
                   </div>
                 </div>

@@ -140,7 +140,7 @@ const EventoNotifications = () => {
   return (
     <Card className="border-primary/20 bg-primary/5">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-base flex items-center gap-2">
             <Bell className="w-4 h-4 text-primary animate-pulse" />
             Eventos Próximos

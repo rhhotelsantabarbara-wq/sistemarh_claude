@@ -70,8 +70,8 @@ export default function NR1Treinamentos() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto p-0 sm:p-2 lg:p-4 space-y-6">
+      <div className="flex-wrap gap-3 flex items-center justify-between">
         <div className="flex items-center gap-3"><BookOpenCheck className="h-7 w-7 text-primary" /><h1 className="text-3xl font-bold">Treinamentos NR-1</h1></div>
         <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" />Novo Treinamento</Button>
       </div>

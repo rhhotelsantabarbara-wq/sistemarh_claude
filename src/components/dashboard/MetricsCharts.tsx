@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { parseDateOnly, dataBR } from "@/lib/date";
+import { parseDateOnly, dataBR, toISODateLocal } from "@/lib/date";
 import { supabase } from "@/integrations/supabase/client";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -66,10 +66,10 @@ const MetricsCharts = ({ selectedEmpresa, setSelectedEmpresa, empresas, period, 
       const { data: episHistory } = await supabase.from("historico_estoque_epis").select("*").gte("created_at", startDate.toISOString());
       const { data: uniformsHistory } = await supabase.from("historico_estoque_uniformes").select("*").gte("created_at", startDate.toISOString());
 
-      let absencesQuery = supabase.from("faltas").select("*, employees(nome_completo, setor)").gte("data", startDate.toISOString().split("T")[0]);
+      let absencesQuery = supabase.from("faltas").select("*, employees(nome_completo, setor)").gte("data", toISODateLocal(startDate));
       const { data: absences } = await absencesQuery;
 
-      const todayStr = now.toISOString().split("T")[0];
+      const todayStr = toISODateLocal(now);
       const { data: vacations } = await supabase.from("ferias").select("*, employees(nome_completo)")
         .gte("periodo_gozo_inicio", todayStr)
         .lte("periodo_gozo_inicio", dataBR(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]);

@@ -235,10 +235,10 @@ function VagaCard({ vaga, onEdit, onStatusChange, onViewCandidaturas }: VagaCard
   const candidaturasCount = vaga.candidaturas?.[0]?.count || 0;
 
   return (
-    <Card>
+    <Card className="min-w-0">
       <CardHeader>
-        <div className="flex justify-between items-start">
-          <div>
+        <div className="flex justify-between items-start gap-3">
+          <div className="min-w-0">
             <CardTitle>{vaga.titulo}</CardTitle>
             <CardDescription className="mt-2">
               {vaga.empresas?.nome} • {vaga.quantidade_vagas} vaga(s)
@@ -250,12 +250,12 @@ function VagaCard({ vaga, onEdit, onStatusChange, onViewCandidaturas }: VagaCard
         </div>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Users className="h-4 w-4" />
             <span>{candidaturasCount} candidatura(s)</span>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={onViewCandidaturas}>
               Ver Candidaturas
             </Button>

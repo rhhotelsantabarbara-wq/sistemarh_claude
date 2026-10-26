@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import { saveAndBackup } from "./pdfBackupHelper";
+import { todayISO } from "@/lib/date";
 
 interface EmployeeForBadge {
   id: string;
@@ -1103,6 +1104,6 @@ export async function generateBadgesPDF(employees: EmployeeForBadge[], options: 
     }
   }
 
-  const fileName = `crachas_${options.orientation}_${new Date().toISOString().split("T")[0]}.pdf`;
+  const fileName = `crachas_${options.orientation}_${todayISO()}.pdf`;
   saveAndBackup(doc, fileName, "Crachas");
 }

@@ -13,6 +13,7 @@ import { HistoricoMensal } from "@/components/financeiro/HistoricoMensal";
 import { AnaliseVariacoes } from "@/components/financeiro/AnaliseVariacoes";
 import { AnaliseTendencias } from "@/components/financeiro/AnaliseTendencias";
 import { useFinanceiroData, type FinanceiroFilters as FilterType } from "@/components/financeiro/hooks/useFinanceiroData";
+import { todayISO } from "@/lib/date";
 
 const Financeiro = () => {
   const [filters, setFilters] = useState<FilterType>({
@@ -70,7 +71,7 @@ const Financeiro = () => {
       y += 6;
     });
 
-    doc.save(`relatorio-financeiro-${new Date().toISOString().split("T")[0]}.pdf`);
+    doc.save(`relatorio-financeiro-${todayISO()}.pdf`);
     toast.success("PDF exportado com sucesso!");
   };
 
@@ -120,7 +121,7 @@ const Financeiro = () => {
     }));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(historicoData), "Histórico");
 
-    XLSX.writeFile(wb, `relatorio-financeiro-${new Date().toISOString().split("T")[0]}.xlsx`);
+    XLSX.writeFile(wb, `relatorio-financeiro-${todayISO()}.xlsx`);
     toast.success("Excel exportado com sucesso!");
   };
 

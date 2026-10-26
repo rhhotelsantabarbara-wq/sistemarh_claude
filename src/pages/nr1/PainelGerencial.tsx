@@ -276,7 +276,7 @@ export default function NR1PainelGerencial() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-0 sm:p-2 lg:p-4 space-y-6">
       {/* Header + filtros */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>

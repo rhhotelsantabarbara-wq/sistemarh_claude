@@ -57,7 +57,7 @@ const Eventos = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="flex-wrap gap-3 mb-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="ghost" onClick={() => navigate("/dashboard")}>
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -65,7 +65,7 @@ const Eventos = () => {
             </Button>
             <h1 className="text-3xl font-bold">Calendário de Eventos</h1>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={handleExportAll} disabled={exporting}>
               {exporting ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />

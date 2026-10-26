@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { parseDateOnly, dataBR } from "@/lib/date";
+import { parseDateOnly, dataBR, todayISO } from "@/lib/date";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -127,7 +127,7 @@ export function ChecklistExecucao({ checklistId, onUpdate }: ChecklistExecucaoPr
         .from("plano_checklist_funcionario")
         .update({
           status: "concluido",
-          data_conclusao: new Date().toISOString().split("T")[0],
+          data_conclusao: todayISO(),
         })
         .eq("id", checklistId);
 
@@ -141,7 +141,7 @@ export function ChecklistExecucao({ checklistId, onUpdate }: ChecklistExecucaoPr
             .from("employees")
             .update({
               status: "demitido",
-              data_desligamento: new Date().toISOString().split("T")[0],
+              data_desligamento: todayISO(),
             })
             .eq("id", checklist.employee_id);
 

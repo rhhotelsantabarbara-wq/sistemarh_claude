@@ -133,7 +133,7 @@ const EpiTab = ({ employeeId }: EpiTabProps) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap justify-between items-center gap-2">
         <h3 className="text-lg font-semibold">EPIs Entregues</h3>
         <Button onClick={() => setShowForm(!showForm)}>
           <Plus className="w-4 h-4 mr-2" />
@@ -158,12 +158,12 @@ const EpiTab = ({ employeeId }: EpiTabProps) => {
             return (
               <Card key={epi.id}>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <CardTitle className="text-base flex items-center gap-2">
                       <Shield className="w-4 h-4" />
                       {epi.tipo_epi}
                     </CardTitle>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       {!signatureStatus.signed && (
                         <Button
                           variant="outline"

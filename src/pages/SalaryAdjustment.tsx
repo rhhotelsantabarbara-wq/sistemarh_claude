@@ -175,7 +175,7 @@ export default function SalaryAdjustment() {
   };
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto p-0 sm:p-2 lg:p-4">
       <Button
         variant="ghost"
         onClick={() => navigate("/dashboard")}
@@ -184,7 +184,7 @@ export default function SalaryAdjustment() {
         <ArrowLeft className="w-4 h-4 mr-2" />
         Voltar
       </Button>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
         <h1 className="text-3xl font-bold">Reajuste Salarial</h1>
         <Button onClick={() => setShowHistory(true)}>Ver Histórico Completo</Button>
       </div>
@@ -243,7 +243,7 @@ export default function SalaryAdjustment() {
               </div>
             </div>
 
-            <div className="flex gap-4 mb-4">
+            <div className="flex flex-wrap gap-2 sm:gap-4 mb-4">
               <Button variant="outline" onClick={toggleAll}>
                 {selectedEmployees.size === employees?.length ? "Desmarcar Todos" : "Selecionar Todos"}
               </Button>

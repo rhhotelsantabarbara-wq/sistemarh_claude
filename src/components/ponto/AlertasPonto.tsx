@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { buscarTudo } from "@/lib/buscarTudo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -116,12 +117,16 @@ export function AlertasPonto() {
     queryKey: ["alertas-ponto-registros", start, end],
     enabled: !!config,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("registros_ponto")
-        .select("employee_id, data, hora_entrada, hora_saida, hora_inicio_intervalo, hora_fim_intervalo, tipo_dia, horas_trabalhadas")
-        .gte("data", start)
-        .lte("data", end);
-      if (error) throw error;
+      // Todos os funcionários no período passam fácil de 1.000 linhas: busca em páginas
+      const data = await buscarTudo((de, ate) =>
+        supabase
+          .from("registros_ponto")
+          .select("employee_id, data, hora_entrada, hora_saida, hora_inicio_intervalo, hora_fim_intervalo, tipo_dia, horas_trabalhadas")
+          .gte("data", start)
+          .lte("data", end)
+          .order("data")
+          .range(de, ate),
+      );
       return data as Registro[];
     },
   });

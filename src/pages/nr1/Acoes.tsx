@@ -63,7 +63,7 @@ export default function NR1Acoes() {
   const statusColor: Record<string,string> = { pendente: "bg-muted", em_andamento: "bg-primary text-primary-foreground", concluida: "bg-emerald-600 text-white", cancelada: "bg-muted" };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-0 sm:p-2 lg:p-4 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3"><ListChecks className="h-7 w-7 text-primary" /><h1 className="text-3xl font-bold">Ações Preventivas</h1></div>
         <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" />Nova Ação</Button>

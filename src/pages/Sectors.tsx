@@ -11,7 +11,7 @@ export default function Sectors() {
   const navigate = useNavigate();
 
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
+    <div className="container mx-auto p-0 sm:p-2 lg:p-4 max-w-6xl">
       <Button
         variant="ghost"
         onClick={() => navigate("/dashboard")}

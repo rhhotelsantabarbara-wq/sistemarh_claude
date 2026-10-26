@@ -38,7 +38,7 @@ export default function NR1Denuncias() {
   const statusInfo = (v: string) => STATUS_DENUNCIA.find((s) => s.value === v);
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-0 sm:p-2 lg:p-4 space-y-6">
       <div>
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <Megaphone className="w-7 h-7 text-primary" />

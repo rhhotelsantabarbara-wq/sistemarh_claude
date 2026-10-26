@@ -240,7 +240,7 @@ export default function Contabilidade() {
               <CardTitle className="text-lg">
                 Registros — {meses[mes - 1]} / {ano}
               </CardTitle>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Select value={filterEmpresaId} onValueChange={setFilterEmpresaId}>
                   <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
                   <SelectContent>

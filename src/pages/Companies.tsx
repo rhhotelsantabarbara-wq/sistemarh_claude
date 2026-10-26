@@ -7,7 +7,7 @@ export default function Companies() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background p-8">
+    <div className="min-h-screen bg-background sm:p-2 lg:p-4">
       <div className="max-w-7xl mx-auto">
         <Button
           variant="ghost"

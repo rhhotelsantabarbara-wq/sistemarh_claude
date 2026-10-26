@@ -13,6 +13,7 @@ import AvaliacaoCard from "@/components/avaliacoes/AvaliacaoCard";
 import CriteriosConfig from "@/components/avaliacoes/CriteriosConfig";
 import { CiclosConfig } from "@/components/avaliacoes/CiclosConfig";
 import { ProximasAvaliacoes } from "@/components/avaliacoes/ProximasAvaliacoes";
+import { todayISO } from "@/lib/date";
 
 export default function Avaliacoes() {
   const [showAvaliacaoForm, setShowAvaliacaoForm] = useState(false);
@@ -82,7 +83,7 @@ export default function Avaliacoes() {
       doc.text(`Funcionários Avaliados: ${totalFuncionariosAvaliados}`, 25, 88);
       doc.text(`Média Geral: ${mediaGeral}`, 25, 95);
       
-      doc.save(`relatorio-avaliacoes-${new Date().toISOString().split("T")[0]}.pdf`);
+      doc.save(`relatorio-avaliacoes-${todayISO()}.pdf`);
       toast.success("Relatório exportado com sucesso!");
     } catch (error) {
       console.error("Erro ao gerar relatório:", error);
@@ -112,15 +113,15 @@ export default function Avaliacoes() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="container mx-auto p-0 sm:p-2 lg:p-4 space-y-6">
+      <div className="flex-wrap gap-3 flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Avaliações de Desempenho</h1>
           <p className="text-muted-foreground">
             Gerencie avaliações periódicas e acompanhe o desenvolvimento da equipe
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
             onClick={() => setShowCiclosConfig(true)}
@@ -271,11 +272,11 @@ export default function Avaliacoes() {
             <div className="flex items-center gap-4">
               <div className="text-5xl font-bold">{mediaGeral}</div>
               <div className="flex-1">
-                <div className="text-sm text-muted-foreground">de 5.0</div>
+                <div className="text-sm text-muted-foreground">de 10</div>
                 <div className="w-full bg-muted rounded-full h-2 mt-2">
                   <div 
                     className="bg-primary h-2 rounded-full transition-all" 
-                    style={{ width: `${(Number(mediaGeral) / 5) * 100}%` }}
+                    style={{ width: `${Math.min(100, (Number(mediaGeral) / 10) * 100)}%` }}
                   />
                 </div>
               </div>
@@ -379,7 +380,7 @@ export default function Avaliacoes() {
 
       {showCiclosConfig && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 overflow-y-auto">
-          <div className="container mx-auto p-6">
+          <div className="container mx-auto p-4 sm:p-6">
             <div className="flex justify-end mb-4">
               <Button variant="outline" onClick={() => setShowCiclosConfig(false)}>
                 Fechar

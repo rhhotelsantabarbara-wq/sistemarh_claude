@@ -18,7 +18,7 @@ export default function PeopleManager() {
   const [activeTab, setActiveTab] = useState("dashboard");
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="min-h-screen bg-background sm:p-2 lg:p-4">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center gap-4">
           <Button variant="ghost" onClick={() => navigate("/dashboard")}>
