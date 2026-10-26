@@ -118,9 +118,6 @@ export default function VacationSchedule() {
           </TabsContent>
 
           <TabsContent value="list" className="mt-6 space-y-4">
-            <Card className="p-6">
-              <VacationFilters filters={filters} onFiltersChange={setFilters} />
-            </Card>
             <VacationList filters={filters} onRefresh={handleRefresh} key={`list-${refreshKey}`} />
           </TabsContent>
 

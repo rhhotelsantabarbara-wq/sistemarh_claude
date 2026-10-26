@@ -1,24 +1,18 @@
-import { useState, useEffect, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Edit, Trash2, AlertCircle, CheckCircle, FileDown, Calendar } from "lucide-react";
-import { ExportVacationDialog } from "./ExportVacationDialog";
-import { supabase } from "@/integrations/supabase/client";
-import type { VacationFiltersType } from "@/components/vacation-schedule/types";
-import { format, isValid, getMonth, getYear } from "date-fns";
+import { useEffect, useMemo, useState } from "react";
+import { format, differenceInCalendarDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { toast } from "sonner";
-import { ApproveVacationDialog } from "./ApproveVacationDialog";
-import EditPlannedVacationDialog from "./EditPlannedVacationDialog";
+import { CheckCircle2, Pencil, Search, Trash2 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,36 +23,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-const MESES = [
-  { value: "all", label: "Todos os Meses" },
-  { value: "1", label: "Janeiro" },
-  { value: "2", label: "Fevereiro" },
-  { value: "3", label: "Março" },
-  { value: "4", label: "Abril" },
-  { value: "5", label: "Maio" },
-  { value: "6", label: "Junho" },
-  { value: "7", label: "Julho" },
-  { value: "8", label: "Agosto" },
-  { value: "9", label: "Setembro" },
-  { value: "10", label: "Outubro" },
-  { value: "11", label: "Novembro" },
-  { value: "12", label: "Dezembro" },
-];
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { ApproveVacationDialog } from "./ApproveVacationDialog";
+import EditPlannedVacationDialog from "./EditPlannedVacationDialog";
+import { dataLocal, diasEntre, hojeLocal } from "@/lib/feriasCalculo";
+import type { VacationFiltersType } from "./types";
 
 interface VacationListProps {
   filters: VacationFiltersType;
   onRefresh: () => void;
 }
 
-interface VacationItem {
+type StatusLancamento = "planejado" | "aprovado" | "em_andamento" | "concluido";
+
+interface Lancamento {
   id: string;
   employee_id: string;
   employee_name: string;
@@ -66,410 +45,325 @@ interface VacationItem {
   empresa_nome: string;
   periodo_inicio: string;
   periodo_fim: string;
+  inicio: Date;
+  fim: Date;
   dias_totais: number;
-  status: string;
-  has_conflict: boolean;
+  status: StatusLancamento;
+  aquisitivo_inicio: Date | null;
+  aquisitivo_fim: Date | null;
+  observacoes?: string | null;
 }
 
-const formatDateSafe = (dateString: string) => {
-  if (!dateString) return "-";
-  const date = new Date(dateString);
-  if (!isValid(date)) {
-    console.error("VacationList - data inválida:", dateString);
-    return "-";
-  }
-  try {
-    return format(date, "dd/MM/yyyy", { locale: ptBR });
-  } catch (error) {
-    console.error("VacationList - erro ao formatar data:", dateString, error);
-    return "-";
-  }
+const STATUS: Record<StatusLancamento, { rotulo: string; pill: string; avatar: string }> = {
+  em_andamento: { rotulo: "Em andamento", pill: "bg-violet-100 text-violet-800 border-violet-300 dark:bg-violet-950 dark:text-violet-200 dark:border-violet-800", avatar: "bg-violet-600 text-white" },
+  planejado: { rotulo: "Aguardando aprovação", pill: "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950 dark:text-blue-200 dark:border-blue-800", avatar: "bg-blue-600 text-white" },
+  aprovado: { rotulo: "Aprovada", pill: "bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-200 dark:border-emerald-800", avatar: "bg-emerald-600 text-white" },
+  concluido: { rotulo: "Concluída", pill: "bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600", avatar: "bg-slate-400 text-white dark:bg-slate-600" },
 };
 
-export function VacationList({ filters, onRefresh }: VacationListProps) {
-  const [vacations, setVacations] = useState<VacationItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showApproveDialog, setShowApproveDialog] = useState(false);
-  const [selectedVacation, setSelectedVacation] = useState<any>(null);
-  const [showEditDialog, setShowEditDialog] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [vacationToDelete, setVacationToDelete] = useState<VacationItem | null>(null);
-  const [showExportDialog, setShowExportDialog] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState<string>("all");
+const FILTROS_STATUS: { valor: "todos" | StatusLancamento; rotulo: string }[] = [
+  { valor: "todos", rotulo: "Todas" },
+  { valor: "em_andamento", rotulo: "Em andamento" },
+  { valor: "planejado", rotulo: "Aguardando aprovação" },
+  { valor: "aprovado", rotulo: "Aprovadas" },
+  { valor: "concluido", rotulo: "Concluídas" },
+];
 
-  // Ano selecionado nos filtros ou ano atual
-  const selectedYear = filters.ano || new Date().getFullYear();
+const MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+const dm = (d: Date) => format(d, "dd/MM", { locale: ptBR });
+const dmy = (d: Date) => format(d, "dd/MM/yyyy", { locale: ptBR });
+const dmyCurto = (d: Date) => format(d, "dd/MM/yy", { locale: ptBR });
+
+function iniciais(nome: string) {
+  const partes = nome.trim().split(/\s+/);
+  return ((partes[0]?.[0] || "") + (partes.length > 1 ? partes[partes.length - 1][0] : "")).toUpperCase();
+}
+
+export function VacationList({ filters, onRefresh }: VacationListProps) {
+  const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busca, setBusca] = useState("");
+  const [status, setStatus] = useState<"todos" | StatusLancamento>("todos");
+  const [ano, setAno] = useState<string>(String(filters.ano || new Date().getFullYear()));
+  const [mes, setMes] = useState<string>("all");
+
+  const [aprovar, setAprovar] = useState<Lancamento | null>(null);
+  const [editar, setEditar] = useState<Lancamento | null>(null);
+  const [excluir, setExcluir] = useState<Lancamento | null>(null);
 
   useEffect(() => {
-    fetchVacations();
-  }, [filters]);
+    carregar();
+  }, [filters.empresa, filters.setor]);
 
-  const fetchVacations = async () => {
+  const carregar = async () => {
     setLoading(true);
-    const now = new Date();
+    let empQuery = supabase.from("employees").select("id, nome_completo, setor, empresa_id, empresas(nome)");
+    if (filters.empresa && filters.empresa !== "all") empQuery = empQuery.eq("empresa_id", filters.empresa);
+    if (filters.setor && filters.setor !== "all") empQuery = empQuery.eq("setor", filters.setor);
 
-    console.log("🔍 VacationList - Iniciando busca de férias", { filters });
-
-    // 1) Buscar funcionários conforme os filtros
-    let employeesQuery = supabase
-      .from("employees")
-      .select("id, nome_completo, setor, empresa_id, empresas(nome)");
-
-    if (filters.empresa && filters.empresa !== "all") {
-      employeesQuery = employeesQuery.eq("empresa_id", filters.empresa);
-    }
-
-    if (filters.setor && filters.setor !== "all") {
-      employeesQuery = employeesQuery.eq("setor", filters.setor);
-    }
-
-    if (filters.search) {
-      employeesQuery = employeesQuery.ilike("nome_completo", `%${filters.search}%`);
-    }
-
-    const { data: employees, error: employeesError } = await employeesQuery;
-
-    console.log("📋 VacationList - Funcionários encontrados:", employees?.length, { employees, employeesError });
-
-    if (employeesError) {
-      console.error("❌ VacationList - Erro ao buscar funcionários:", employeesError);
-      toast.error("Erro ao carregar funcionários para as férias");
-      setVacations([]);
+    const [empRes, planRes, ferRes] = await Promise.all([
+      empQuery,
+      supabase.from("ferias_planejadas").select("*"),
+      supabase.from("ferias").select("*"),
+    ]);
+    if (empRes.error || planRes.error || ferRes.error) {
+      console.error("Lançamentos de férias:", empRes.error || planRes.error || ferRes.error);
+      toast.error("Erro ao carregar as férias");
       setLoading(false);
       return;
     }
 
-    if (!employees || employees.length === 0) {
-      console.log("⚠️ VacationList - Nenhum funcionário encontrado");
-      setVacations([]);
-      setLoading(false);
-      return;
-    }
+    const emps = new Map<string, any>((empRes.data || []).map((e: any) => [e.id, e]));
+    const hoje = hojeLocal();
+    const lista: Lancamento[] = [];
 
-    const employeesById: Record<string, any> = {};
-    for (const emp of employees) {
-      employeesById[emp.id] = emp;
-    }
-
-    const employeeIds = employees.map((e: any) => e.id);
-
-    // 2) Férias planejadas
-    const { data: plannedData, error: plannedError } = await supabase
-      .from("ferias_planejadas")
-      .select("*")
-      .in("employee_id", employeeIds);
-
-    console.log("📅 VacationList - Férias planejadas:", plannedData?.length, { plannedData, plannedError });
-
-    // 3) Férias confirmadas (tabela ferias)
-    const { data: confirmedData, error: confirmedError } = await supabase
-      .from("ferias")
-      .select("*")
-      .in("employee_id", employeeIds);
-
-    console.log("✅ VacationList - Férias confirmadas:", confirmedData?.length, { confirmedData, confirmedError });
-
-    if (plannedError || confirmedError) {
-      console.error("❌ VacationList - Erro ao buscar férias:", { plannedError, confirmedError });
-      toast.error("Erro ao carregar férias");
-      setVacations([]);
-      setLoading(false);
-      return;
-    }
-
-    const allVacations: VacationItem[] = [];
-
-    (plannedData || []).forEach((item: any) => {
-      const emp = employeesById[item.employee_id];
-      allVacations.push({
-        id: item.id,
-        employee_id: item.employee_id,
-        employee_name: emp?.nome_completo || "Funcionário não encontrado",
-        setor: emp?.setor || "Sem Setor",
-        empresa_nome: emp?.empresas?.nome || "Sem Empresa",
-        periodo_inicio: item.periodo_inicio,
-        periodo_fim: item.periodo_fim,
-        dias_totais: item.dias_totais,
-        status: item.status || "planejado",
-        has_conflict: false,
+    for (const p of planRes.data || []) {
+      const e = emps.get(p.employee_id);
+      const inicio = dataLocal(p.periodo_inicio);
+      const fim = dataLocal(p.periodo_fim);
+      if (!e || !inicio || !fim) continue;
+      lista.push({
+        id: p.id, employee_id: p.employee_id, employee_name: e.nome_completo, setor: e.setor || "Sem setor",
+        empresa_nome: e.empresas?.nome || "", periodo_inicio: p.periodo_inicio, periodo_fim: p.periodo_fim,
+        inicio, fim, dias_totais: p.dias_totais || diasEntre(inicio, fim), status: "planejado",
+        aquisitivo_inicio: null, aquisitivo_fim: null, observacoes: p.observacoes,
       });
-    });
-
-    (confirmedData || []).forEach((item: any) => {
-      const emp = employeesById[item.employee_id];
-      const start = new Date(item.periodo_gozo_inicio);
-      const end = new Date(item.periodo_gozo_fim);
-      let status: string;
-      if (now < start) status = "aprovado";
-      else if (now > end) status = "concluido";
-      else status = "em_andamento";
-
-      allVacations.push({
-        id: item.id,
-        employee_id: item.employee_id,
-        employee_name: emp?.nome_completo || "Funcionário não encontrado",
-        setor: emp?.setor || "Sem Setor",
-        empresa_nome: emp?.empresas?.nome || "Sem Empresa",
-        periodo_inicio: item.periodo_gozo_inicio,
-        periodo_fim: item.periodo_gozo_fim,
-        dias_totais: item.dias_totais,
-        status,
-        has_conflict: false,
+    }
+    for (const f of ferRes.data || []) {
+      const e = emps.get(f.employee_id);
+      const inicio = dataLocal(f.periodo_gozo_inicio);
+      const fim = dataLocal(f.periodo_gozo_fim);
+      if (!e || !inicio || !fim) continue;
+      const st: StatusLancamento = hoje < inicio ? "aprovado" : hoje > fim ? "concluido" : "em_andamento";
+      lista.push({
+        id: f.id, employee_id: f.employee_id, employee_name: e.nome_completo, setor: e.setor || "Sem setor",
+        empresa_nome: e.empresas?.nome || "", periodo_inicio: f.periodo_gozo_inicio, periodo_fim: f.periodo_gozo_fim,
+        inicio, fim, dias_totais: f.dias_totais, status: st,
+        aquisitivo_inicio: dataLocal(f.periodo_aquisitivo_inicio), aquisitivo_fim: dataLocal(f.periodo_aquisitivo_fim),
       });
-    });
-
-    console.log("🔄 VacationList - Total de férias combinadas:", allVacations.length, { allVacations });
-
-    // Filtro por status (aplicado após combinar planejadas + confirmadas)
-    const filteredVacations =
-      filters.status && filters.status !== "all"
-        ? allVacations.filter((v) => v.status === filters.status)
-        : allVacations;
-
-    console.log("🎯 VacationList - Após filtro de status:", filteredVacations.length, { filters, filteredVacations });
-
-    // Ordenar por início desc
-    filteredVacations.sort(
-      (a, b) => new Date(b.periodo_inicio).getTime() - new Date(a.periodo_inicio).getTime()
-    );
-
-    setVacations(filteredVacations);
+    }
+    setLancamentos(lista);
     setLoading(false);
-    console.log("✨ VacationList - Busca finalizada. Total exibido:", filteredVacations.length);
   };
 
-  // Filtrar férias pelo mês selecionado - verifica se o período de férias se sobrepõe ao mês
-  const filteredByMonth = useMemo(() => {
-    if (selectedMonth === "all") {
-      return vacations;
-    }
-    
-    const monthNumber = parseInt(selectedMonth, 10);
-    
-    // Calcular primeiro e último dia do mês selecionado
-    const monthStart = new Date(selectedYear, monthNumber - 1, 1);
-    const monthEnd = new Date(selectedYear, monthNumber, 0); // Último dia do mês
-    monthEnd.setHours(23, 59, 59, 999);
-    
-    return vacations.filter((vacation) => {
-      const vacationStart = new Date(vacation.periodo_inicio);
-      const vacationEnd = new Date(vacation.periodo_fim);
-      
-      // Verifica se há sobreposição entre o período de férias e o mês selecionado
-      // Sobreposição existe se: início das férias <= fim do mês E fim das férias >= início do mês
-      return vacationStart <= monthEnd && vacationEnd >= monthStart;
+  const anos = useMemo(() => {
+    const s = new Set<number>([new Date().getFullYear()]);
+    lancamentos.forEach((l) => { s.add(l.inicio.getFullYear()); s.add(l.fim.getFullYear()); });
+    return Array.from(s).sort((a, b) => b - a);
+  }, [lancamentos]);
+
+  // Filtro por ano/mês: férias com algum dia no período escolhido
+  const noPeriodo = useMemo(() => {
+    const termo = busca.trim().toLowerCase();
+    return lancamentos.filter((l) => {
+      if (termo && !l.employee_name.toLowerCase().includes(termo)) return false;
+      if (ano === "all") return true;
+      const y = Number(ano);
+      const ini = mes === "all" ? new Date(y, 0, 1) : new Date(y, Number(mes), 1);
+      const fim = mes === "all" ? new Date(y, 11, 31) : new Date(y, Number(mes) + 1, 0);
+      return l.inicio <= fim && l.fim >= ini;
     });
-  }, [vacations, selectedMonth, selectedYear]);
+  }, [lancamentos, busca, ano, mes]);
 
-  const handleApprove = (vacation: VacationItem) => {
-    setSelectedVacation(vacation);
-    setShowApproveDialog(true);
-  };
+  const contagem = useMemo(() => {
+    const c: Record<string, number> = { todos: noPeriodo.length };
+    noPeriodo.forEach((l) => { c[l.status] = (c[l.status] || 0) + 1; });
+    return c;
+  }, [noPeriodo]);
 
-  const handleEdit = (vacation: VacationItem) => {
-    setSelectedVacation(vacation);
-    setShowEditDialog(true);
-  };
-
-  const handleDeleteClick = (vacation: VacationItem) => {
-    setVacationToDelete(vacation);
-    setShowDeleteDialog(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!vacationToDelete) return;
-
-    try {
-      const tableName = vacationToDelete.status === "planejado" ? "ferias_planejadas" : "ferias";
-      
-      const { error } = await supabase
-        .from(tableName)
-        .delete()
-        .eq("id", vacationToDelete.id);
-
-      if (error) throw error;
-
-      toast.success("Férias excluídas com sucesso");
-      setShowDeleteDialog(false);
-      setVacationToDelete(null);
-      fetchVacations();
-      onRefresh();
-    } catch (error) {
-      console.error("Erro ao excluir férias:", error);
-      toast.error("Erro ao excluir férias");
+  // Agrupa por mês de início; em andamento primeiro, depois em ordem de data
+  const grupos = useMemo(() => {
+    const visiveis = (status === "todos" ? noPeriodo : noPeriodo.filter((l) => l.status === status))
+      .sort((a, b) => a.inicio.getTime() - b.inicio.getTime() || a.employee_name.localeCompare(b.employee_name));
+    const mapa = new Map<string, { titulo: string; itens: Lancamento[] }>();
+    for (const l of visiveis) {
+      const chave = `${l.inicio.getFullYear()}-${String(l.inicio.getMonth()).padStart(2, "0")}`;
+      if (!mapa.has(chave)) mapa.set(chave, { titulo: `${MESES[l.inicio.getMonth()]} de ${l.inicio.getFullYear()}`, itens: [] });
+      mapa.get(chave)!.itens.push(l);
     }
+    return Array.from(mapa.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([, g]) => g);
+  }, [noPeriodo, status]);
+
+  const confirmarExclusao = async () => {
+    if (!excluir) return;
+    const tabela = excluir.status === "planejado" ? "ferias_planejadas" : "ferias";
+    const { error } = await supabase.from(tabela).delete().eq("id", excluir.id);
+    if (error) {
+      toast.error("Erro ao excluir as férias");
+      return;
+    }
+    toast.success("Férias excluídas");
+    setExcluir(null);
+    carregar();
+    onRefresh();
   };
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, { variant: any; label: string }> = {
-      planejado: { variant: "secondary", label: "Planejado" },
-      aprovado: { variant: "default", label: "Aprovado" },
-      em_andamento: { variant: "default", label: "Em Andamento" },
-      concluido: { variant: "outline", label: "Concluído" },
-    };
-
-    const config = variants[status] || variants.em_andamento;
-    return <Badge variant={config.variant}>{config.label}</Badge>;
-  };
+  const hoje = hojeLocal();
 
   return (
     <>
-    <Card>
-      <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <CardTitle>Lista de Férias</CardTitle>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Selecione o mês" />
-              </SelectTrigger>
-              <SelectContent>
-                {MESES.map((mes) => (
-                  <SelectItem key={mes.value} value={mes.value}>
-                    {mes.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <Button variant="outline" onClick={() => setShowExportDialog(true)}>
-            <FileDown className="w-4 h-4 mr-2" />
-            Exportar
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {selectedMonth !== "all" && (
-          <div className="mb-4 flex items-center gap-2">
-            <Badge variant="secondary" className="text-sm">
-              Mostrando férias de {MESES.find(m => m.value === selectedMonth)?.label} de {selectedYear}
-            </Badge>
-            <span className="text-sm text-muted-foreground">
-              ({filteredByMonth.length} {filteredByMonth.length === 1 ? "registro" : "registros"})
-            </span>
-          </div>
-        )}
-        {loading ? (
-          <div className="text-center py-12 text-muted-foreground">Carregando...</div>
-        ) : filteredByMonth.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            {selectedMonth !== "all" 
-              ? `Nenhuma férias com dias em ${MESES.find(m => m.value === selectedMonth)?.label} de ${selectedYear}`
-              : "Nenhuma féria encontrada"
-            }
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Funcionário</TableHead>
-                <TableHead>Setor</TableHead>
-                <TableHead>Empresa</TableHead>
-                <TableHead>Período</TableHead>
-                <TableHead className="text-center">Dias</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredByMonth.map((vacation) => (
-                <TableRow key={vacation.id}>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-2">
-                      {vacation.has_conflict && (
-                        <AlertCircle className="h-4 w-4 text-destructive" />
-                      )}
-                      {vacation.employee_name}
-                    </div>
-                  </TableCell>
-                  <TableCell>{vacation.setor}</TableCell>
-                  <TableCell>{vacation.empresa_nome}</TableCell>
-                  <TableCell>
-                    {formatDateSafe(vacation.periodo_inicio)} -{" "}
-                    {formatDateSafe(vacation.periodo_fim)}
-                  </TableCell>
-                  <TableCell className="text-center">{vacation.dias_totais}</TableCell>
-                  <TableCell>{getStatusBadge(vacation.status)}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      {vacation.status === "planejado" && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleApprove(vacation)}
-                          title="Aprovar férias"
-                        >
-                          <CheckCircle className="h-4 w-4 text-green-600" />
-                        </Button>
-                      )}
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => handleEdit(vacation)}
-                        title="Editar férias"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => handleDeleteClick(vacation)}
-                        title="Excluir férias"
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
+      <div className="space-y-4">
+        <Card>
+          <CardContent className="p-4 space-y-4">
+            <div className="flex flex-wrap gap-3">
+              <div className="relative flex-1 min-w-[220px]">
+                <Label htmlFor="busca-lancamentos" className="sr-only">Buscar colaborador</Label>
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input id="busca-lancamentos" placeholder="Buscar colaborador…" className="pl-9 h-11" value={busca} onChange={(e) => setBusca(e.target.value)} />
+              </div>
+              <div className="w-32">
+                <Label htmlFor="ano-lancamentos" className="sr-only">Ano</Label>
+                <Select value={ano} onValueChange={(v) => { setAno(v); if (v === "all") setMes("all"); }}>
+                  <SelectTrigger id="ano-lancamentos" className="h-11"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os anos</SelectItem>
+                    {anos.map((a) => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="w-44">
+                <Label htmlFor="mes-lancamentos" className="sr-only">Mês</Label>
+                <Select value={mes} onValueChange={setMes} disabled={ano === "all"}>
+                  <SelectTrigger id="mes-lancamentos" className="h-11"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Ano inteiro</SelectItem>
+                    {MESES.map((m, i) => <SelectItem key={m} value={String(i)}>{m}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar por situação">
+              {FILTROS_STATUS.map((f) => (
+                <button
+                  key={f.valor}
+                  type="button"
+                  aria-pressed={status === f.valor}
+                  onClick={() => setStatus(f.valor)}
+                  className={`min-h-10 rounded-full border px-4 text-sm font-medium transition ${status === f.valor ? "bg-foreground text-background border-foreground" : "bg-card hover:bg-muted"}`}
+                >
+                  {f.rotulo} <span className="ml-1 opacity-70">{contagem[f.valor] || 0}</span>
+                </button>
               ))}
-            </TableBody>
-          </Table>
+            </div>
+          </CardContent>
+        </Card>
+
+        {loading ? (
+          <div className="py-16 text-center text-muted-foreground">Carregando férias…</div>
+        ) : grupos.length === 0 ? (
+          <Card>
+            <CardContent className="py-16 text-center">
+              <p className="font-medium">Nenhuma férias neste período</p>
+              <p className="text-sm text-muted-foreground">Troque o ano, o mês ou a situação acima.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          grupos.map((g) => (
+            <section key={g.titulo} className="space-y-2">
+              <div className="flex items-baseline justify-between px-1">
+                <h3 className="text-base font-semibold">{g.titulo}</h3>
+                <span className="text-sm text-muted-foreground">{g.itens.length} {g.itens.length === 1 ? "férias" : "férias"}</span>
+              </div>
+              <Card className="overflow-hidden">
+                <ul className="divide-y">
+                  {g.itens.map((l) => {
+                    const st = STATUS[l.status];
+                    const diaAtual = l.status === "em_andamento" ? differenceInCalendarDays(hoje, l.inicio) + 1 : 0;
+                    const totalDias = diasEntre(l.inicio, l.fim);
+                    const faltam = l.status === "aprovado" || l.status === "planejado" ? differenceInCalendarDays(l.inicio, hoje) : null;
+                    return (
+                      <li key={`${l.status}-${l.id}`} className="flex flex-wrap items-center gap-x-4 gap-y-3 p-4">
+                        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${st.avatar}`} aria-hidden="true">
+                          {iniciais(l.employee_name)}
+                        </div>
+
+                        <div className="min-w-[180px] flex-1">
+                          <div className="font-medium leading-tight">{l.employee_name}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {l.setor}{l.empresa_nome ? ` · ${l.empresa_nome}` : ""}
+                          </div>
+                        </div>
+
+                        <div className="min-w-[200px] flex-1">
+                          <div className="font-medium tabular-nums">
+                            {dm(l.inicio)} → {dmy(l.fim)} <span className="ml-1 text-sm font-normal text-muted-foreground">· {l.dias_totais} dias</span>
+                          </div>
+                          {l.status === "em_andamento" ? (
+                            <div className="mt-1.5 flex items-center gap-2">
+                              <div className="h-1.5 w-32 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuemin={1} aria-valuemax={totalDias} aria-valuenow={diaAtual} aria-label="Andamento das férias">
+                                <div className="h-full rounded-full bg-violet-600" style={{ width: `${Math.min(100, (diaAtual / totalDias) * 100)}%` }} />
+                              </div>
+                              <span className="text-xs text-muted-foreground">dia {diaAtual} de {totalDias} · volta em {dmy(new Date(l.fim.getFullYear(), l.fim.getMonth(), l.fim.getDate() + 1))}</span>
+                            </div>
+                          ) : (
+                            <div className="text-xs text-muted-foreground">
+                              {l.aquisitivo_inicio && l.aquisitivo_fim
+                                ? `Período aquisitivo ${dmyCurto(l.aquisitivo_inicio)} a ${dmyCurto(l.aquisitivo_fim)}`
+                                : l.status === "planejado" ? "Período aquisitivo definido na aprovação" : ""}
+                              {faltam !== null && faltam > 0 && ` · começa em ${faltam} ${faltam === 1 ? "dia" : "dias"}`}
+                            </div>
+                          )}
+                        </div>
+
+                        <span className={`inline-flex shrink-0 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${st.pill}`}>
+                          {st.rotulo}
+                        </span>
+
+                        <div className="ml-auto flex shrink-0 items-center gap-1">
+                          {l.status === "planejado" && (
+                            <Button size="sm" className="h-10" onClick={() => setAprovar(l)}>
+                              <CheckCircle2 className="mr-1.5 h-4 w-4" /> Aprovar
+                            </Button>
+                          )}
+                          <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => setEditar(l)} aria-label={`Editar férias de ${l.employee_name}`}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-10 w-10 text-destructive hover:text-destructive" onClick={() => setExcluir(l)} aria-label={`Excluir férias de ${l.employee_name}`}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </Card>
+            </section>
+          ))
         )}
-      </CardContent>
-    </Card>
-    
-    <ApproveVacationDialog
-      open={showApproveDialog}
-      onOpenChange={setShowApproveDialog}
-      plannedVacation={selectedVacation}
-      onSuccess={() => {
-        fetchVacations();
-        onRefresh();
-      }}
-    />
+      </div>
 
-    <EditPlannedVacationDialog
-      open={showEditDialog}
-      onOpenChange={setShowEditDialog}
-      vacation={selectedVacation}
-      onUpdated={() => {
-        fetchVacations();
-        onRefresh();
-      }}
-    />
+      <ApproveVacationDialog
+        open={!!aprovar}
+        onOpenChange={(o) => { if (!o) setAprovar(null); }}
+        plannedVacation={aprovar}
+        onSuccess={() => { carregar(); onRefresh(); }}
+      />
 
-    <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-          <AlertDialogDescription>
-            Tem certeza que deseja excluir estas férias? Esta ação não pode ser desfeita.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          <AlertDialogAction onClick={handleDeleteConfirm}>
-            Excluir
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+      <EditPlannedVacationDialog
+        open={!!editar}
+        onOpenChange={(o: boolean) => { if (!o) setEditar(null); }}
+        vacation={editar}
+        onUpdated={() => { carregar(); onRefresh(); }}
+      />
 
-    <ExportVacationDialog
-      open={showExportDialog}
-      onOpenChange={setShowExportDialog}
-    />
+      <AlertDialog open={!!excluir} onOpenChange={(o) => { if (!o) setExcluir(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir férias?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {excluir && `${excluir.employee_name}: ${dmy(excluir.inicio)} a ${dmy(excluir.fim)}. Esta ação não pode ser desfeita.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmarExclusao} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
