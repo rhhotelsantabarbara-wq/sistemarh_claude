@@ -32,7 +32,7 @@ export default function VacationSchedule() {
   const [programarPara, setProgramarPara] = useState<string | null>(null);
   const [aprovar, setAprovar] = useState<FeriasPlanejada | null>(null);
   const [showExportDialog, setShowExportDialog] = useState(false);
-  const [visaoCalendario, setVisaoCalendario] = useState<"mes" | "linha">("mes");
+  const [visaoCalendario, setVisaoCalendario] = useState<"mes" | "linha">("linha");
 
   const handleRefresh = () => setRefreshKey((prev) => prev + 1);
 
@@ -107,8 +107,8 @@ export default function VacationSchedule() {
               <VacationFilters filters={filters} onFiltersChange={setFilters} />
             </Card>
             <div className="inline-flex rounded-lg border p-1" role="group" aria-label="Visualização">
-              <Button size="sm" variant={visaoCalendario === "mes" ? "default" : "ghost"} aria-pressed={visaoCalendario === "mes"} onClick={() => setVisaoCalendario("mes")}>Mês</Button>
               <Button size="sm" variant={visaoCalendario === "linha" ? "default" : "ghost"} aria-pressed={visaoCalendario === "linha"} onClick={() => setVisaoCalendario("linha")}>Linha do tempo</Button>
+              <Button size="sm" variant={visaoCalendario === "mes" ? "default" : "ghost"} aria-pressed={visaoCalendario === "mes"} onClick={() => setVisaoCalendario("mes")}>Mês</Button>
             </div>
             {visaoCalendario === "mes" ? (
               <VacationCalendar filters={filters} onRefresh={handleRefresh} key={`calendar-${refreshKey}`} />
