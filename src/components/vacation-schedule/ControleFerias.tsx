@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import {
   calcularResumoFerias,
   dataLocal,
+  formatarDias,
   hojeLocal,
   SITUACOES,
   type FeriasPlanejada,
@@ -266,8 +267,18 @@ export function ControleFerias({ filters, onFiltersChange, onProgramar, onAprova
                           )}
                         </TableCell>
                         <TableCell className="text-center">
-                          {p ? (
-                            <span className="font-semibold">{r.saldoTotal} dias</span>
+                          {r.saldoTotal > 0 ? (
+                            <>
+                              <div className="font-semibold">{formatarDias(r.saldoTotal)} dias</div>
+                              {r.saldoVencido > 0 && r.saldoProporcional > 0 && (
+                                <div className="text-xs text-muted-foreground whitespace-nowrap" title="Período(s) completo(s) + proporcional do período atual">
+                                  {formatarDias(r.saldoVencido)} + {formatarDias(r.saldoProporcional)}
+                                </div>
+                              )}
+                              {r.saldoVencido === 0 && (
+                                <div className="text-xs text-muted-foreground whitespace-nowrap">proporcional ({r.avosProporcionais}/12)</div>
+                              )}
+                            </>
                           ) : (
                             <span className="text-muted-foreground">—</span>
                           )}

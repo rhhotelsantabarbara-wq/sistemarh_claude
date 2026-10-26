@@ -25,6 +25,7 @@ import { AlertTriangle, Info } from "lucide-react";
 import {
   calcularResumoFerias,
   dataLocal,
+  formatarDias,
   diasEntre,
   hojeLocal,
   type FeriasPlanejada,
@@ -153,8 +154,8 @@ export function AddVacationDialog({
         lista.push({ tipo: "info", texto: "Não há saldo pendente: estas férias serão do período aquisitivo atual (antecipação)." });
       }
     }
-    if (p && diasTotais > resumo!.saldoTotal) {
-      lista.push({ tipo: "alerta", texto: `São ${diasTotais} dias, mas o saldo é de ${resumo!.saldoTotal} dias.` });
+    if (resumo && diasTotais > resumo.saldoTotal && resumo.situacao !== "sem_admissao") {
+      lista.push({ tipo: "alerta", texto: `São ${diasTotais} dias, mas o saldo hoje é de ${formatarDias(resumo.saldoTotal)} dias.` });
     }
     if (p && diasTotais < p.saldo) {
       lista.push({ tipo: "info", texto: `Ficam ${p.saldo - diasTotais} dias de saldo deste período para depois.` });
@@ -243,14 +244,14 @@ export function AddVacationDialog({
             <div className="rounded-lg border bg-muted/50 p-3 text-sm">
               {p ? (
                 <div className="flex flex-wrap gap-x-6 gap-y-1">
-                  <span><span className="text-muted-foreground">Saldo:</span> <strong>{resumo.saldoTotal} dias</strong></span>
+                  <span><span className="text-muted-foreground">Saldo:</span> <strong>{formatarDias(resumo.saldoTotal)} dias</strong>{resumo.saldoProporcional > 0 && <span className="text-muted-foreground"> ({formatarDias(resumo.saldoVencido)} + {formatarDias(resumo.saldoProporcional)} proporcional)</span>}</span>
                   <span><span className="text-muted-foreground">Período:</span> {br(p.inicio)} a {br(p.fim)}</span>
                   <span><span className="text-muted-foreground">Iniciar até:</span> <strong>{br(p.iniciarAte)}</strong></span>
                 </div>
               ) : resumo.situacao === "sem_admissao" ? (
                 <span className="text-muted-foreground">Sem data de admissão no cadastro: não dá para calcular o saldo.</span>
               ) : (
-                <span className="text-muted-foreground">Sem saldo pendente.</span>
+                <span className="text-muted-foreground">Sem período vencido. Saldo proporcional: <strong>{formatarDias(resumo.saldoProporcional)} dias</strong> ({resumo.avosProporcionais}/12).</span>
               )}
             </div>
           )}

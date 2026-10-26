@@ -9,7 +9,7 @@
 //   (afastamentos podem deslocar os períodos) e tudo antes dela é considerado quitado.
 // - Sem âncora: períodos a partir da admissão; considera-se quitado tudo antes do último
 //   período com férias registradas. Sem nenhum registro, olham-se só os 2 últimos períodos.
-import { addDays, addYears, differenceInCalendarDays, differenceInDays } from "date-fns";
+import { addDays, addMonths, addYears, differenceInCalendarDays, differenceInDays, differenceInCalendarMonths } from "date-fns";
 
 export const DIAS_DIREITO = 30;
 export const DIAS_AVISO_VENCIMENTO = 90;
@@ -73,7 +73,10 @@ export interface ResumoFerias {
   periodoPendente: PeriodoAquisitivo | null;
   periodoAtual: PeriodoAquisitivo | null; // período em aquisição (ainda não completo)
   periodosVencidos: number;
-  saldoTotal: number;
+  saldoVencido: number; // períodos completos ainda não gozados
+  saldoProporcional: number; // período em aquisição: 2,5 dias por mês trabalhado (avos)
+  avosProporcionais: number;
+  saldoTotal: number; // vencido + proporcional, como no relatório da contabilidade
   emCurso: RegistroFerias | null;
   proximaAprovada: RegistroFerias | null;
   programada: FeriasPlanejada | null;
@@ -102,6 +105,20 @@ function periodo(base: Date, k: number): Omit<PeriodoAquisitivo, "gozados" | "sa
   const fim = addDays(addYears(base, k + 1), -1);
   const limite = addDays(addYears(base, k + 2), -1);
   return { indice: k, inicio, fim, limite, iniciarAte: addDays(limite, -DIAS_ANTECEDENCIA_LIMITE) };
+}
+
+/** Avos do período em aquisição: meses completos + 1 se a fração do mês tiver 15 dias ou mais (máx. 12). */
+export function avosDoPeriodo(inicio: Date, hoje: Date): number {
+  if (hoje < inicio) return 0;
+  let meses = differenceInCalendarMonths(hoje, inicio);
+  if (addMonths(inicio, meses) > hoje) meses--;
+  const resto = differenceInCalendarDays(hoje, addMonths(inicio, meses)) + 1;
+  return Math.min(12, meses + (resto >= 15 ? 1 : 0));
+}
+
+/** "17,5" / "30" */
+export function formatarDias(d: number): string {
+  return Number.isInteger(d) ? String(d) : d.toFixed(1).replace(".", ",");
 }
 
 /** Em qual período aquisitivo (índice) um registro de férias se encaixa. */
@@ -135,7 +152,7 @@ export function calcularResumoFerias(
   const ancora = dataLocal(ancoraPeriodoAberto);
   const admissao = ancora || dataLocal(dataAdmissao);
   if (!admissao) {
-    return { situacao: emCurso ? "de_ferias" : "sem_admissao", periodoPendente: null, periodoAtual: null, periodosVencidos: 0, saldoTotal: 0, emCurso, proximaAprovada, programada, semHistorico: registros.length === 0 };
+    return { situacao: emCurso ? "de_ferias" : "sem_admissao", periodoPendente: null, periodoAtual: null, periodosVencidos: 0, saldoVencido: 0, saldoProporcional: 0, avosProporcionais: 0, saldoTotal: 0, emCurso, proximaAprovada, programada, semHistorico: registros.length === 0 };
   }
 
   // Dias gozados por período aquisitivo
@@ -168,7 +185,10 @@ export function calcularResumoFerias(
   const periodoAtual = montar(completos);
   const periodoPendente = pendentes[0] || null;
   const periodosVencidos = pendentes.filter((p) => p.iniciarAte < hoje).length;
-  const saldoTotal = pendentes.reduce((s, p) => s + p.saldo, 0);
+  const saldoVencido = pendentes.reduce((s, p) => s + p.saldo, 0);
+  const avosProporcionais = avosDoPeriodo(periodoAtual.inicio, hoje);
+  const saldoProporcional = Math.max(0, avosProporcionais * (DIAS_DIREITO / 12) - periodoAtual.gozados);
+  const saldoTotal = saldoVencido + saldoProporcional;
 
   let situacao: SituacaoFerias;
   if (emCurso) situacao = "de_ferias";
@@ -180,7 +200,7 @@ export function calcularResumoFerias(
   else if (completos === 0 && (!dataLocal(dataAdmissao) || differenceInCalendarDays(hoje, dataLocal(dataAdmissao)!) < 365)) situacao = "em_aquisicao";
   else situacao = "em_dia";
 
-  return { situacao, periodoPendente, periodoAtual, periodosVencidos, saldoTotal, emCurso, proximaAprovada, programada, semHistorico: registros.length === 0 };
+  return { situacao, periodoPendente, periodoAtual, periodosVencidos, saldoVencido, saldoProporcional, avosProporcionais, saldoTotal, emCurso, proximaAprovada, programada, semHistorico: registros.length === 0 };
 }
 
 /** Período aquisitivo sugerido ao aprovar férias: o pendente mais antigo, senão o que está em curso. */
