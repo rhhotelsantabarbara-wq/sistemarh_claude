@@ -151,7 +151,9 @@ export function AddVacationDialog({
       if (resumo.situacao === "em_aquisicao" && resumo.periodoAtual) {
         lista.push({ tipo: "alerta", texto: `Ainda não completou 12 meses de casa (completa em ${br(addDays(resumo.periodoAtual.fim, 1))}). Férias antes disso são antecipação.` });
       } else if (resumo.situacao !== "sem_admissao") {
-        lista.push({ tipo: "info", texto: "Não há saldo pendente: estas férias serão do período aquisitivo atual (antecipação)." });
+        lista.push({ tipo: "info", texto: resumo.periodoAnteriorContabilidade
+          ? `Na aprovação, estas férias ficam no período ${br(resumo.periodoAnteriorContabilidade.inicio)} a ${br(resumo.periodoAnteriorContabilidade.fim)} (dá para ajustar).`
+          : "Não há período fechado com saldo: estas férias serão do período em curso (antecipação)." });
       }
     }
     if (resumo && diasTotais > resumo.saldoTotal && resumo.situacao !== "sem_admissao") {

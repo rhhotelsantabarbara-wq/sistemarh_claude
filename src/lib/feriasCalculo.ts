@@ -72,6 +72,7 @@ export interface ResumoFerias {
   situacao: SituacaoFerias;
   periodoPendente: PeriodoAquisitivo | null;
   periodoAtual: PeriodoAquisitivo | null; // período em aquisição (ainda não completo)
+  periodoAnteriorContabilidade: PeriodoAquisitivo | null; // período logo antes do aberto na contabilidade (dado como quitado)
   periodosVencidos: number;
   periodosPendentes: number; // períodos completos com saldo (vencidos ou não)
   saldoVencido: number; // períodos completos ainda não gozados
@@ -153,7 +154,7 @@ export function calcularResumoFerias(
   const ancora = dataLocal(ancoraPeriodoAberto);
   const admissao = ancora || dataLocal(dataAdmissao);
   if (!admissao) {
-    return { situacao: emCurso ? "de_ferias" : "sem_admissao", periodoPendente: null, periodoAtual: null, periodosVencidos: 0, periodosPendentes: 0, saldoVencido: 0, saldoProporcional: 0, avosProporcionais: 0, saldoTotal: 0, emCurso, proximaAprovada, programada, semHistorico: registros.length === 0 };
+    return { situacao: emCurso ? "de_ferias" : "sem_admissao", periodoPendente: null, periodoAtual: null, periodoAnteriorContabilidade: null, periodosVencidos: 0, periodosPendentes: 0, saldoVencido: 0, saldoProporcional: 0, avosProporcionais: 0, saldoTotal: 0, emCurso, proximaAprovada, programada, semHistorico: registros.length === 0 };
   }
 
   // Dias gozados por período aquisitivo
@@ -191,6 +192,14 @@ export function calcularResumoFerias(
   const saldoProporcional = Math.max(0, avosProporcionais * (DIAS_DIREITO / 12) - periodoAtual.gozados);
   const saldoTotal = saldoVencido + saldoProporcional;
 
+  // Com a âncora da contabilidade e nenhum período completo depois dela, o período anterior
+  // (já fechado) é o que normalmente recebe as férias que estão sendo marcadas agora.
+  const admReal = dataLocal(dataAdmissao);
+  const anterior = ancora && completos === 0 ? periodo(ancora, -1) : null;
+  const periodoAnteriorContabilidade = anterior && (!admReal || admReal <= anterior.inicio)
+    ? { ...anterior, gozados: 0, saldo: DIAS_DIREITO }
+    : null;
+
   let situacao: SituacaoFerias;
   if (emCurso) situacao = "de_ferias";
   else if (periodosVencidos > 0) situacao = "vencida";
@@ -201,10 +210,12 @@ export function calcularResumoFerias(
   else if (completos === 0 && (!dataLocal(dataAdmissao) || differenceInCalendarDays(hoje, dataLocal(dataAdmissao)!) < 365)) situacao = "em_aquisicao";
   else situacao = "em_dia";
 
-  return { situacao, periodoPendente, periodoAtual, periodosVencidos, periodosPendentes: pendentes.length, saldoVencido, saldoProporcional, avosProporcionais, saldoTotal, emCurso, proximaAprovada, programada, semHistorico: registros.length === 0 };
+  return { situacao, periodoPendente, periodoAtual, periodoAnteriorContabilidade, periodosVencidos, periodosPendentes: pendentes.length, saldoVencido, saldoProporcional, avosProporcionais, saldoTotal, emCurso, proximaAprovada, programada, semHistorico: registros.length === 0 };
 }
 
 /** Período aquisitivo sugerido ao aprovar férias: o pendente mais antigo, senão o que está em curso. */
 export function periodoParaLancamento(resumo: ResumoFerias): PeriodoAquisitivo | null {
-  return resumo.periodoPendente || resumo.periodoAtual;
+  // 1) período fechado com saldo; 2) o período anterior ao aberto na contabilidade
+  //    (férias marcadas agora costumam ser dele); 3) senão, o período em curso (antecipação)
+  return resumo.periodoPendente || resumo.periodoAnteriorContabilidade || resumo.periodoAtual;
 }
