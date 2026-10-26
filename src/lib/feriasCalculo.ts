@@ -73,6 +73,7 @@ export interface ResumoFerias {
   periodoPendente: PeriodoAquisitivo | null;
   periodoAtual: PeriodoAquisitivo | null; // período em aquisição (ainda não completo)
   periodosVencidos: number;
+  periodosPendentes: number; // períodos completos com saldo (vencidos ou não)
   saldoVencido: number; // períodos completos ainda não gozados
   saldoProporcional: number; // período em aquisição: 2,5 dias por mês trabalhado (avos)
   avosProporcionais: number;
@@ -152,7 +153,7 @@ export function calcularResumoFerias(
   const ancora = dataLocal(ancoraPeriodoAberto);
   const admissao = ancora || dataLocal(dataAdmissao);
   if (!admissao) {
-    return { situacao: emCurso ? "de_ferias" : "sem_admissao", periodoPendente: null, periodoAtual: null, periodosVencidos: 0, saldoVencido: 0, saldoProporcional: 0, avosProporcionais: 0, saldoTotal: 0, emCurso, proximaAprovada, programada, semHistorico: registros.length === 0 };
+    return { situacao: emCurso ? "de_ferias" : "sem_admissao", periodoPendente: null, periodoAtual: null, periodosVencidos: 0, periodosPendentes: 0, saldoVencido: 0, saldoProporcional: 0, avosProporcionais: 0, saldoTotal: 0, emCurso, proximaAprovada, programada, semHistorico: registros.length === 0 };
   }
 
   // Dias gozados por período aquisitivo
@@ -200,7 +201,7 @@ export function calcularResumoFerias(
   else if (completos === 0 && (!dataLocal(dataAdmissao) || differenceInCalendarDays(hoje, dataLocal(dataAdmissao)!) < 365)) situacao = "em_aquisicao";
   else situacao = "em_dia";
 
-  return { situacao, periodoPendente, periodoAtual, periodosVencidos, saldoVencido, saldoProporcional, avosProporcionais, saldoTotal, emCurso, proximaAprovada, programada, semHistorico: registros.length === 0 };
+  return { situacao, periodoPendente, periodoAtual, periodosVencidos, periodosPendentes: pendentes.length, saldoVencido, saldoProporcional, avosProporcionais, saldoTotal, emCurso, proximaAprovada, programada, semHistorico: registros.length === 0 };
 }
 
 /** Período aquisitivo sugerido ao aprovar férias: o pendente mais antigo, senão o que está em curso. */

@@ -258,13 +258,23 @@ export function ControleFerias({ filters, onFiltersChange, onProgramar, onAprova
                           )}
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-sm">
-                          {p ? (
-                            <>{fmtCurto(p.inicio)} a {fmtCurto(p.fim)}</>
-                          ) : r.situacao === "em_aquisicao" && r.periodoAtual ? (
-                            <span className="text-muted-foreground">completa em {fmt(addUmDia(r.periodoAtual.fim))}</span>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
+                          {p && (
+                            <div>
+                              <span className="font-medium">{fmtCurto(p.inicio)} a {fmtCurto(p.fim)}</span>
+                              <span className="ml-1.5 text-xs text-red-700 dark:text-red-300">vencido</span>
+                            </div>
                           )}
+                          {r.periodosPendentes > 1 && (
+                            <div className="text-xs text-red-700 dark:text-red-300">+{r.periodosPendentes - 1} período(s) vencido(s)</div>
+                          )}
+                          {r.periodoAtual ? (
+                            <div className={p ? "text-muted-foreground" : ""}>
+                              {fmtCurto(r.periodoAtual.inicio)} a {fmtCurto(r.periodoAtual.fim)}
+                              <span className="ml-1.5 text-xs text-muted-foreground">em curso</span>
+                            </div>
+                          ) : !p ? (
+                            <span className="text-muted-foreground">—</span>
+                          ) : null}
                         </TableCell>
                         <TableCell className="text-center">
                           {r.saldoTotal > 0 ? (
@@ -343,8 +353,3 @@ export function ControleFerias({ filters, onFiltersChange, onProgramar, onAprova
   );
 }
 
-function addUmDia(d: Date): Date {
-  const n = new Date(d);
-  n.setDate(n.getDate() + 1);
-  return n;
-}
