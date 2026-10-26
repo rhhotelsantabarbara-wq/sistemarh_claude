@@ -32,7 +32,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
-import { dataBR } from "@/lib/date";
+import { dataBR, todayISO, toISODateLocal } from "@/lib/date";
 
 type Empresa = { id: string; nome: string; cnpj?: string | null };
 
@@ -44,11 +44,10 @@ async function sha256(text: string): Promise<string> {
     .join("");
 }
 
-const todayISO = () => todayISO();
 const daysAgoISO = (n: number) => {
   const d = new Date();
   d.setDate(d.getDate() - n);
-  return d.toISOString().slice(0, 10);
+  return toISODateLocal(d);
 };
 
 export default function NR1AuditoriaMT() {
