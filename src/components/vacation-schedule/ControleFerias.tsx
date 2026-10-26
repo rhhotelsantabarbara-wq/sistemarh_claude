@@ -55,12 +55,15 @@ interface ControleFeriasProps {
 const fmt = (d?: Date | null) => (d ? format(d, "dd/MM/yyyy", { locale: ptBR }) : "—");
 const fmtCurto = (d?: Date | null) => (d ? format(d, "dd/MM/yy", { locale: ptBR }) : "—");
 
+const SEM_FERIAS = ["intermitente", "prestador_servico"];
+
 const ORDEM_CHIPS: SituacaoFerias[] = ["vencida", "vence_breve", "programada", "pode_tirar", "aprovada", "de_ferias", "em_dia", "em_aquisicao", "sem_admissao"];
 
 export function ControleFerias({ filters, onFiltersChange, onProgramar, onAprovar }: ControleFeriasProps) {
   const [linhas, setLinhas] = useState<Linha[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [situacao, setSituacao] = useState<SituacaoFerias | "todas">("todas");
+  const [foraDoControle, setForaDoControle] = useState(0);
 
   useEffect(() => {
     carregar();
@@ -73,7 +76,7 @@ export function ControleFerias({ filters, onFiltersChange, onProgramar, onAprova
 
     const [empRes, ferRes, planRes] = await Promise.all([
       (supabase.from("employees") as any)
-        .select("id, nome_completo, setor, data_admissao, ferias_periodo_aberto_inicio, empresa_id, empresas(nome)")
+        .select("id, nome_completo, setor, data_admissao, tipo_contrato, ferias_periodo_aberto_inicio, empresa_id, empresas(nome)")
         .neq("status", "demitido")
         .order("nome_completo"),
       supabase
@@ -86,7 +89,7 @@ export function ControleFerias({ filters, onFiltersChange, onProgramar, onAprova
 
     if (empRes.error && String(empRes.error.message || "").includes("ferias_periodo_aberto_inicio")) {
       // Banco ainda sem a coluna nova: carrega sem ela
-      const r = await supabase.from("employees").select("id, nome_completo, setor, data_admissao, empresa_id, empresas(nome)").neq("status", "demitido").order("nome_completo");
+      const r = await supabase.from("employees").select("id, nome_completo, setor, data_admissao, tipo_contrato, empresa_id, empresas(nome)").neq("status", "demitido").order("nome_completo");
       empRes.data = r.data as any;
       empRes.error = r.error as any;
     }
@@ -109,8 +112,13 @@ export function ControleFerias({ filters, onFiltersChange, onProgramar, onAprova
     const planejadas = porFuncionario((planRes.data || []) as FeriasPlanejada[]);
     const hoje = hojeLocal();
 
+    // Intermitentes e prestadores de serviço não têm férias a controlar
+    const todos = (empRes.data || []) as any[];
+    const comFerias = todos.filter((e) => !SEM_FERIAS.includes(e.tipo_contrato));
+    setForaDoControle(todos.length - comFerias.length);
+
     setLinhas(
-      (empRes.data || []).map((e: any) => ({
+      comFerias.map((e: any) => ({
         id: e.id,
         nome: e.nome_completo,
         setor: e.setor || "Sem setor",
@@ -316,6 +324,7 @@ export function ControleFerias({ filters, onFiltersChange, onProgramar, onAprova
           )}
           <p className="text-xs text-muted-foreground">
             Cálculo: 30 dias por período aquisitivo de 12 meses, a gozar nos 12 meses seguintes. "Iniciar até" é o último dia para começar 30 dias de férias sem pagar em dobro. Quando o período em aberto veio da contabilidade, os períodos contam a partir dele; senão, da admissão.
+            {foraDoControle > 0 && ` Intermitentes e prestadores de serviço não aparecem (${foraDoControle}).`}
           </p>
         </CardContent>
       </Card>
