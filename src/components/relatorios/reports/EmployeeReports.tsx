@@ -1,354 +1,333 @@
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import ExportButtons from "../ExportButtons";
-import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
-import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
+import { formatDateOnlyPtBR } from "@/lib/date";
+import { gerarRelatorioPdf } from "@/lib/relatorioPdf";
+
+const STATUS: Record<string, string> = {
+  ativo: "Ativo",
+  ferias: "Férias",
+  afastado: "Afastado",
+  em_admissao: "Em admissão",
+  demitido: "Demitido",
+};
+const CONTRATO: Record<string, string> = {
+  fixo: "Fixo (CLT)",
+  intermitente: "Intermitente",
+  prestador_servico: "Prestador de serviço",
+};
+const AGRUPAR: Record<string, { rotulo: string; titulo: string; valor: (e: any) => string }> = {
+  sector: { rotulo: "Setor", titulo: "Colaboradores por Setor", valor: (e) => e.setor || "Sem setor" },
+  company: { rotulo: "Empresa", titulo: "Colaboradores por Empresa", valor: (e) => e.empresas?.nome || "Sem empresa" },
+  cargo: { rotulo: "Cargo", titulo: "Colaboradores por Cargo", valor: (e) => e.cargo || "Sem cargo" },
+  status: { rotulo: "Situação", titulo: "Colaboradores por Situação", valor: (e) => STATUS[e.status] || e.status || "—" },
+  contract: { rotulo: "Contrato", titulo: "Colaboradores por Tipo de Contrato", valor: (e) => CONTRATO[e.tipo_contrato] || e.tipo_contrato || "—" },
+  gender: { rotulo: "Sexo", titulo: "Colaboradores por Sexo", valor: (e) => e.sexo || "Não informado" },
+  all: { rotulo: "", titulo: "Lista de Colaboradores", valor: () => "" },
+};
+
+const nomeBonito = (s: string) => (s || "").toLowerCase().replace(/(^|\s)(\p{L})/gu, (m) => m.toUpperCase()).replace(/\s(De|Da|Do|Das|Dos|E)\s/g, (m) => m.toLowerCase());
 
 const EmployeeReports = () => {
-  const [reportType, setReportType] = useState("all");
-  const [selectedCompany, setSelectedCompany] = useState("all");
-  const [selectedSector, setSelectedSector] = useState("all");
-  const [selectedContractType, setSelectedContractType] = useState("all");
-  const [selectedStatus, setSelectedStatus] = useState("all");
-  const [selectedGender, setSelectedGender] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [agrupar, setAgrupar] = useState("sector");
+  const [empresa, setEmpresa] = useState("all");
+  const [setor, setSetor] = useState("all");
+  const [contrato, setContrato] = useState("all");
+  const [status, setStatus] = useState("ativos");
+  const [sexo, setSexo] = useState("all");
+  const [busca, setBusca] = useState("");
 
-  // Fetch companies
   const { data: companies } = useQuery({
     queryKey: ["companies"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("empresas").select("*");
+      const { data, error } = await supabase.from("empresas").select("*").order("nome");
       if (error) throw error;
       return data;
     },
   });
 
-  // Fetch sectors
   const { data: sectors } = useQuery({
     queryKey: ["sectors"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("setores").select("*");
+      const { data, error } = await supabase.from("setores").select("*").order("nome");
       if (error) throw error;
       return data;
     },
   });
 
-  // Fetch employees with filters
   const { data: employees, isLoading } = useQuery({
-    queryKey: [
-      "employees-report",
-      selectedCompany,
-      selectedSector,
-      selectedContractType,
-      selectedStatus,
-      selectedGender,
-    ],
+    queryKey: ["employees-report", empresa, setor, contrato, status, sexo],
     queryFn: async () => {
-      let query = supabase
-        .from("employees")
-        .select("*, empresas(nome)");
-
-      if (selectedCompany !== "all") {
-        query = query.eq("empresa_id", selectedCompany);
-      }
-      if (selectedSector !== "all") {
-        query = query.eq("setor", selectedSector);
-      }
-      if (selectedContractType !== "all") {
-        query = query.eq("tipo_contrato", selectedContractType as any);
-      }
-      if (selectedStatus !== "all") {
-        query = query.eq("status", selectedStatus as any);
-      }
-      if (selectedGender !== "all") {
-        query = query.eq("sexo", selectedGender);
-      }
-
-      const { data, error } = await query;
+      let q = supabase.from("employees").select("*, empresas(nome)");
+      if (empresa !== "all") q = q.eq("empresa_id", empresa);
+      if (setor !== "all") q = q.eq("setor", setor);
+      if (contrato !== "all") q = q.eq("tipo_contrato", contrato as any);
+      if (status === "ativos") q = q.neq("status", "demitido" as any);
+      else if (status !== "all") q = q.eq("status", status as any);
+      if (sexo !== "all") q = q.eq("sexo", sexo);
+      const { data, error } = await q.order("nome_completo");
       if (error) throw error;
       return data;
     },
   });
 
-  const paginatedData = useMemo(() => {
-    if (!employees) return [];
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return employees.slice(startIndex, endIndex);
-  }, [employees, currentPage]);
+  const filtrados = useMemo(() => {
+    const t = busca.trim().toLowerCase();
+    return (employees || []).filter((e: any) => !t || e.nome_completo?.toLowerCase().includes(t) || e.cargo?.toLowerCase().includes(t));
+  }, [employees, busca]);
 
-  const totalPages = Math.ceil((employees?.length || 0) / itemsPerPage);
-
-  const getReportTitle = () => {
-    switch (reportType) {
-      case "gender":
-        return "Relatório de Funcionários por Sexo";
-      case "company":
-        return "Relatório de Funcionários por Empresa";
-      case "sector":
-        return "Relatório de Funcionários por Setor";
-      case "contract":
-        return "Relatório de Funcionários por Tipo de Contrato";
-      case "status":
-        return "Relatório de Funcionários por Status";
-      default:
-        return "Relatório Completo de Funcionários";
+  // Grupos ordenados do maior para o menor; nomes em ordem alfabética dentro de cada grupo
+  const grupos = useMemo(() => {
+    const def = AGRUPAR[agrupar];
+    const mapa = new Map<string, any[]>();
+    for (const e of filtrados) {
+      const k = def.valor(e);
+      if (!mapa.has(k)) mapa.set(k, []);
+      mapa.get(k)!.push(e);
     }
+    return Array.from(mapa.entries())
+      .map(([titulo, lista]) => ({ titulo, lista: lista.sort((a, b) => a.nome_completo.localeCompare(b.nome_completo)) }))
+      .sort((a, b) => b.lista.length - a.lista.length || a.titulo.localeCompare(b.titulo));
+  }, [filtrados, agrupar]);
+
+  const def = AGRUPAR[agrupar];
+  const maior = Math.max(1, ...grupos.map((g) => g.lista.length));
+
+  // Colunas: a que está sendo usada para agrupar sai da tabela
+  const colunas = [
+    { chave: "nome", titulo: "Nome", valor: (e: any) => nomeBonito(e.nome_completo), largura: 62 },
+    { chave: "cargo", titulo: "Cargo", valor: (e: any) => nomeBonito(e.cargo || ""), largura: 46 },
+    { chave: "sector", titulo: "Setor", valor: (e: any) => e.setor || "—", largura: 32 },
+    { chave: "company", titulo: "Empresa", valor: (e: any) => (e.empresas?.nome || "—").replace("EMPREENDIMENTOS TURISTICOS ", "").replace(" OPERADORA DE HOTEIS LTDA", ""), largura: 30 },
+    { chave: "admissao", titulo: "Admissão", valor: (e: any) => formatDateOnlyPtBR(e.data_admissao) || "—", largura: 22 },
+    { chave: "contract", titulo: "Contrato", valor: (e: any) => CONTRATO[e.tipo_contrato] || "—", largura: 28 },
+    { chave: "status", titulo: "Situação", valor: (e: any) => STATUS[e.status] || e.status || "—", largura: 22 },
+  ].filter((c) => c.chave !== agrupar);
+
+  const filtrosTexto = () => {
+    const f: string[] = [];
+    f.push(`Situação: ${status === "ativos" ? "ativos (sem demitidos)" : status === "all" ? "todas" : STATUS[status]}`);
+    if (empresa !== "all") f.push(`Empresa: ${companies?.find((c) => c.id === empresa)?.nome}`);
+    if (setor !== "all") f.push(`Setor: ${setor}`);
+    if (contrato !== "all") f.push(`Contrato: ${CONTRATO[contrato]}`);
+    if (sexo !== "all") f.push(`Sexo: ${sexo}`);
+    if (busca.trim()) f.push(`Busca: "${busca.trim()}"`);
+    return f;
   };
 
   const exportToPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(14);
-    doc.text(getReportTitle(), 14, 15);
-    doc.setFontSize(9);
-    doc.text(`${new Date().toLocaleDateString()} | Total: ${employees?.length || 0}`, 14, 22);
-
-    // Tabela compacta
-    let yPos = 30;
-    const lineHeight = 6;
-    
-    employees?.forEach((emp, i) => {
-      if (yPos > 280) {
-        doc.addPage();
-        yPos = 15;
-      }
-      
-      const line = `${i + 1}. ${emp.nome_completo} | ${emp.cargo} | ${emp.empresas?.nome || '-'} | ${emp.status}`;
-      doc.text(line, 14, yPos);
-      yPos += lineHeight;
+    gerarRelatorioPdf({
+      titulo: def.titulo,
+      filtros: filtrosTexto(),
+      colunas: colunas.map((c) => c.titulo),
+      larguras: Object.fromEntries(colunas.map((c, i) => [i, c.largura]).filter(([i]) => i !== 0)),
+      grupos: grupos.map((g) => ({ titulo: g.titulo, linhas: g.lista.map((e) => colunas.map((c) => c.valor(e))) })),
+      rotuloGrupo: def.rotulo,
+      paisagem: true,
+      nomeArquivo: `${def.titulo.toLowerCase().replace(/\s+/g, "-")}-${new Date().toLocaleDateString("pt-BR").replace(/\//g, "-")}.pdf`,
     });
-
-    doc.save(`funcionarios-${new Date().getTime()}.pdf`);
   };
 
   const exportToExcel = () => {
-    const data = employees?.map((emp) => ({
-      Nome: emp.nome_completo,
-      CPF: emp.cpf,
-      Cargo: emp.cargo,
-      Empresa: emp.empresas?.nome || "-",
-      Setor: emp.setor || "-",
-      "Tipo Contrato": emp.tipo_contrato,
-      Status: emp.status,
-      Sexo: emp.sexo || "-",
-      Salário: emp.salario,
-      "Data Admissão": emp.data_admissao,
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(data || []);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Funcionários");
-    XLSX.writeFile(wb, `relatorio-funcionarios-${new Date().getTime()}.xlsx`);
-  };
-
-  const getStatusLabel = (status: string) => {
-    const labels: Record<string, string> = {
-      ativo: "Ativo",
-      ferias: "Férias",
-      afastado: "Afastado",
-      demitido: "Demitido",
-    };
-    return labels[status] || status;
+    const linhas = grupos.flatMap((g) =>
+      g.lista.map((e: any) => ({
+        ...(agrupar !== "all" ? { [def.rotulo]: g.titulo } : {}),
+        Nome: e.nome_completo,
+        CPF: e.cpf || "",
+        Cargo: e.cargo || "",
+        Setor: e.setor || "",
+        Empresa: e.empresas?.nome || "",
+        "Data de admissão": formatDateOnlyPtBR(e.data_admissao),
+        Contrato: CONTRATO[e.tipo_contrato] || e.tipo_contrato || "",
+        Situação: STATUS[e.status] || e.status || "",
+        Sexo: e.sexo || "",
+      })),
+    );
+    const ws = XLSX.utils.json_to_sheet(linhas);
+    ws["!cols"] = Object.keys(linhas[0] || {}).map((k) => ({ wch: k === "Nome" ? 40 : k === "Empresa" ? 36 : 18 }));
+    XLSX.utils.book_append_sheet(wb, ws, "Colaboradores");
+    if (agrupar !== "all") {
+      const resumo = grupos.map((g) => ({ [def.rotulo]: g.titulo, Quantidade: g.lista.length }));
+      resumo.push({ [def.rotulo]: "Total", Quantidade: filtrados.length } as any);
+      const wr = XLSX.utils.json_to_sheet(resumo);
+      wr["!cols"] = [{ wch: 36 }, { wch: 12 }];
+      XLSX.utils.book_append_sheet(wb, wr, "Resumo");
+    }
+    XLSX.writeFile(wb, `${def.titulo.toLowerCase().replace(/\s+/g, "-")}.xlsx`);
   };
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Filtros de Relatório</CardTitle>
+          <CardTitle>Relatório de colaboradores</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-2">
-              <Label>Tipo de Relatório</Label>
-              <Select value={reportType} onValueChange={setReportType}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+              <Label htmlFor="rel-agrupar">Agrupar por</Label>
+              <Select value={agrupar} onValueChange={setAgrupar}>
+                <SelectTrigger id="rel-agrupar"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Lista Completa</SelectItem>
-                  <SelectItem value="gender">Por Sexo</SelectItem>
-                  <SelectItem value="company">Por Empresa</SelectItem>
-                  <SelectItem value="sector">Por Setor</SelectItem>
-                  <SelectItem value="contract">Por Tipo de Contrato</SelectItem>
-                  <SelectItem value="status">Por Status</SelectItem>
+                  <SelectItem value="sector">Setor</SelectItem>
+                  <SelectItem value="company">Empresa</SelectItem>
+                  <SelectItem value="cargo">Cargo</SelectItem>
+                  <SelectItem value="status">Situação</SelectItem>
+                  <SelectItem value="contract">Tipo de contrato</SelectItem>
+                  <SelectItem value="gender">Sexo</SelectItem>
+                  <SelectItem value="all">Não agrupar (lista única)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
-              <Label>Empresa</Label>
-              <Select value={selectedCompany} onValueChange={setSelectedCompany}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+              <Label htmlFor="rel-status">Situação</Label>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger id="rel-status"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ativos">Ativos (sem demitidos)</SelectItem>
+                  <SelectItem value="ativo">Só trabalhando</SelectItem>
+                  <SelectItem value="ferias">De férias</SelectItem>
+                  <SelectItem value="afastado">Afastados</SelectItem>
+                  <SelectItem value="em_admissao">Em admissão</SelectItem>
+                  <SelectItem value="demitido">Demitidos</SelectItem>
+                  <SelectItem value="all">Todos, inclusive demitidos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="rel-busca">Buscar</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input id="rel-busca" placeholder="Nome ou cargo" className="pl-9" value={busca} onChange={(e) => setBusca(e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="rel-empresa">Empresa</Label>
+              <Select value={empresa} onValueChange={setEmpresa}>
+                <SelectTrigger id="rel-empresa"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas</SelectItem>
-                  {companies?.map((company) => (
-                    <SelectItem key={company.id} value={company.id}>
-                      {company.nome}
-                    </SelectItem>
-                  ))}
+                  {companies?.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
-              <Label>Setor</Label>
-              <Select value={selectedSector} onValueChange={setSelectedSector}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+              <Label htmlFor="rel-setor">Setor</Label>
+              <Select value={setor} onValueChange={setSetor}>
+                <SelectTrigger id="rel-setor"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
-                  {sectors?.map((sector) => (
-                    <SelectItem key={sector.id} value={sector.nome}>
-                      {sector.nome}
-                    </SelectItem>
-                  ))}
+                  {sectors?.map((s) => <SelectItem key={s.id} value={s.nome}>{s.nome}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-
-            <div className="space-y-2">
-              <Label>Tipo de Contrato</Label>
-              <Select value={selectedContractType} onValueChange={setSelectedContractType}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="fixo">Fixo</SelectItem>
-                  <SelectItem value="intermitente">Intermitente</SelectItem>
-                  <SelectItem value="prestador_servico">Prestador de Serviço</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="ativo">Ativo</SelectItem>
-                  <SelectItem value="ferias">Férias</SelectItem>
-                  <SelectItem value="afastado">Afastado</SelectItem>
-                  <SelectItem value="demitido">Demitido</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Sexo</Label>
-              <Select value={selectedGender} onValueChange={setSelectedGender}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="Masculino">Masculino</SelectItem>
-                  <SelectItem value="Feminino">Feminino</SelectItem>
-                  <SelectItem value="Outro">Outro</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="rel-contrato">Contrato</Label>
+                <Select value={contrato} onValueChange={setContrato}>
+                  <SelectTrigger id="rel-contrato"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="fixo">Fixo (CLT)</SelectItem>
+                    <SelectItem value="intermitente">Intermitente</SelectItem>
+                    <SelectItem value="prestador_servico">Prestador</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="rel-sexo">Sexo</Label>
+                <Select value={sexo} onValueChange={setSexo}>
+                  <SelectTrigger id="rel-sexo"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="Masculino">Masculino</SelectItem>
+                    <SelectItem value="Feminino">Feminino</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
-          <div className="flex justify-end">
-            <ExportButtons
-              onExportPDF={exportToPDF}
-              onExportExcel={exportToExcel}
-              disabled={!employees || employees.length === 0}
-            />
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+            <p className="text-sm text-muted-foreground">
+              <strong className="text-foreground">{filtrados.length}</strong> colaboradores
+              {agrupar !== "all" && <> em <strong className="text-foreground">{grupos.length}</strong> {def.rotulo.toLowerCase()}{grupos.length === 1 ? "" : "s"}</>}
+            </p>
+            <ExportButtons onExportPDF={exportToPDF} onExportExcel={exportToExcel} disabled={filtrados.length === 0} />
           </div>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{getReportTitle()}</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            {employees?.length || 0} registros | Página {currentPage} de {totalPages}
-          </p>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="w-8 h-8 animate-spin" />
-            </div>
-          ) : employees && employees.length > 0 ? (
-            <>
+      {isLoading ? (
+        <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin" /></div>
+      ) : filtrados.length === 0 ? (
+        <Card><CardContent className="py-12 text-center text-muted-foreground">Nenhum colaborador com esses filtros.</CardContent></Card>
+      ) : (
+        <>
+          {agrupar !== "all" && (
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-base">Resumo por {def.rotulo.toLowerCase()}</CardTitle></CardHeader>
+              <CardContent>
+                <ul className="grid gap-x-8 gap-y-2 sm:grid-cols-2">
+                  {grupos.map((g) => (
+                    <li key={g.titulo}>
+                      <a href={`#grupo-${encodeURIComponent(g.titulo)}`} className="group block rounded-md p-1 hover:bg-muted/60">
+                        <div className="flex justify-between gap-3 text-sm">
+                          <span className="truncate font-medium">{g.titulo}</span>
+                          <span className="tabular-nums text-muted-foreground">{g.lista.length} · {((g.lista.length / filtrados.length) * 100).toFixed(0)}%</span>
+                        </div>
+                        <div className="mt-1 h-1.5 rounded-full bg-muted">
+                          <div className="h-full rounded-full bg-primary" style={{ width: `${(g.lista.length / maior) * 100}%` }} />
+                        </div>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+
+          {grupos.map((g) => (
+            <Card key={g.titulo} id={`grupo-${encodeURIComponent(g.titulo)}`} className="scroll-mt-24 overflow-hidden">
+              {agrupar !== "all" && (
+                <div className="flex items-baseline justify-between gap-3 border-b bg-muted/40 px-4 py-3">
+                  <h3 className="font-semibold">{g.titulo}</h3>
+                  <span className="text-sm text-muted-foreground">{g.lista.length} {g.lista.length === 1 ? "pessoa" : "pessoas"}</span>
+                </div>
+              )}
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="py-2">Nome</TableHead>
-                      <TableHead className="py-2">Cargo</TableHead>
-                      <TableHead className="py-2">Empresa</TableHead>
-                      <TableHead className="py-2">Setor</TableHead>
-                      <TableHead className="py-2">Contrato</TableHead>
-                      <TableHead className="py-2">Status</TableHead>
-                      <TableHead className="py-2">Sexo</TableHead>
+                      <TableHead className="w-10 text-right">#</TableHead>
+                      {colunas.map((c) => <TableHead key={c.chave}>{c.titulo}</TableHead>)}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paginatedData.map((employee) => (
-                      <TableRow key={employee.id}>
-                        <TableCell className="py-2 font-medium">{employee.nome_completo}</TableCell>
-                        <TableCell className="py-2">{employee.cargo}</TableCell>
-                        <TableCell className="py-2">{employee.empresas?.nome || "-"}</TableCell>
-                        <TableCell className="py-2">{employee.setor || "-"}</TableCell>
-                        <TableCell className="py-2">{employee.tipo_contrato}</TableCell>
-                        <TableCell className="py-2">{getStatusLabel(employee.status || "")}</TableCell>
-                        <TableCell className="py-2">{employee.sexo || "-"}</TableCell>
+                    {g.lista.map((e: any, i: number) => (
+                      <TableRow key={e.id}>
+                        <TableCell className="py-2 text-right text-muted-foreground tabular-nums">{i + 1}</TableCell>
+                        {colunas.map((c) => (
+                          <TableCell key={c.chave} className={`py-2 ${c.chave === "nome" ? "font-medium" : ""}`}>{c.valor(e)}</TableCell>
+                        ))}
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </div>
-
-              {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </Button>
-                  <span className="text-sm">
-                    Página {currentPage} de {totalPages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </div>
-              )}
-            </>
-          ) : (
-            <p className="text-center text-muted-foreground py-8">
-              Nenhum funcionário encontrado com os filtros selecionados
-            </p>
-          )}
-        </CardContent>
-      </Card>
+            </Card>
+          ))}
+        </>
+      )}
     </div>
   );
 };
