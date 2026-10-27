@@ -235,20 +235,20 @@ export default function NR1Lideranca() {
 
       {/* Link único */}
       <Dialog open={!!linkDe} onOpenChange={() => setLinkDe(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
+        <DialogContent className="max-w-md overflow-hidden">
+          <DialogHeader className="min-w-0">
             <DialogTitle>Link da pesquisa</DialogTitle>
             <DialogDescription>{linkDe?.titulo} · mande o mesmo link para toda a equipe</DialogDescription>
           </DialogHeader>
           {linkDe && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 rounded-md bg-muted p-2">
-                <span className="flex-1 truncate font-mono text-xs">{link(linkDe)}</span>
-                <Button size="sm" variant="ghost" onClick={() => copiar(link(linkDe))}><Copy className="h-4 w-4 mr-1" />Copiar</Button>
+            <div className="min-w-0 space-y-4">
+              <div className="flex min-w-0 items-center gap-2 rounded-md bg-muted p-2">
+                <span className="min-w-0 flex-1 truncate font-mono text-xs" title={link(linkDe)}>{link(linkDe)}</span>
+                <Button size="sm" variant="ghost" className="shrink-0" onClick={() => copiar(link(linkDe))}><Copy className="h-4 w-4 mr-1" />Copiar</Button>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <Button className="flex-1" variant="outline" onClick={() => copiar(mensagemWhats(linkDe))}>Copiar mensagem pronta</Button>
-                <Button className="flex-1" variant="outline" asChild>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <Button className="w-full" variant="outline" onClick={() => copiar(mensagemWhats(linkDe))}>Copiar mensagem pronta</Button>
+                <Button className="w-full" variant="outline" asChild>
                   <a href={`https://wa.me/?text=${encodeURIComponent(mensagemWhats(linkDe))}`} target="_blank" rel="noreferrer">Enviar no WhatsApp</a>
                 </Button>
               </div>
