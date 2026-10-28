@@ -10,9 +10,13 @@ import { Key, Loader2 } from "lucide-react";
 interface ChangePasswordDialogProps {
   userId: string | null | undefined;
   employeeName: string;
+  /** para criar o acesso de quem ainda não tem login */
+  employeeId?: string;
+  cpf?: string | null;
+  onUpdate?: () => void;
 }
 
-const ChangePasswordDialog = ({ userId, employeeName }: ChangePasswordDialogProps) => {
+const ChangePasswordDialog = ({ userId, employeeName, employeeId, cpf, onUpdate }: ChangePasswordDialogProps) => {
   const [open, setOpen] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -21,8 +25,8 @@ const ChangePasswordDialog = ({ userId, employeeName }: ChangePasswordDialogProp
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!userId) {
-      toast.error("Funcionário não possui conta de usuário");
+    if (!userId && !(employeeId && cpf)) {
+      toast.error("Cadastre o CPF do funcionário antes de criar o acesso");
       return;
     }
 
@@ -39,13 +43,25 @@ const ChangePasswordDialog = ({ userId, employeeName }: ChangePasswordDialogProp
     setLoading(true);
 
     try {
-      const { error } = await supabase.functions.invoke('update-employee-password', {
-        body: { userId, newPassword }
-      });
-
-      if (error) throw error;
-
-      toast.success("Senha alterada com sucesso");
+      if (!userId) {
+        // Ainda não tem login: cria o acesso com o CPF e liga ao cadastro
+        const { data, error } = await supabase.functions.invoke('create-employee-user', {
+          body: { cpf, senha: newPassword, nome_completo: employeeName }
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        const { error: vinculoError } = await supabase.from("employees").update({ user_id: data.user.id }).eq("id", employeeId!);
+        if (vinculoError) throw vinculoError;
+        toast.success("Acesso criado. Entra com o CPF e esta senha.");
+        onUpdate?.();
+      } else {
+        const { data, error } = await supabase.functions.invoke('update-employee-password', {
+          body: { userId, newPassword }
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        toast.success(data?.emailCorrigido ? "Senha alterada e login ajustado ao CPF atual" : "Senha alterada com sucesso");
+      }
       setNewPassword("");
       setConfirmPassword("");
       setOpen(false);
@@ -62,12 +78,12 @@ const ChangePasswordDialog = ({ userId, employeeName }: ChangePasswordDialogProp
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <Key className="w-4 h-4 mr-2" />
-          Alterar Senha
+          {userId ? "Alterar Senha" : "Criar acesso"}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Alterar Senha - {employeeName}</DialogTitle>
+          <DialogTitle>{userId ? "Alterar senha" : "Criar acesso"} - {employeeName}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">

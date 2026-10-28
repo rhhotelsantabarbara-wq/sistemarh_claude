@@ -73,8 +73,26 @@ Deno.serve(async (req) => {
 
     console.log('Senha alterada com sucesso');
 
+    // O login é feito pelo CPF (e-mail interno "funcionario.<cpf>@rhsantabarbara.app").
+    // Se o CPF do cadastro foi corrigido depois de criar o acesso, o e-mail ficou com o CPF antigo
+    // e a pessoa não conseguia entrar. Aqui o e-mail passa a usar o CPF atual do cadastro.
+    let emailCorrigido = false;
+    const { data: emp } = await supabaseAdmin.from('employees').select('cpf').eq('user_id', userId).maybeSingle();
+    const cpfAtual = String(emp?.cpf || '').replace(/\D/g, '');
+    if (cpfAtual.length === 11) {
+      const { data: alvo } = await supabaseAdmin.auth.admin.getUserById(userId);
+      const emailAtual = alvo?.user?.email || '';
+      const prefixo = ['funcionario', 'gestor', 'admin'].find((p) => emailAtual.startsWith(p + '.')) || 'funcionario';
+      const esperado = `${prefixo}.${cpfAtual}@rhsantabarbara.app`;
+      if (emailAtual && emailAtual !== esperado && emailAtual.endsWith('@rhsantabarbara.app')) {
+        const { error: emailError } = await supabaseAdmin.auth.admin.updateUserById(userId, { email: esperado, email_confirm: true });
+        if (emailError) console.error('Não foi possível ajustar o e-mail ao CPF:', emailError);
+        else emailCorrigido = true;
+      }
+    }
+
     return new Response(
-      JSON.stringify({ message: 'Senha alterada com sucesso' }),
+      JSON.stringify({ message: 'Senha alterada com sucesso', emailCorrigido }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200 

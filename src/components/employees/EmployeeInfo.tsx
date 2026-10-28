@@ -19,7 +19,7 @@ interface EmployeeInfoProps {
   onUpdate: () => void;
 }
 
-const EmployeeInfo = ({ employee }: EmployeeInfoProps) => {
+const EmployeeInfo = ({ employee, onUpdate }: EmployeeInfoProps) => {
   const { canViewSalary } = useCanViewSalary();
   const [isOnVacation, setIsOnVacation] = useState(false);
 
@@ -114,6 +114,9 @@ const EmployeeInfo = ({ employee }: EmployeeInfoProps) => {
           <ChangePasswordDialog 
             userId={employee.user_id} 
             employeeName={employee.nome_completo}
+            employeeId={employee.id}
+            cpf={employee.cpf}
+            onUpdate={onUpdate}
           />
         </div>
       </CardHeader>
