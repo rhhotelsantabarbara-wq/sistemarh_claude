@@ -11,7 +11,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { FileCheck2, Eye, Loader2, Save, Upload } from "lucide-react";
+import { FileCheck2, Eye, Loader2, Save, Upload, Check, ChevronsUpDown, Sparkles, AlertCircle } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { competenciaDoTexto, nomeProvavel, vincularPorTexto, type ComoEncontrou } from "@/lib/holeriteVinculo";
 import { toast } from "sonner";
 
 (pdfjsLib as typeof pdfjsLib & { GlobalWorkerOptions: { workerSrc: string } }).GlobalWorkerOptions.workerSrc = workerSrc;
@@ -42,6 +45,60 @@ interface PageHolerite {
   tipo_folha: string;
   status: PageStatus;
   selecionado: boolean;
+  /** como o sistema achou o funcionário sozinho (null = escolhido à mão ou não achou) */
+  como?: ComoEncontrou | null;
+  /** nome lido na página, para ajudar quando não achou */
+  nome_lido?: string | null;
+}
+
+const COMO_ROTULO: Record<ComoEncontrou, string> = {
+  cpf: "Achado pelo CPF",
+  nome: "Achado pelo nome",
+  nome_parecido: "Nome parecido: confira",
+};
+
+/** Lista de funcionários com busca por digitação */
+function EscolherFuncionario({ valor, lista, onEscolher }: { valor: string | null; lista: Employee[]; onEscolher: (id: string) => void }) {
+  const [aberto, setAberto] = useState(false);
+  const atual = lista.find((e) => e.id === valor);
+  return (
+    <Popover open={aberto} onOpenChange={setAberto}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" role="combobox" aria-expanded={aberto} className="h-9 w-full justify-between font-normal">
+          <span className={`truncate ${atual ? "" : "text-muted-foreground"}`}>{atual ? atual.nome_completo : "Escolha o funcionário"}</span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[min(380px,90vw)] p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Digite o nome ou CPF…" />
+          <CommandList>
+            <CommandEmpty>Ninguém encontrado.</CommandEmpty>
+            <CommandGroup>
+              {lista.map((e) => (
+                <CommandItem key={e.id} value={`${e.nome_completo} ${e.cpf || ""} ${e.id}`} onSelect={() => { onEscolher(e.id); setAberto(false); }}>
+                  <Check className={`mr-2 h-4 w-4 ${e.id === valor ? "opacity-100" : "opacity-0"}`} />
+                  <span className="truncate">{e.nome_completo}</span>
+                  {e.cpf && <span className="ml-auto pl-2 text-xs text-muted-foreground">{e.cpf}</span>}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/** Texto da página, linha por linha */
+async function textoDaPagina(pdf: any, numero: number): Promise<string> {
+  const page = await pdf.getPage(numero);
+  const tc = await page.getTextContent();
+  let out = "";
+  for (const item of tc.items as any[]) {
+    out += (item.str || "") + (item.hasEOL ? "\n" : " ");
+  }
+  return out;
 }
 
 interface ImportarHoleritesTabProps {
@@ -80,6 +137,7 @@ export function ImportarHoleritesTab(_props: ImportarHoleritesTabProps = {}) {
   const [saving, setSaving] = useState(false);
   const [sobrescrever, setSobrescrever] = useState(false);
   const [previewPage, setPreviewPage] = useState<number | null>(null);
+  const [soFaltando, setSoFaltando] = useState(false);
 
   const previewUrl = useMemo(() => (file ? URL.createObjectURL(file) : ""), [file]);
 
@@ -142,19 +200,57 @@ export function ImportarHoleritesTab(_props: ImportarHoleritesTabProps = {}) {
     try {
       const bytes = new Uint8Array(await file.arrayBuffer());
       const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
-      const novasPaginas: PageHolerite[] = Array.from({ length: pdf.numPages }, (_, index) => ({
-        pagina: index + 1,
-        employee_id: null,
-        employee_nome: null,
-        empresa_id: empresaDefault || null,
-        mes: mesDefault,
-        ano: anoDefault,
-        tipo_folha: "salario",
-        status: "aguardando_vinculo",
-        selecionado: false,
-      }));
+      const novasPaginas: PageHolerite[] = [];
+      for (let n = 1; n <= pdf.numPages; n++) {
+        let texto = "";
+        try { texto = await textoDaPagina(pdf, n); } catch { /* página sem texto: fica para escolher à mão */ }
+        // Procura primeiro na empresa escolhida; se não achar, em todas
+        const achado = vincularPorTexto(texto, employeesDisponiveis) || (empresaDefault ? vincularPorTexto(texto, employees) : null);
+        const funcionario = achado ? employees.find((e) => e.id === achado.employee_id) : null;
+        const comp = competenciaDoTexto(texto);
+        novasPaginas.push({
+          pagina: n,
+          employee_id: funcionario?.id || null,
+          employee_nome: funcionario?.nome_completo || null,
+          empresa_id: funcionario?.empresa_id || empresaDefault || null,
+          mes: comp?.mes ?? mesDefault,
+          ano: comp?.ano ?? anoDefault,
+          tipo_folha: "salario",
+          status: "aguardando_vinculo",
+          selecionado: false,
+          como: achado?.como || null,
+          nome_lido: funcionario ? null : nomeProvavel(texto),
+        });
+      }
+
+      // Confere de uma vez quem já tem holerite nessa competência
+      const ids = Array.from(new Set(novasPaginas.map((p) => p.employee_id).filter(Boolean))) as string[];
+      const existentes = new Set<string>();
+      if (ids.length) {
+        const anos = Array.from(new Set(novasPaginas.map((p) => p.ano).filter(Boolean))) as number[];
+        const { data } = await supabase
+          .from("holerite_documentos" as never)
+          .select("employee_id, mes, ano")
+          .in("employee_id", ids)
+          .in("ano", anos)
+          .eq("tipo_folha", "salario");
+        ((data as any[]) || []).forEach((d) => existentes.add(`${d.employee_id}:${d.mes}:${d.ano}`));
+      }
+      // O mesmo funcionário em duas páginas: a segunda fica para conferir
+      const vistos = new Set<string>();
+      for (const p of novasPaginas) {
+        if (!p.employee_id) continue;
+        if (vistos.has(p.employee_id)) { p.employee_id = null; p.employee_nome = null; p.como = null; continue; }
+        vistos.add(p.employee_id);
+        p.status = !p.mes || !p.ano ? "sem_periodo" : existentes.has(`${p.employee_id}:${p.mes}:${p.ano}`) ? "ja_existe" : "ok";
+        p.selecionado = p.status === "ok" || (p.status === "ja_existe" && sobrescrever);
+      }
       setPaginas(novasPaginas);
-      toast.success(`${pdf.numPages} página(s) separada(s). Vincule cada uma ao funcionário correto.`);
+      const auto = novasPaginas.filter((p) => p.employee_id).length;
+      const faltam = novasPaginas.length - auto;
+      if (auto === 0) toast.warning(`${pdf.numPages} página(s) separada(s), mas não deu para ler os nomes. Vincule à mão.`);
+      else toast.success(`${pdf.numPages} página(s): ${auto} vinculada(s) sozinha(s)${faltam ? `, ${faltam} para escolher` : ""}.`);
+      if (faltam) setSoFaltando(false);
     } catch (error) {
       console.error(error);
       toast.error("Não foi possível abrir este PDF. Verifique se o arquivo não está protegido.");
@@ -176,6 +272,7 @@ export function ImportarHoleritesTab(_props: ImportarHoleritesTabProps = {}) {
         employee_id: employee.id,
         employee_nome: employee.nome_completo,
         empresa_id: employee.empresa_id,
+        como: null,
         status,
         selecionado: status === "ok" || (status === "ja_existe" && sobrescrever),
       } : item));
@@ -266,7 +363,7 @@ export function ImportarHoleritesTab(_props: ImportarHoleritesTabProps = {}) {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Cada página será um holerite separado. Depois, escolha manualmente o funcionário de cada página.
+            Cada página vira um holerite separado. O sistema lê o nome e o CPF de cada página e já vincula ao funcionário; você só confere e escolhe os que ele não achar.
           </p>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
             <div>
@@ -331,6 +428,11 @@ export function ImportarHoleritesTab(_props: ImportarHoleritesTabProps = {}) {
             <div className="grid gap-3 rounded border bg-muted/30 p-3 md:grid-cols-2">
               <div className="text-sm">
                 <b>{paginas.length}</b> página(s) separada(s) · <b>{totalVinculados}</b> vinculada(s)
+                {paginas.length - totalVinculados > 0 && <> · <b className="text-amber-700">{paginas.length - totalVinculados}</b> sem funcionário</>}
+                <label className="mt-2 flex cursor-pointer items-center gap-2">
+                  <Checkbox checked={soFaltando} onCheckedChange={(v) => setSoFaltando(Boolean(v))} />
+                  Mostrar só as páginas para conferir
+                </label>
               </div>
               <div className="flex items-start gap-2">
                 <Checkbox id="sobrescrever-toggle" checked={sobrescrever} onCheckedChange={(value) => setSobrescrever(Boolean(value))} />
@@ -360,8 +462,8 @@ export function ImportarHoleritesTab(_props: ImportarHoleritesTabProps = {}) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginas.map((pagina, index) => (
-                  <TableRow key={pagina.pagina}>
+                {paginas.map((pagina, index) => (soFaltando && pagina.employee_id && pagina.como !== "nome_parecido") ? null : (
+                  <TableRow key={pagina.pagina} className={!pagina.employee_id ? "bg-amber-50/50 dark:bg-amber-950/20" : undefined}>
                     <TableCell>
                       <Checkbox
                         checked={pagina.selecionado}
@@ -371,16 +473,15 @@ export function ImportarHoleritesTab(_props: ImportarHoleritesTabProps = {}) {
                     </TableCell>
                     <TableCell className="font-medium">{pagina.pagina}</TableCell>
                     <TableCell className="min-w-72">
-                      <Select value={pagina.employee_id || ""} onValueChange={(value) => void vincularManual(index, value)}>
-                        <SelectTrigger className="h-9"><SelectValue placeholder="Escolha o funcionário" /></SelectTrigger>
-                        <SelectContent>
-                          {employeesDisponiveis.map((employee) => (
-                            <SelectItem key={employee.id} value={employee.id}>
-                              {employee.nome_completo}{employee.cpf ? ` · ${employee.cpf}` : ""}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <EscolherFuncionario valor={pagina.employee_id} lista={employeesDisponiveis.some((e) => e.id === pagina.employee_id) ? employeesDisponiveis : employees} onEscolher={(id) => void vincularManual(index, id)} />
+                      {pagina.como && (
+                        <p className={`mt-1 flex items-center gap-1 text-xs ${pagina.como === "nome_parecido" ? "text-amber-700 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400"}`}>
+                          <Sparkles className="h-3 w-3" />{COMO_ROTULO[pagina.como]}
+                        </p>
+                      )}
+                      {!pagina.employee_id && pagina.nome_lido && (
+                        <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground"><AlertCircle className="h-3 w-3" />No holerite: <b className="font-medium">{pagina.nome_lido}</b></p>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex min-w-44 items-center gap-2">
