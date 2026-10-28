@@ -24,7 +24,14 @@ import {
   Info,
   Check,
   Eye,
+  ArrowLeft,
+  CalendarCheck,
+  Palmtree,
+  GraduationCap,
+  HardHat,
+  Banknote,
 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { VacationProgress } from "@/components/ui/vacation-progress";
@@ -297,54 +304,73 @@ const FuncionarioDashboard = ({ user }: FuncionarioDashboardProps) => {
     }
   };
 
+  // Navegação interna: cada atalho abre uma tela própria (#holerites, #avisos…), e o "voltar" do celular funciona
+  const [secao, setSecao] = useState<string>(() => window.location.hash.replace("#", ""));
+  useEffect(() => {
+    const aoMudar = () => { setSecao(window.location.hash.replace("#", "")); window.scrollTo({ top: 0 }); };
+    window.addEventListener("hashchange", aoMudar);
+    return () => window.removeEventListener("hashchange", aoMudar);
+  }, []);
+  const abrir = (s: string) => { window.location.hash = s; };
+  const voltar = () => {
+    if (window.history.length > 1 && secao) window.history.back();
+    else { history.replaceState(null, "", window.location.pathname); setSecao(""); }
+  };
 
   if (hasAccess === null || !employee) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-muted/30">
         <p className="text-muted-foreground">Carregando...</p>
       </div>
     );
   }
 
+  const primeiroNome = String(employee.nome_completo || "").split(" ")[0];
+  const nomeBonito = primeiroNome.charAt(0).toUpperCase() + primeiroNome.slice(1).toLowerCase();
+  const hora = new Date().getHours();
+  const saudacao = hora < 12 ? "Bom dia" : hora < 18 ? "Boa tarde" : "Boa noite";
+  const iniciais = String(employee.nome_completo || "").split(" ").filter(Boolean).map((p: string, i: number, a: string[]) => (i === 0 || i === a.length - 1 ? p[0] : "")).join("").toUpperCase();
+
+  const Cabecalho = ({ compacto }: { compacto?: boolean }) => (
+    <header className="bg-primary text-primary-foreground">
+      <div className={`mx-auto max-w-3xl px-4 ${compacto ? "py-3" : "pt-4 pb-8"}`}>
+        <div className="flex items-center justify-between gap-3">
+          {companyLogo ? (
+            <span className="flex h-9 items-center rounded-lg bg-white/95 px-2"><img src={companyLogo} alt="Logo da empresa" className="h-7 w-auto object-contain" /></span>
+          ) : <span className="text-sm font-semibold opacity-90">Meu Painel</span>}
+          <Button variant="ghost" size="sm" onClick={handleLogout} className="text-primary-foreground hover:bg-white/15 hover:text-primary-foreground">
+            <LogOut className="mr-1.5 h-4 w-4" />Sair
+          </Button>
+        </div>
+        {!compacto && (
+          <div className="mt-5 flex items-center gap-4">
+            <Avatar className="h-16 w-16 border-2 border-white/40">
+              <AvatarImage src={employee.foto_url || undefined} alt="" className="object-cover" />
+              <AvatarFallback className="bg-white/20 text-lg font-semibold text-primary-foreground">{iniciais}</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              <p className="text-sm opacity-85">{saudacao},</p>
+              <h1 className="truncate text-2xl font-bold">{nomeBonito}</h1>
+              <p className="truncate text-sm opacity-85">{[employee.cargo, employee.setor].filter(Boolean).join(" · ")}</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </header>
+  );
+
   if (hasAccess === false) {
     return (
-      <div className="min-h-screen bg-background">
-        <header className="border-b bg-card">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {companyLogo ? (
-                <div className="w-10 h-10 flex items-center justify-center">
-                  <img src={companyLogo} alt="Logo" className="w-10 h-10 object-contain" />
-                </div>
-              ) : (
-                <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                  <UserCircle className="w-5 h-5 text-primary-foreground" />
-                </div>
-              )}
-              <div>
-                <h1 className="text-xl font-bold">Meu Painel</h1>
-                <p className="text-sm text-muted-foreground">{employee?.nome_completo}</p>
-              </div>
-            </div>
-            <Button variant="outline" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Sair
-            </Button>
-          </div>
-        </header>
-        <main className="container mx-auto px-4 py-8">
-          <Card className="border-destructive">
+      <div className="min-h-screen bg-muted/30">
+        <Cabecalho />
+        <main className="mx-auto -mt-4 max-w-3xl px-4 pb-8">
+          <Card>
             <CardContent className="py-12 text-center">
-              <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Shield className="w-8 h-8 text-destructive" />
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+                <Shield className="h-8 w-8 text-destructive" />
               </div>
-              <h2 className="text-xl font-semibold mb-2">Acesso Restrito</h2>
-              <p className="text-muted-foreground">
-                Seu tipo de contrato não possui acesso ao painel do funcionário.
-              </p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Entre em contato com o RH para mais informações.
-              </p>
+              <h2 className="mb-2 text-xl font-semibold">Acesso restrito</h2>
+              <p className="text-muted-foreground">Seu tipo de contrato não tem acesso ao painel. Fale com o RH para mais informações.</p>
             </CardContent>
           </Card>
         </main>
@@ -352,400 +378,246 @@ const FuncionarioDashboard = ({ user }: FuncionarioDashboardProps) => {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-background">
-      <PendingSignaturesAlert />
-      <PendingHoleritesAlert />
-      
-      
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {companyLogo ? (
-              <div className="w-10 h-10 flex items-center justify-center">
-                <img src={companyLogo} alt="Logo" className="w-10 h-10 object-contain" />
-              </div>
-            ) : (
-              <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                <UserCircle className="w-5 h-5 text-primary-foreground" />
-              </div>
-            )}
-            <div>
-              <h1 className="text-xl font-bold">Meu Painel</h1>
-              <p className="text-sm text-muted-foreground">{employee.nome_completo}</p>
+  // ---------- dados derivados ----------
+  const hoje = todayISO();
+  const feriasEmCurso = activeVacation && activeVacation.periodo_gozo_inicio <= hoje ? activeVacation : null;
+  const feriasMarcadas = activeVacation && activeVacation.periodo_gozo_inicio > hoje ? activeVacation : null;
+  const progressoFerias = feriasEmCurso ? calculateVacationProgress() : null;
+  const ordemPrioridade: Record<string, number> = { urgente: 0, alta: 1, media: 2, baixa: 3 };
+  const avisosOrdenados = [...avisos].sort((a, b) => {
+    const lidoA = avisosLidos.has(a.id) ? 1 : 0, lidoB = avisosLidos.has(b.id) ? 1 : 0;
+    if (lidoA !== lidoB) return lidoA - lidoB;
+    return (ordemPrioridade[a.prioridade] ?? 2) - (ordemPrioridade[b.prioridade] ?? 2);
+  });
+  const naoLidos = avisos.filter((a) => !avisosLidos.has(a.id));
+  const dataCurta = (d: string) => dataBR(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+
+  const marcarComoLido = async (aviso: any) => {
+    if (avisosLidos.has(aviso.id)) return;
+    const { error } = await supabase.from("avisos_leituras").insert({ aviso_id: aviso.id, employee_id: employee.id });
+    if (!error) setAvisosLidos((prev) => new Set(prev).add(aviso.id));
+  };
+
+  const CartaoAviso = ({ aviso }: { aviso: any }) => {
+    const prioridade = prioridadeConfig[aviso.prioridade] || prioridadeConfig.media;
+    const CategoriaIcon = categoriaIcons[aviso.categoria] || Bell;
+    const lido = avisosLidos.has(aviso.id);
+    return (
+      <div className={`rounded-xl border-l-4 bg-card p-4 shadow-sm ${prioridade.borderColor} ${lido ? "opacity-70" : ""}`}>
+        <div className="flex items-start gap-3">
+          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${prioridade.bgColor}`}><CategoriaIcon className="h-4 w-4" /></span>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-semibold capitalize">{aviso.categoria || "Aviso"}</span>
+              {(aviso.prioridade === "urgente" || aviso.prioridade === "alta") && <Badge variant={aviso.prioridade === "urgente" ? "destructive" : "outline"} className="text-xs">{prioridade.label}</Badge>}
+              {lido && <span className="flex items-center gap-1 text-xs text-muted-foreground"><Check className="h-3 w-3" />Lido</span>}
+            </div>
+            <p className="mt-1 whitespace-pre-line break-words text-[15px] leading-relaxed">{aviso.mensagem}</p>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              {aviso.anexo_url && (
+                <a href={aviso.anexo_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+                  <Paperclip className="h-4 w-4" />Ver anexo
+                </a>
+              )}
+              {!lido && (
+                <Button variant="outline" size="sm" onClick={() => marcarComoLido(aviso)} className="h-8">
+                  <Eye className="mr-1 h-4 w-4" />Marcar como lido
+                </Button>
+              )}
+              <span className="ml-auto text-xs text-muted-foreground">até {dataCurta(aviso.data_expiracao)}</span>
             </div>
           </div>
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut className="w-4 h-4 mr-2" />
-            Sair
-          </Button>
         </div>
-      </header>
+      </div>
+    );
+  };
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="grid gap-6">
-          {/* Vacation Progress */}
-          {visibility.ferias_visivel && activeVacation && (() => {
-            const vacationProgress = calculateVacationProgress();
-            if (vacationProgress && vacationProgress.daysRemaining > 0) {
-              return (
-                <Card className="border-primary">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Calendar className="w-5 h-5" />
-                      Férias em Andamento
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Retorno previsto</span>
-                      <span className="font-medium">
-                        {dataBR(activeVacation.periodo_gozo_fim).toLocaleDateString("pt-BR")}
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Dias restantes</span>
-                        <span className="font-bold text-lg">
-                          {vacationProgress.daysRemaining} {vacationProgress.daysRemaining === 1 ? 'dia' : 'dias'}
-                        </span>
-                      </div>
-                      <VacationProgress 
-                        totalDays={vacationProgress.totalDays}
-                        daysPassed={vacationProgress.totalDays - vacationProgress.daysRemaining}
-                        vacationDays={vacationProgress.vacationDays}
-                        timeOffDays={vacationProgress.timeOffDays}
-                        className="h-3"
-                      />
-                      {vacationProgress.timeOffDays > 0 && (
-                        <div className="flex gap-2 text-xs text-muted-foreground justify-center">
-                          <div className="flex items-center gap-1">
-                            <div className="w-3 h-3 rounded-full bg-secondary" />
-                            <span>Férias ({vacationProgress.vacationDays})</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <div className="w-3 h-3 rounded-full bg-warning" />
-                            <span>Folgas ({vacationProgress.timeOffDays})</span>
-                          </div>
-                        </div>
-                      )}
-                      <p className="text-xs text-muted-foreground text-center">
-                        {Math.round(vacationProgress.progress)}% concluído
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            }
-            return null;
-          })()}
+  const resumo: { rotulo: string; valor: string; detalhe?: string; cor?: string; icone: any }[] = [];
+  if (visibility.folgas_visivel) resumo.push({ rotulo: "Folgas", valor: String(employee.quantidade_folgas || 0), detalhe: "disponíveis", icone: CalendarCheck });
+  if (visibility.banco_horas_visivel) resumo.push({ rotulo: "Banco de horas", valor: formatDecimalToHoursMinutes(bancoHoras), detalhe: "acumuladas", icone: Wallet });
+  if (visibility.saldo_horas_visivel) resumo.push({
+    rotulo: "Saldo do mês",
+    valor: horasMesAnterior === null ? "—" : `${horasMesAnterior > 0 ? "+" : ""}${formatDecimalToHoursMinutes(horasMesAnterior)}`,
+    detalhe: format(subMonths(new Date(), 1), "MMMM", { locale: ptBR }),
+    cor: horasMesAnterior === null || horasMesAnterior === 0 ? undefined : horasMesAnterior > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400",
+    icone: Clock,
+  });
+  if (visibility.ferias_visivel) resumo.push({
+    rotulo: "Férias",
+    valor: feriasEmCurso ? "Agora" : feriasMarcadas ? dataCurta(feriasMarcadas.periodo_gozo_inicio) : "—",
+    detalhe: feriasEmCurso ? `volta ${dataCurta(feriasEmCurso.periodo_gozo_fim)}` : feriasMarcadas ? "próximas férias" : "nada marcado",
+    icone: Palmtree,
+  });
 
-          {/* TACs */}
-          {visibility.tacs_visivel && <TacCard employeeId={employee.id} />}
+  const atalhos: { chave: string; titulo: string; sub: string; icone: any; cor: string; contador?: number; acao?: () => void }[] = [];
+  if (visibility.holerite_visivel) atalhos.push({ chave: "holerites", titulo: "Holerites", sub: "Ver, baixar e assinar", icone: Receipt, cor: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300", acao: () => navigate("/meus-holerites") });
+  if (visibility.avisos_visivel) atalhos.push({ chave: "avisos", titulo: "Avisos", sub: naoLidos.length ? `${naoLidos.length} não lido${naoLidos.length > 1 ? "s" : ""}` : "Tudo lido", icone: Megaphone, cor: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300", contador: naoLidos.length });
+  if (visibility.treinamentos_visivel) atalhos.push({ chave: "treinamentos", titulo: "Treinamentos", sub: "Cursos e certificados", icone: GraduationCap, cor: "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300" });
+  if (visibility.holerite_visivel && holerites.length > 0) atalhos.push({ chave: "pagamentos", titulo: "Pagamentos", sub: "Valores por mês", icone: Banknote, cor: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" });
+  if (visibility.epis_visivel) atalhos.push({ chave: "epis", titulo: "EPIs", sub: `${epis.length} recebido${epis.length === 1 ? "" : "s"}`, icone: HardHat, cor: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300" });
+  if (visibility.uniformes_visivel) atalhos.push({ chave: "uniformes", titulo: "Uniformes", sub: `${uniformes.length} recebido${uniformes.length === 1 ? "" : "s"}`, icone: Shirt, cor: "bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300" });
 
-          {/* Avisos */}
-          {visibility.avisos_visivel && avisos.length > 0 && (
-            <div className="space-y-3">
-              {avisos
-                .sort((a, b) => {
-                  const prioridadeOrder: Record<string, number> = { urgente: 0, alta: 1, media: 2, baixa: 3 };
-                  return (prioridadeOrder[a.prioridade] || 2) - (prioridadeOrder[b.prioridade] || 2);
-                })
-                .map((aviso) => {
-                  const prioridade = prioridadeConfig[aviso.prioridade] || prioridadeConfig.media;
-                  const CategoriaIcon = categoriaIcons[aviso.categoria] || Bell;
-                  const isLido = avisosLidos.has(aviso.id);
+  const TelaSecao = ({ titulo, children }: { titulo: string; children: React.ReactNode }) => (
+    <div className="min-h-screen bg-muted/30">
+      <Cabecalho compacto />
+      <main className="mx-auto max-w-3xl space-y-4 px-4 py-4 pb-10">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={voltar} className="-ml-2"><ArrowLeft className="mr-1 h-4 w-4" />Início</Button>
+        </div>
+        <h2 className="text-2xl font-bold">{titulo}</h2>
+        {children}
+      </main>
+    </div>
+  );
 
-                  const marcarComoLido = async () => {
-                    if (isLido) return;
-                    try {
-                      await supabase.from("avisos_leituras").insert({
-                        aviso_id: aviso.id,
-                        employee_id: employee.id,
-                      });
-                      setAvisosLidos(prev => new Set(prev).add(aviso.id));
-                    } catch (error) {
-                      console.error("Error marking as read:", error);
-                    }
-                  };
+  const ListaVazia = ({ texto }: { texto: string }) => <Card><CardContent className="py-10 text-center text-muted-foreground">{texto}</CardContent></Card>;
 
-                  return (
-                    <Alert 
-                      key={aviso.id} 
-                      className={`${prioridade.borderColor} ${prioridade.bgColor} ${isLido ? 'opacity-75' : ''}`}
-                    >
-                      <CategoriaIcon className="h-5 w-5" />
-                      <AlertTitle className="font-semibold text-lg flex items-center gap-2 flex-wrap">
-                        <span className="capitalize">{aviso.categoria || "Aviso"}</span>
-                        <Badge variant={aviso.prioridade === "urgente" ? "destructive" : "outline"} className="text-xs">
-                          {prioridade.label}
-                        </Badge>
-                        {isLido && (
-                          <Badge variant="secondary" className="text-xs">
-                            <Check className="w-3 h-3 mr-1" />
-                            Lido
-                          </Badge>
-                        )}
-                      </AlertTitle>
-                      <AlertDescription className="text-base mt-2">
-                        {aviso.mensagem}
-                        <div className="flex flex-wrap items-center gap-3 mt-3">
-                          <span className="text-xs text-muted-foreground">
-                            Válido até: {dataBR(aviso.data_expiracao).toLocaleDateString("pt-BR")}
-                          </span>
-                          {aviso.anexo_url && (
-                            <a 
-                              href={aviso.anexo_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                            >
-                              <Paperclip className="w-3 h-3" />
-                              Ver anexo
-                            </a>
-                          )}
-                          {!isLido && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={marcarComoLido}
-                              className="text-xs h-6"
-                            >
-                              <Eye className="w-3 h-3 mr-1" />
-                              Marcar como lido
-                            </Button>
-                          )}
-                        </div>
-                      </AlertDescription>
-                    </Alert>
-                  );
-                })}
+  // ---------- telas internas ----------
+  if (secao === "avisos" && visibility.avisos_visivel) return (
+    <TelaSecao titulo="Avisos">
+      {avisosOrdenados.length === 0 ? <ListaVazia texto="Nenhum aviso no momento." /> : <div className="space-y-3">{avisosOrdenados.map((a) => <CartaoAviso key={a.id} aviso={a} />)}</div>}
+    </TelaSecao>
+  );
+  if (secao === "treinamentos" && visibility.treinamentos_visivel) return (
+    <TelaSecao titulo="Treinamentos"><TreinamentosCard employeeId={employee.id} /></TelaSecao>
+  );
+  if (secao === "epis" && visibility.epis_visivel) return (
+    <TelaSecao titulo="EPIs recebidos">
+      {epis.length === 0 ? <ListaVazia texto="Nenhum EPI registrado." /> : (
+        <Card><CardContent className="divide-y p-0">
+          {epis.map((epi) => (
+            <div key={epi.id} className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <p className="font-medium">{epi.tipo_epi}</p>
+                <span className="shrink-0 text-sm text-muted-foreground">{dataBR(epi.data_entrega).toLocaleDateString("pt-BR")}</span>
+              </div>
+              <p className="text-sm text-muted-foreground">Quantidade: {epi.quantidade}</p>
+              {epi.observacoes && <p className="mt-1 text-sm">{epi.observacoes}</p>}
             </div>
-          )}
-
-          {/* Cards de Horas */}
-          {(visibility.saldo_horas_visivel || visibility.banco_horas_visivel) && (
-            <div className="grid gap-4 md:grid-cols-2">
-              {/* Horas do Mês Anterior */}
-              {visibility.saldo_horas_visivel && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Clock className="w-5 h-5" />
-                      Saldo de Horas - Mês Anterior
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {horasMesAnterior !== null ? (
-                      <div className="space-y-2">
-                        <div className={`text-3xl font-bold ${
-                          horasMesAnterior > 0 
-                            ? 'text-green-600 dark:text-green-400' 
-                            : horasMesAnterior < 0 
-                            ? 'text-red-600 dark:text-red-400'
-                            : 'text-muted-foreground'
-                        }`}>
-                          {horasMesAnterior > 0 ? '+' : ''}{formatDecimalToHoursMinutes(horasMesAnterior)}
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {format(subMonths(new Date(), 1), "MMMM 'de' yyyy", { locale: ptBR })}
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="text-muted-foreground">
-                        Sem registros
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Banco de Horas */}
-              {visibility.banco_horas_visivel && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Wallet className="w-5 h-5" />
-                      Banco de Horas
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <div className={`text-3xl font-bold ${
-                        bancoHoras > 0 
-                          ? 'text-primary' 
-                          : 'text-muted-foreground'
-                      }`}>
-                        {formatDecimalToHoursMinutes(bancoHoras)}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Horas acumuladas
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+          ))}
+        </CardContent></Card>
+      )}
+    </TelaSecao>
+  );
+  if (secao === "uniformes" && visibility.uniformes_visivel) return (
+    <TelaSecao titulo="Uniformes recebidos">
+      {uniformes.length === 0 ? <ListaVazia texto="Nenhum uniforme registrado." /> : (
+        <Card><CardContent className="divide-y p-0">
+          {uniformes.map((u) => (
+            <div key={u.id} className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <p className="font-medium">{u.tipo_uniforme}</p>
+                <span className="shrink-0 text-sm text-muted-foreground">{dataBR(u.data_entrega).toLocaleDateString("pt-BR")}</span>
+              </div>
+              <p className="text-sm text-muted-foreground">Tamanho {u.tamanho} · Quantidade: {u.quantidade}</p>
+              {u.observacoes && <p className="mt-1 text-sm">{u.observacoes}</p>}
             </div>
-          )}
-
-          {/* Card de Folgas */}
-          {visibility.folgas_visivel && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Folgas Disponíveis</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-primary">
-                  {employee.quantidade_folgas || 0} folgas
+          ))}
+        </CardContent></Card>
+      )}
+    </TelaSecao>
+  );
+  if (secao === "pagamentos" && visibility.holerite_visivel) return (
+    <TelaSecao titulo="Pagamentos">
+      <Button onClick={() => navigate("/meus-holerites")} className="h-12 w-full"><FileText className="mr-2 h-4 w-4" />Abrir holerites (assinar e baixar)</Button>
+      <div className="space-y-3">
+        {holerites.map((h) => {
+          const mesNome = new Date(h.ano, h.mes - 1).toLocaleString("pt-BR", { month: "long" });
+          const tipo = ({ salario: "Salário", complementar: "Complementar", adiantamento: "Adiantamento", decimo_terceiro: "13º salário" } as Record<string, string>)[h.tipo_folha] || h.tipo_folha;
+          const descontos = (h.desconto || 0) + (h.folha_pagamento_itens || []).filter((i: any) => i.variaveis_folha?.tipo === "desconto").reduce((s: number, i: any) => s + i.valor, 0);
+          const brl = (v: number) => Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+          return (
+            <Card key={h.id}><CardContent className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-semibold capitalize">{mesNome} de {h.ano}</p>
+                  <p className="text-sm text-muted-foreground">{tipo}</p>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+                <div className="text-right">
+                  <p className="text-lg font-bold">{brl(h.valor_liquido)}</p>
+                  <p className="text-xs text-muted-foreground">líquido</p>
+                </div>
+              </div>
+              <div className="mt-3 flex justify-between border-t pt-3 text-sm">
+                <span><span className="text-muted-foreground">Bruto </span>{brl(h.valor_bruto)}</span>
+                <span><span className="text-muted-foreground">Descontos </span><span className="text-destructive">{brl(descontos)}</span></span>
+              </div>
+            </CardContent></Card>
+          );
+        })}
+      </div>
+    </TelaSecao>
+  );
 
-          {/* Treinamentos */}
-          {visibility.treinamentos_visivel && <TreinamentosCard employeeId={employee.id} />}
+  // ---------- tela inicial ----------
+  return (
+    <div className="min-h-screen bg-muted/30">
+      <Cabecalho />
+      <main className="mx-auto -mt-4 max-w-3xl space-y-5 px-4 pb-10">
+        <PendingSignaturesAlert />
+        <PendingHoleritesAlert />
 
-          {/* EPIs */}
-          {visibility.epis_visivel && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="w-5 h-5" />
-                  EPIs Recebidos
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {epis.length === 0 ? (
-                  <p className="text-muted-foreground">Nenhum EPI registrado.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {epis.map((epi) => (
-                      <div key={epi.id} className="border-b pb-3 last:border-0">
-                        <p className="font-medium">{epi.tipo_epi}</p>
-                        <div className="flex gap-4 text-sm text-muted-foreground mt-1">
-                          <span>Qtd: {epi.quantidade}</span>
-                          <span>
-                            Data: {dataBR(epi.data_entrega).toLocaleDateString("pt-BR")}
-                          </span>
-                        </div>
-                        {epi.observacoes && (
-                          <p className="text-sm mt-1">{epi.observacoes}</p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
+        {visibility.ferias_visivel && feriasEmCurso && progressoFerias && progressoFerias.daysRemaining > 0 && (
+          <Card className="overflow-hidden border-0 bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md">
+            <CardContent className="space-y-3 p-5">
+              <div className="flex items-center gap-2 text-sm font-medium opacity-90"><Palmtree className="h-4 w-4" />Você está de férias</div>
+              <p className="text-2xl font-bold">Faltam {progressoFerias.daysRemaining} {progressoFerias.daysRemaining === 1 ? "dia" : "dias"}</p>
+              <div className="h-2 overflow-hidden rounded-full bg-white/25">
+                <div className="h-full rounded-full bg-white" style={{ width: `${progressoFerias.progress}%` }} />
+              </div>
+              <p className="text-sm opacity-90">Retorno previsto: {dataBR(feriasEmCurso.periodo_gozo_fim).toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}</p>
+            </CardContent>
+          </Card>
+        )}
 
-          {/* Uniformes */}
-          {visibility.uniformes_visivel && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shirt className="w-5 h-5" />
-                  Uniformes Recebidos
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {uniformes.length === 0 ? (
-                  <p className="text-muted-foreground">Nenhum uniforme registrado.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {uniformes.map((uniforme) => (
-                      <div key={uniforme.id} className="border-b pb-3 last:border-0">
-                        <p className="font-medium">{uniforme.tipo_uniforme}</p>
-                        <div className="flex gap-4 text-sm text-muted-foreground mt-1">
-                          <span>Tamanho: {uniforme.tamanho}</span>
-                          <span>Qtd: {uniforme.quantidade}</span>
-                          <span>
-                            Data: {dataBR(uniforme.data_entrega).toLocaleDateString("pt-BR")}
-                          </span>
-                        </div>
-                        {uniforme.observacoes && (
-                          <p className="text-sm mt-1">{uniforme.observacoes}</p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
+        {resumo.length > 0 && (
+          <div className={`grid gap-3 ${resumo.length === 1 ? "grid-cols-1" : "grid-cols-2"} ${resumo.length >= 4 ? "sm:grid-cols-4" : ""}`}>
+            {resumo.map((r) => (
+              <Card key={r.rotulo} className="shadow-sm">
+                <CardContent className="p-4">
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground"><r.icone className="h-3.5 w-3.5" />{r.rotulo}</p>
+                  <p className={`mt-1 truncate text-2xl font-bold tabular-nums ${r.cor || ""}`}>{r.valor}</p>
+                  {r.detalhe && <p className="truncate text-xs text-muted-foreground">{r.detalhe}</p>}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
-          {/* Holerites */}
-          {visibility.holerite_visivel && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Receipt className="w-5 h-5" />
-                  Meus Holerites
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  onClick={() => navigate("/meus-holerites")}
-                  className="w-full mb-3"
-                  variant="outline"
+        {visibility.tacs_visivel && <TacCard employeeId={employee.id} />}
+
+        {visibility.avisos_visivel && naoLidos.length > 0 && (
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="flex items-center gap-2 text-lg font-semibold"><Bell className="h-5 w-5" />Avisos novos</h2>
+              {avisos.length > 2 && <Button variant="link" size="sm" className="px-0" onClick={() => abrir("avisos")}>Ver todos</Button>}
+            </div>
+            {avisosOrdenados.filter((a) => !avisosLidos.has(a.id)).slice(0, 2).map((a) => <CartaoAviso key={a.id} aviso={a} />)}
+          </section>
+        )}
+
+        {atalhos.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-lg font-semibold">Acesso rápido</h2>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {atalhos.map((a) => (
+                <button
+                  key={a.chave}
+                  type="button"
+                  onClick={a.acao || (() => abrir(a.chave))}
+                  className="relative flex min-h-[112px] flex-col items-start justify-between rounded-2xl border bg-card p-4 text-left shadow-sm transition hover:border-primary/40 hover:shadow-md active:scale-[0.98]"
                 >
-                  <FileText className="w-4 h-4 mr-2" />
-                  Acessar Meus Holerites (Assinar / Baixar Certificado)
-                </Button>
-                {holerites.length === 0 ? (
-                  <p className="text-muted-foreground">Nenhum holerite disponível.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {holerites.map((holerite) => {
-                      const mesNome = new Date(holerite.ano, holerite.mes - 1).toLocaleString("pt-BR", { month: "long" });
-                      const tipoLabel = {
-                        salario: "Folha de Salário",
-                        complementar: "Complementar",
-                        adiantamento: "Adiantamento",
-                        decimo_terceiro: "13º Salário",
-                      }[holerite.tipo_folha as string] || holerite.tipo_folha;
-
-                      return (
-                        <div key={holerite.id} className="border rounded-lg p-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium">
-                                {mesNome.charAt(0).toUpperCase() + mesNome.slice(1)} / {holerite.ano}
-                              </p>
-                              <p className="text-sm text-muted-foreground">{tipoLabel}</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-bold text-lg">
-                                R$ {Number(holerite.valor_liquido).toFixed(2)}
-                              </p>
-                              <p className="text-xs text-muted-foreground">Valor Líquido</p>
-                            </div>
-                          </div>
-                          <div className="mt-3 pt-3 border-t">
-                            <div className="grid grid-cols-2 gap-2 text-sm">
-                              <div>
-                                <span className="text-muted-foreground">Bruto:</span>{" "}
-                                <span className="font-medium">R$ {Number(holerite.valor_bruto).toFixed(2)}</span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">Descontos:</span>{" "}
-                                <span className="font-medium text-destructive">
-                                  R$ {((holerite.desconto || 0) + (holerite.folha_pagamento_itens || [])
-                                    .filter((i: any) => i.variaveis_folha?.tipo === "desconto")
-                                    .reduce((sum: number, i: any) => sum + i.valor, 0)).toFixed(2)}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-        </div>
+                  <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${a.cor}`}><a.icone className="h-5 w-5" /></span>
+                  {!!a.contador && <span className="absolute right-3 top-3 flex h-6 min-w-6 items-center justify-center rounded-full bg-destructive px-1.5 text-xs font-bold text-destructive-foreground">{a.contador}</span>}
+                  <span className="mt-3 block w-full">
+                    <span className="block font-semibold">{a.titulo}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{a.sub}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
       </main>
     </div>
   );
