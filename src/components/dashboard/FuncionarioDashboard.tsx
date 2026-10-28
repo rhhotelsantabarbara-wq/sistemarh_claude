@@ -29,7 +29,6 @@ import {
   Palmtree,
   GraduationCap,
   HardHat,
-  Banknote,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -193,21 +192,7 @@ const FuncionarioDashboard = ({ user }: FuncionarioDashboardProps) => {
           empData.empresa_id 
             ? supabase.from("empresas").select("logo_url").eq("id", empData.empresa_id).maybeSingle()
             : Promise.resolve({ data: null }),
-          supabase
-            .from("folha_pagamento")
-            .select(`
-              *,
-              folha_pagamento_itens (
-                id,
-                variavel_id,
-                valor,
-                variaveis_folha (id, nome, codigo, tipo)
-              )
-            `)
-            .eq("employee_id", empData.id)
-            .order("ano", { ascending: false })
-            .order("mes", { ascending: false })
-            .limit(12)
+          Promise.resolve({ data: [] as any[] }), // holerites do portal: só os PDFs (Meus Holerites)
         ]);
 
         setEpis(episRes.data || []);
@@ -453,7 +438,6 @@ const FuncionarioDashboard = ({ user }: FuncionarioDashboardProps) => {
   if (visibility.holerite_visivel) atalhos.push({ chave: "holerites", titulo: "Holerites", sub: "Ver, baixar e assinar", icone: Receipt, cor: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300", acao: () => navigate("/meus-holerites") });
   if (visibility.avisos_visivel) atalhos.push({ chave: "avisos", titulo: "Avisos", sub: naoLidos.length ? `${naoLidos.length} não lido${naoLidos.length > 1 ? "s" : ""}` : "Tudo lido", icone: Megaphone, cor: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300", contador: naoLidos.length });
   if (visibility.treinamentos_visivel) atalhos.push({ chave: "treinamentos", titulo: "Treinamentos", sub: "Cursos e certificados", icone: GraduationCap, cor: "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300" });
-  if (visibility.holerite_visivel && holerites.length > 0) atalhos.push({ chave: "pagamentos", titulo: "Pagamentos", sub: "Valores por mês", icone: Banknote, cor: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" });
   if (visibility.epis_visivel) atalhos.push({ chave: "epis", titulo: "EPIs", sub: `${epis.length} recebido${epis.length === 1 ? "" : "s"}`, icone: HardHat, cor: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300" });
   if (visibility.uniformes_visivel) atalhos.push({ chave: "uniformes", titulo: "Uniformes", sub: `${uniformes.length} recebido${uniformes.length === 1 ? "" : "s"}`, icone: Shirt, cor: "bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300" });
 
@@ -517,38 +501,6 @@ const FuncionarioDashboard = ({ user }: FuncionarioDashboardProps) => {
       )}
     </TelaSecao>
   );
-  if (secao === "pagamentos" && visibility.holerite_visivel) return (
-    <TelaSecao titulo="Pagamentos">
-      <Button onClick={() => navigate("/meus-holerites")} className="h-12 w-full"><FileText className="mr-2 h-4 w-4" />Abrir holerites (assinar e baixar)</Button>
-      <div className="space-y-3">
-        {holerites.map((h) => {
-          const mesNome = new Date(h.ano, h.mes - 1).toLocaleString("pt-BR", { month: "long" });
-          const tipo = ({ salario: "Salário", complementar: "Complementar", adiantamento: "Adiantamento", decimo_terceiro: "13º salário" } as Record<string, string>)[h.tipo_folha] || h.tipo_folha;
-          const descontos = (h.desconto || 0) + (h.folha_pagamento_itens || []).filter((i: any) => i.variaveis_folha?.tipo === "desconto").reduce((s: number, i: any) => s + i.valor, 0);
-          const brl = (v: number) => Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-          return (
-            <Card key={h.id}><CardContent className="p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="font-semibold capitalize">{mesNome} de {h.ano}</p>
-                  <p className="text-sm text-muted-foreground">{tipo}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold">{brl(h.valor_liquido)}</p>
-                  <p className="text-xs text-muted-foreground">líquido</p>
-                </div>
-              </div>
-              <div className="mt-3 flex justify-between border-t pt-3 text-sm">
-                <span><span className="text-muted-foreground">Bruto </span>{brl(h.valor_bruto)}</span>
-                <span><span className="text-muted-foreground">Descontos </span><span className="text-destructive">{brl(descontos)}</span></span>
-              </div>
-            </CardContent></Card>
-          );
-        })}
-      </div>
-    </TelaSecao>
-  );
-
   // ---------- tela inicial ----------
   return (
     <div className="min-h-screen bg-muted/30">
