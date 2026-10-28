@@ -23,20 +23,27 @@ export function SelfieCapture({ onCapture, onCancel }: Props) {
   async function start() {
     setError(null);
     setCaptured(null);
+    setReady(false);
+    stop();
     try {
       const s = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: 640, height: 480 },
+        video: { facingMode: { ideal: "user" }, width: { ideal: 960 }, height: { ideal: 1280 } },
         audio: false,
       });
       streamRef.current = s;
-      if (videoRef.current) {
-        videoRef.current.srcObject = s;
-        await videoRef.current.play();
-        setReady(true);
+      const v = videoRef.current;
+      if (v) {
+        v.srcObject = s;
+        // Só libera o botão quando a câmera já está mostrando imagem (evita foto preta)
+        const liberar = () => { if (v.videoWidth > 0) setReady(true); };
+        v.onloadeddata = liberar;
+        v.onplaying = liberar;
+        await v.play().catch(() => { /* alguns celulares tocam sozinhos pelo autoPlay */ });
+        liberar();
       }
     } catch (e) {
       setError(
-        "Não foi possível acessar a câmera. Permita o acesso e tente novamente.",
+        "Não foi possível acessar a câmera. Permita o acesso à câmera nas configurações do navegador e tente novamente.",
       );
     }
   }
@@ -45,46 +52,62 @@ export function SelfieCapture({ onCapture, onCancel }: Props) {
     streamRef.current = null;
   }
 
-  function tirar() {
-    if (!videoRef.current) return;
+  /** Desenha o quadro atual; devolve null se a imagem saiu escura demais (câmera ainda iniciando) */
+  function desenhar(): string | null {
     const v = videoRef.current;
-    const vw = v.videoWidth || 640;
-    const vh = v.videoHeight || 480;
+    if (!v || !v.videoWidth) return null;
+    const vw = v.videoWidth;
+    const vh = v.videoHeight;
 
-    // Recorta em formato oval (rosto) centralizado
-    // Define um retângulo de recorte vertical 3:4 centralizado
-    const cropH = vh;
-    const cropW = Math.round(cropH * 0.75); // 3:4
+    // Recorte vertical 3:4 centralizado (funciona com a câmera em pé ou deitada)
+    let cropW = vw, cropH = Math.round(vw / 0.75);
+    if (cropH > vh) { cropH = vh; cropW = Math.round(vh * 0.75); }
     const cropX = Math.round((vw - cropW) / 2);
-    const cropY = 0;
+    const cropY = Math.round((vh - cropH) / 2);
 
     const outW = 480;
     const outH = 640;
-
     const c = document.createElement("canvas");
     c.width = outW;
     c.height = outH;
     const ctx = c.getContext("2d")!;
 
-    // Fundo transparente
-    ctx.clearRect(0, 0, outW, outH);
+    // Fundo branco (fundo transparente vira preto no PDF assinado)
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, outW, outH);
 
-    // Máscara oval
     ctx.save();
     ctx.beginPath();
     ctx.ellipse(outW / 2, outH / 2, outW / 2, outH / 2, 0, 0, Math.PI * 2);
     ctx.closePath();
     ctx.clip();
-
     // Espelha (selfie)
     ctx.translate(outW, 0);
     ctx.scale(-1, 1);
     ctx.drawImage(v, cropX, cropY, cropW, cropH, 0, 0, outW, outH);
     ctx.restore();
 
-    const url = c.toDataURL("image/png");
-    setCaptured(url);
-    stop();
+    // Confere o brilho no centro da foto
+    const px = ctx.getImageData(outW / 2 - 60, outH / 2 - 80, 120, 160).data;
+    let soma = 0;
+    for (let i = 0; i < px.length; i += 16) soma += px[i] + px[i + 1] + px[i + 2];
+    const media = soma / (px.length / 16) / 3;
+    if (media < 12) return null;
+    return c.toDataURL("image/jpeg", 0.9);
+  }
+
+  async function tirar() {
+    // Tenta algumas vezes: em alguns celulares os primeiros quadros saem pretos
+    for (let tentativa = 0; tentativa < 5; tentativa++) {
+      const url = desenhar();
+      if (url) {
+        setCaptured(url);
+        stop();
+        return;
+      }
+      await new Promise((r) => setTimeout(r, 300));
+    }
+    setError("A foto saiu escura. Procure um lugar mais claro, confira se nada cobre a câmera e tente de novo.");
   }
 
   function confirmar() {
@@ -104,17 +127,19 @@ export function SelfieCapture({ onCapture, onCancel }: Props) {
         </div>
       )}
       <div className="relative overflow-hidden rounded-lg border bg-black aspect-[3/4] max-w-sm mx-auto flex items-center justify-center">
+        {/* O vídeo fica sempre na tela (só escondido depois da foto) para o "Refazer" funcionar */}
+        <video
+          ref={videoRef}
+          className={`w-full h-full object-cover ${captured ? "hidden" : ""}`}
+          style={{ transform: "scaleX(-1)" }}
+          autoPlay
+          playsInline
+          muted
+        />
         {captured ? (
-          <img src={captured} alt="Selfie" className="w-full h-full object-contain bg-muted" />
+          <img src={captured} alt="Selfie" className="absolute inset-0 w-full h-full object-contain bg-white" />
         ) : (
           <>
-            <video
-              ref={videoRef}
-              className="w-full h-full object-cover"
-              style={{ transform: "scaleX(-1)" }}
-              playsInline
-              muted
-            />
             {/* Overlay com guia oval para enquadrar o rosto */}
             <svg
               className="absolute inset-0 w-full h-full pointer-events-none"
@@ -155,7 +180,7 @@ export function SelfieCapture({ onCapture, onCancel }: Props) {
               className="flex-1"
             >
               <Camera className="w-4 h-4 mr-2" />
-              Capturar selfie
+              {ready ? "Capturar selfie" : "Abrindo câmera…"}
             </Button>
             {onCancel && (
               <Button type="button" variant="outline" onClick={onCancel}>

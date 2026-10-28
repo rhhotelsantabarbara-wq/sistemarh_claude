@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
     const signaturePath = `${basePath}/assinatura.png`;
     const uploads = await Promise.all([
       admin.storage.from("holerites-assinados").upload(pdfPath, pdfBytes, { contentType: "application/pdf", upsert: false }),
-      admin.storage.from("holerites-assinados").upload(selfiePath, selfieBytes, { contentType: "image/png", upsert: false }),
+      admin.storage.from("holerites-assinados").upload(selfiePath, selfieBytes, { contentType: "image/jpeg", upsert: false }),
       admin.storage.from("holerites-assinados").upload(signaturePath, signatureBytes, { contentType: "image/png", upsert: false }),
     ]);
     const uploadError = uploads.find((result) => result.error)?.error;
