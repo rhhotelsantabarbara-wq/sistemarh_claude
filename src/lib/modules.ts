@@ -9,6 +9,7 @@ export interface ModuleDef {
 export const MODULES: ModuleDef[] = [
   { key: "dashboard", label: "Visão Geral", path: "/dashboard", group: "Principal" },
   { key: "managers", label: "Gestores", path: "/managers", group: "Pessoas" },
+  { key: "admissao-digital", label: "Admissão digital", path: "/admissao-digital", group: "Pessoas" },
   { key: "funcoes", label: "Funções", path: "/funcoes", group: "Pessoas" },
   { key: "people-manager", label: "People Manager", path: "/people-manager", group: "Pessoas" },
   { key: "controle-ponto", label: "Controle de Ponto", path: "/controle-ponto", group: "Operacional" },

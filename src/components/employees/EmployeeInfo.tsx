@@ -6,7 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { User, FileText, MapPin, Briefcase, Landmark } from "lucide-react";
+import { User, FileText, MapPin, Briefcase, Landmark, FileSignature, Wallet } from "lucide-react";
+import FichaLeitura from "./FichaLeitura";
+import { fimExperiencia, grupo } from "@/lib/fichaCampos";
 import ChangePasswordDialog from "./ChangePasswordDialog";
 import { gerarSolicitacaoContaSalario } from "@/lib/pdfGeneratorContaSalario";
 import { toast } from "sonner";
@@ -126,7 +128,7 @@ const EmployeeInfo = ({ employee }: EmployeeInfoProps) => {
         </div>
 
         <Tabs defaultValue="dados-pessoais" className="w-full">
-          <TabsList className="inline-flex w-full overflow-x-auto tabs-scroll lg:grid lg:grid-cols-4">
+          <TabsList className="inline-flex w-full overflow-x-auto tabs-scroll lg:grid lg:grid-cols-6">
             <TabsTrigger value="dados-pessoais" className="flex-shrink-0 flex items-center gap-2">
               <User className="h-4 w-4" />
               <span className="hidden sm:inline">Dados Pessoais</span>
@@ -142,6 +144,14 @@ const EmployeeInfo = ({ employee }: EmployeeInfoProps) => {
             <TabsTrigger value="movimentacoes" className="flex-shrink-0 flex items-center gap-2">
               <Briefcase className="h-4 w-4" />
               <span className="hidden sm:inline">Movimentações</span>
+            </TabsTrigger>
+            <TabsTrigger value="contrato" className="flex-shrink-0 flex items-center gap-2">
+              <FileSignature className="h-4 w-4" />
+              <span className="hidden sm:inline">Contrato</span>
+            </TabsTrigger>
+            <TabsTrigger value="banco" className="flex-shrink-0 flex items-center gap-2">
+              <Wallet className="h-4 w-4" />
+              <span className="hidden sm:inline">Banco e benefícios</span>
             </TabsTrigger>
           </TabsList>
 
@@ -160,6 +170,9 @@ const EmployeeInfo = ({ employee }: EmployeeInfoProps) => {
               <InfoRow label="Raça/Cor" value={employee.raca_cor} />
               <InfoRow label="Sexo" value={employee.sexo} />
             </div>
+            <div className="mt-6 border-t pt-6">
+              <FichaLeitura grupos={[grupo("pessoais"), grupo("emergencia"), grupo("pcd")]} dados={employee} />
+            </div>
           </TabsContent>
 
           <TabsContent value="documentacao" className="mt-6">
@@ -172,6 +185,9 @@ const EmployeeInfo = ({ employee }: EmployeeInfoProps) => {
               <InfoRow label="RG - Data de Emissão" value={formatDate(employee.rg_data_emissao)} />
               <InfoRow label="RG - UF de Emissão" value={employee.rg_uf} />
               <InfoRow label="Telefone" value={employee.telefone} />
+            </div>
+            <div className="mt-6 border-t pt-6">
+              <FichaLeitura grupos={[grupo("documentos")]} dados={employee} />
             </div>
             <div className="mt-6 pt-4 border-t">
               <Button
@@ -247,6 +263,26 @@ const EmployeeInfo = ({ employee }: EmployeeInfoProps) => {
                 <InfoRow label="Data de Desligamento" value={formatDate(employee.data_desligamento)} />
               )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="contrato" className="mt-6">
+            {(() => {
+              const fim = employee.tipo_contrato === "fixo" ? fimExperiencia(employee.data_admissao, employee.experiencia_dias, employee.experiencia_prorrogacao_dias) : null;
+              return fim ? (
+                <div className="mb-6 grid grid-cols-1 gap-4 rounded-lg bg-muted/50 p-4 md:grid-cols-2">
+                  <InfoRow label="Fim do 1º período de experiência" value={formatDate(fim.primeiro)} />
+                  <InfoRow label="Fim da prorrogação" value={fim.prorrogacao ? formatDate(fim.prorrogacao) : "Sem prorrogação informada"} />
+                </div>
+              ) : null;
+            })()}
+            <FichaLeitura
+              grupos={[grupo("contrato"), grupo("organizacao"), ...(employee.status === "demitido" ? [grupo("desligamento")] : [])]}
+              dados={employee}
+            />
+          </TabsContent>
+
+          <TabsContent value="banco" className="mt-6">
+            <FichaLeitura grupos={[grupo("banco"), grupo("beneficios"), grupo("tamanhos")]} dados={employee} semFinanceiro={!canViewSalary} />
           </TabsContent>
         </Tabs>
       </CardContent>

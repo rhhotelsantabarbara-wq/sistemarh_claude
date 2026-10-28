@@ -42,6 +42,8 @@ const Avaliacoes = lazyComRetry(() => import("./pages/Avaliacoes"));
 const Treinamentos = lazyComRetry(() => import("./pages/Treinamentos"));
 const Adiantamentos = lazyComRetry(() => import("./pages/Adiantamentos"));
 const PlanoAdmissaoDesligamento = lazyComRetry(() => import("./pages/PlanoAdmissaoDesligamento"));
+const AdmissaoDigital = lazyComRetry(() => import("./pages/AdmissaoDigital"));
+const AdmissaoPublica = lazyComRetry(() => import("./pages/AdmissaoPublica"));
 const PeopleManager = lazyComRetry(() => import("./pages/PeopleManager"));
 const Tacs = lazyComRetry(() => import("./pages/Tacs"));
 const Crachas = lazyComRetry(() => import("./pages/Crachas"));
@@ -114,6 +116,7 @@ const App = () => {
               <Route path="/treinamentos" element={<AppLayout><Treinamentos /></AppLayout>} />
               <Route path="/adiantamentos" element={<AppLayout><Adiantamentos /></AppLayout>} />
               <Route path="/plano-admissao-desligamento" element={<AppLayout><PlanoAdmissaoDesligamento /></AppLayout>} />
+              <Route path="/admissao-digital" element={<AppLayout><AdmissaoDigital /></AppLayout>} />
               <Route path="/people-manager" element={<AppLayout><PeopleManager /></AppLayout>} />
               <Route path="/tacs" element={<AppLayout><Tacs /></AppLayout>} />
               <Route path="/crachas" element={<AppLayout><Crachas /></AppLayout>} />
@@ -139,6 +142,7 @@ const App = () => {
               <Route path="/denuncia" element={<DenunciaPublica />} />
               <Route path="/privacidade" element={<Privacidade />} />
               <Route path="/lideranca/:token" element={<NR1LiderancaResponder />} />
+              <Route path="/admissao/:codigo" element={<AdmissaoPublica />} />
               <Route path="/validar-holerite/:protocolo" element={<ValidarHolerite />} />
               <Route path="/meus-holerites" element={<MeusHolerites />} />
               <Route path="/nr1/relatorios" element={<AppLayout><NR1Relatorios /></AppLayout>} />

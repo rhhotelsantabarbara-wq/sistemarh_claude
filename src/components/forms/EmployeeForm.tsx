@@ -5,7 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { User, FileText, MapPin, Briefcase } from "lucide-react";
+import { User, FileText, MapPin, Briefcase, FileSignature, Landmark } from "lucide-react";
+import CamposFicha from "./employee-tabs/CamposFicha";
+import { grupo, paraBanco, paraFormulario } from "@/lib/fichaCampos";
+import { useCanViewSalary } from "@/hooks/useCanViewSalary";
 
 import DadosPessoaisTab from "./employee-tabs/DadosPessoaisTab";
 import DocumentacaoTab from "./employee-tabs/DocumentacaoTab";
@@ -17,9 +20,12 @@ interface EmployeeFormProps {
   initialData?: any;
   onSaved: () => void;
   onCancel: () => void;
+  /** chamado com o id do funcionário recém-criado (antes de onSaved) */
+  onCreated?: (id: string) => Promise<void> | void;
 }
 
-const EmployeeForm = ({ employeeId, initialData, onSaved, onCancel }: EmployeeFormProps) => {
+const EmployeeForm = ({ employeeId, initialData, onSaved, onCancel, onCreated }: EmployeeFormProps) => {
+  const { canViewSalary } = useCanViewSalary();
   const [loading, setLoading] = useState(false);
   const [cpfLoading, setCpfLoading] = useState(false);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -67,6 +73,7 @@ const EmployeeForm = ({ employeeId, initialData, onSaved, onCancel }: EmployeeFo
     data_admissao: initialData?.data_admissao || "",
     status: initialData?.status || "ativo",
     data_desligamento: initialData?.data_desligamento || "",
+    ...paraFormulario(initialData),
   });
 
   const handleFormChange = (field: string, value: string) => {
@@ -334,6 +341,7 @@ const EmployeeForm = ({ employeeId, initialData, onSaved, onCancel }: EmployeeFo
       bairro: formValues.bairro || null,
       uf: formValues.uf || null,
       cidade: formValues.cidade || null,
+      ...paraBanco(formValues),
     };
 
     try {
@@ -438,6 +446,8 @@ const EmployeeForm = ({ employeeId, initialData, onSaved, onCancel }: EmployeeFo
           }
         }
 
+        if (onCreated) await onCreated(newEmployee.id);
+
         if (data.status === "em_admissao" && createChecklist && selectedTemplateId) {
           await createAdmissionChecklist(newEmployee.id, selectedTemplateId);
         }
@@ -465,7 +475,7 @@ const EmployeeForm = ({ employeeId, initialData, onSaved, onCancel }: EmployeeFo
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="inline-flex w-full overflow-x-auto tabs-scroll lg:grid lg:grid-cols-4">
+            <TabsList className="inline-flex w-full overflow-x-auto tabs-scroll lg:grid lg:grid-cols-6">
               <TabsTrigger value="dados-pessoais" className="flex-shrink-0 flex items-center gap-2">
                 <User className="h-4 w-4" />
                 <span className="hidden sm:inline">Dados Pessoais</span>
@@ -482,6 +492,14 @@ const EmployeeForm = ({ employeeId, initialData, onSaved, onCancel }: EmployeeFo
                 <Briefcase className="h-4 w-4" />
                 <span className="hidden sm:inline">Movimentações</span>
               </TabsTrigger>
+              <TabsTrigger value="contrato" className="flex-shrink-0 flex items-center gap-2">
+                <FileSignature className="h-4 w-4" />
+                <span className="hidden sm:inline">Contrato</span>
+              </TabsTrigger>
+              <TabsTrigger value="banco" className="flex-shrink-0 flex items-center gap-2">
+                <Landmark className="h-4 w-4" />
+                <span className="hidden sm:inline">Banco e benefícios</span>
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="dados-pessoais" className="mt-6">
@@ -494,6 +512,9 @@ const EmployeeForm = ({ employeeId, initialData, onSaved, onCancel }: EmployeeFo
                 formValues={formValues}
                 onFormChange={handleFormChange}
               />
+              <div className="mt-6 border-t pt-6">
+                <CamposFicha grupos={[grupo("pessoais"), grupo("emergencia"), grupo("pcd")]} valores={formValues} onChange={handleFormChange} />
+              </div>
             </TabsContent>
 
             <TabsContent value="documentacao" className="mt-6">
@@ -505,6 +526,9 @@ const EmployeeForm = ({ employeeId, initialData, onSaved, onCancel }: EmployeeFo
                 onCpfLookup={() => handleCpfLookup(false)}
                 cpfLoading={cpfLoading}
               />
+              <div className="mt-6 border-t pt-6">
+                <CamposFicha grupos={[grupo("documentos")]} valores={formValues} onChange={handleFormChange} />
+              </div>
             </TabsContent>
 
             <TabsContent value="endereco" className="mt-6">
@@ -532,6 +556,19 @@ const EmployeeForm = ({ employeeId, initialData, onSaved, onCancel }: EmployeeFo
                 formValues={formValues}
                 onFormChange={handleFormChange}
               />
+            </TabsContent>
+
+            <TabsContent value="contrato" className="mt-6">
+              <CamposFicha
+                grupos={[grupo("contrato"), grupo("organizacao"), ...(formValues.status === "demitido" ? [grupo("desligamento")] : [])]}
+                valores={formValues}
+                onChange={handleFormChange}
+                proprioId={employeeId}
+              />
+            </TabsContent>
+
+            <TabsContent value="banco" className="mt-6">
+              <CamposFicha grupos={[grupo("banco"), grupo("beneficios"), grupo("tamanhos")]} valores={formValues} onChange={handleFormChange} semFinanceiro={!canViewSalary} />
             </TabsContent>
           </Tabs>
 

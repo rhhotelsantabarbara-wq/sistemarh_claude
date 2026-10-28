@@ -61,6 +61,7 @@ import { BirthdayCard } from "@/components/dashboard/BirthdayCard";
 import { BirthdayListDialog } from "@/components/dashboard/BirthdayListDialog";
 import { PendingChecklistsAlert } from "@/components/dashboard/PendingChecklistsAlert";
 import { ExperiencePeriodAlerts } from "@/components/dashboard/ExperiencePeriodAlerts";
+import { DocumentosVencendoAlert } from "@/components/dashboard/DocumentosVencendoAlert";
 import EventoNotifications from "@/components/dashboard/EventoNotifications";
 import TaskList from "@/components/dashboard/TaskList";
 import NavigationSearch from "@/components/dashboard/NavigationSearch";
@@ -662,6 +663,9 @@ const GestorDashboard = ({ user }: GestorDashboardProps) => {
 
             {/* Pending Checklists Alert */}
             <PendingChecklistsAlert />
+
+            {/* Documentos vencendo e admissões por link */}
+            <DocumentosVencendoAlert />
 
             {/* Experience Period Alerts */}
             <ExperiencePeriodAlerts selectedEmpresa={selectedEmpresa} />

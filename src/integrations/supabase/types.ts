@@ -1274,6 +1274,8 @@ export type Database = {
       }
       employee_files: {
         Row: {
+          categoria: string | null
+          validade: string | null
           created_at: string
           description: string | null
           employee_id: string
@@ -1285,6 +1287,8 @@ export type Database = {
           uploaded_by: string | null
         }
         Insert: {
+          categoria?: string | null
+          validade?: string | null
           created_at?: string
           description?: string | null
           employee_id: string
@@ -1296,6 +1300,8 @@ export type Database = {
           uploaded_by?: string | null
         }
         Update: {
+          categoria?: string | null
+          validade?: string | null
           created_at?: string
           description?: string | null
           employee_id?: string
@@ -1325,6 +1331,64 @@ export type Database = {
       }
       employees: {
         Row: {
+          nome_social: string | null
+          estado_civil: string | null
+          grau_instrucao: string | null
+          email_pessoal: string | null
+          pais_nascimento: string | null
+          contato_emergencia_nome: string | null
+          contato_emergencia_telefone: string | null
+          contato_emergencia_parentesco: string | null
+          pcd: boolean
+          pcd_tipo: string | null
+          pcd_reabilitado: boolean
+          pcd_cota: boolean
+          ctps_serie: string | null
+          ctps_uf: string | null
+          titulo_eleitor: string | null
+          titulo_zona: string | null
+          titulo_secao: string | null
+          reservista: string | null
+          cnh_numero: string | null
+          cnh_categoria: string | null
+          cnh_validade: string | null
+          conselho_classe: string | null
+          certidao: string | null
+          banco: string | null
+          agencia: string | null
+          conta: string | null
+          conta_tipo: string | null
+          pix_chave: string | null
+          experiencia_dias: number | null
+          experiencia_prorrogacao_dias: number | null
+          horas_semanais: number | null
+          escala: string | null
+          horario_trabalho: string | null
+          sindicato: string | null
+          primeiro_emprego: boolean
+          categoria_esocial: string | null
+          insalubridade: string | null
+          periculosidade: boolean
+          adicional_noturno: boolean
+          gestor_id: string | null
+          centro_custo: string | null
+          local_trabalho: string | null
+          vt_opta: boolean
+          vt_linhas: string | null
+          vt_valor_diario: number | null
+          vale_refeicao_valor: number | null
+          vale_alimentacao_valor: number | null
+          plano_saude: string | null
+          plano_odonto: string | null
+          seguro_vida: boolean
+          tamanho_camisa: string | null
+          tamanho_calca: string | null
+          tamanho_calcado: string | null
+          aso_admissional_data: string | null
+          desligamento_tipo: string | null
+          desligamento_motivo: string | null
+          aviso_previo: string | null
+          exame_demissional_data: string | null
           bairro: string | null
           cargo: string
           carteira_trabalho: string | null
@@ -1368,6 +1432,64 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          nome_social?: string | null
+          estado_civil?: string | null
+          grau_instrucao?: string | null
+          email_pessoal?: string | null
+          pais_nascimento?: string | null
+          contato_emergencia_nome?: string | null
+          contato_emergencia_telefone?: string | null
+          contato_emergencia_parentesco?: string | null
+          pcd?: boolean
+          pcd_tipo?: string | null
+          pcd_reabilitado?: boolean
+          pcd_cota?: boolean
+          ctps_serie?: string | null
+          ctps_uf?: string | null
+          titulo_eleitor?: string | null
+          titulo_zona?: string | null
+          titulo_secao?: string | null
+          reservista?: string | null
+          cnh_numero?: string | null
+          cnh_categoria?: string | null
+          cnh_validade?: string | null
+          conselho_classe?: string | null
+          certidao?: string | null
+          banco?: string | null
+          agencia?: string | null
+          conta?: string | null
+          conta_tipo?: string | null
+          pix_chave?: string | null
+          experiencia_dias?: number | null
+          experiencia_prorrogacao_dias?: number | null
+          horas_semanais?: number | null
+          escala?: string | null
+          horario_trabalho?: string | null
+          sindicato?: string | null
+          primeiro_emprego?: boolean
+          categoria_esocial?: string | null
+          insalubridade?: string | null
+          periculosidade?: boolean
+          adicional_noturno?: boolean
+          gestor_id?: string | null
+          centro_custo?: string | null
+          local_trabalho?: string | null
+          vt_opta?: boolean
+          vt_linhas?: string | null
+          vt_valor_diario?: number | null
+          vale_refeicao_valor?: number | null
+          vale_alimentacao_valor?: number | null
+          plano_saude?: string | null
+          plano_odonto?: string | null
+          seguro_vida?: boolean
+          tamanho_camisa?: string | null
+          tamanho_calca?: string | null
+          tamanho_calcado?: string | null
+          aso_admissional_data?: string | null
+          desligamento_tipo?: string | null
+          desligamento_motivo?: string | null
+          aviso_previo?: string | null
+          exame_demissional_data?: string | null
           bairro?: string | null
           cargo: string
           carteira_trabalho?: string | null
@@ -1411,6 +1533,64 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          nome_social?: string | null
+          estado_civil?: string | null
+          grau_instrucao?: string | null
+          email_pessoal?: string | null
+          pais_nascimento?: string | null
+          contato_emergencia_nome?: string | null
+          contato_emergencia_telefone?: string | null
+          contato_emergencia_parentesco?: string | null
+          pcd?: boolean
+          pcd_tipo?: string | null
+          pcd_reabilitado?: boolean
+          pcd_cota?: boolean
+          ctps_serie?: string | null
+          ctps_uf?: string | null
+          titulo_eleitor?: string | null
+          titulo_zona?: string | null
+          titulo_secao?: string | null
+          reservista?: string | null
+          cnh_numero?: string | null
+          cnh_categoria?: string | null
+          cnh_validade?: string | null
+          conselho_classe?: string | null
+          certidao?: string | null
+          banco?: string | null
+          agencia?: string | null
+          conta?: string | null
+          conta_tipo?: string | null
+          pix_chave?: string | null
+          experiencia_dias?: number | null
+          experiencia_prorrogacao_dias?: number | null
+          horas_semanais?: number | null
+          escala?: string | null
+          horario_trabalho?: string | null
+          sindicato?: string | null
+          primeiro_emprego?: boolean
+          categoria_esocial?: string | null
+          insalubridade?: string | null
+          periculosidade?: boolean
+          adicional_noturno?: boolean
+          gestor_id?: string | null
+          centro_custo?: string | null
+          local_trabalho?: string | null
+          vt_opta?: boolean
+          vt_linhas?: string | null
+          vt_valor_diario?: number | null
+          vale_refeicao_valor?: number | null
+          vale_alimentacao_valor?: number | null
+          plano_saude?: string | null
+          plano_odonto?: string | null
+          seguro_vida?: boolean
+          tamanho_camisa?: string | null
+          tamanho_calca?: string | null
+          tamanho_calcado?: string | null
+          aso_admissional_data?: string | null
+          desligamento_tipo?: string | null
+          desligamento_motivo?: string | null
+          aviso_previo?: string | null
+          exame_demissional_data?: string | null
           bairro?: string | null
           cargo?: string
           carteira_trabalho?: string | null

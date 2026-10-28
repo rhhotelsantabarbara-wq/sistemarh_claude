@@ -21,6 +21,7 @@ const allMenuItems = [
   { title: "Avaliações", url: "/avaliacoes", icon: Award, keywords: "desempenho performance notas" },
   { title: "Treinamentos", url: "/treinamentos", icon: GraduationCap, keywords: "cursos capacitação aulas" },
   { title: "Checklists", url: "/plano-admissao-desligamento", icon: ClipboardList, keywords: "admissão desligamento plano" },
+  { title: "Admissão digital", url: "/admissao-digital", icon: UserPlus, keywords: "admissão link novo colaborador contratação documentos" },
   { title: "Eventos", url: "/eventos", icon: CalendarDays, keywords: "agenda reuniões compromissos" },
   { title: "Vagas", url: "/vagas", icon: SearchIcon, keywords: "recrutamento oportunidades emprego" },
   { title: "Candidaturas", url: "/recrutamento", icon: UserPlus, keywords: "candidatos seleção processo seletivo" },

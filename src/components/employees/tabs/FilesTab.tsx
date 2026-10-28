@@ -5,7 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Upload, FileText, Download, Trash2, Loader2, Camera, ScanLine, Crop } from "lucide-react";
+import { Upload, FileText, Download, Trash2, Loader2, Camera, ScanLine, Crop, Pencil, CalendarClock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TIPOS_DOCUMENTO, nomeTipoDocumento, situacaoValidade, tipoDocumento } from "@/lib/documentosTipos";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,7 +26,42 @@ interface EmployeeFile {
   file_size: number | null;
   description: string | null;
   created_at: string;
+  categoria?: string | null;
+  validade?: string | null;
 }
+
+const SEM_TIPO = "__sem_tipo__";
+
+/** Tipo do documento + validade (aparece no envio, no scanner e na edição) */
+const CamposTipoValidade = ({ categoria, validade, onCategoria, onValidade, prefixo }: {
+  categoria: string; validade: string; onCategoria: (v: string) => void; onValidade: (v: string) => void; prefixo: string;
+}) => (
+  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div>
+      <Label htmlFor={`${prefixo}-tipo`}>Tipo de documento</Label>
+      <Select value={categoria || SEM_TIPO} onValueChange={(v) => onCategoria(v === SEM_TIPO ? "" : v)}>
+        <SelectTrigger id={`${prefixo}-tipo`}><SelectValue placeholder="Selecione" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value={SEM_TIPO}><span className="text-muted-foreground">Sem tipo</span></SelectItem>
+          {TIPOS_DOCUMENTO.map((t) => <SelectItem key={t.chave} value={t.chave}>{t.nome}</SelectItem>)}
+        </SelectContent>
+      </Select>
+    </div>
+    <div>
+      <Label htmlFor={`${prefixo}-validade`}>Validade {tipoDocumento(categoria)?.vence ? "" : "(se tiver)"}</Label>
+      <Input id={`${prefixo}-validade`} type="date" value={validade} onChange={(e) => onValidade(e.target.value)} />
+    </div>
+  </div>
+);
+
+const SeloValidade = ({ validade }: { validade?: string | null }) => {
+  const s = situacaoValidade(validade);
+  if (!s) return null;
+  const cor = s.tipo === "vencido" ? "bg-red-100 text-red-800 border-red-200 dark:bg-red-950 dark:text-red-200 dark:border-red-900"
+    : s.tipo === "breve" ? "bg-amber-100 text-amber-900 border-amber-200 dark:bg-amber-950 dark:text-amber-200 dark:border-amber-900"
+    : "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-200 dark:border-emerald-900";
+  return <Badge variant="outline" className={`gap-1 font-normal ${cor}`}><CalendarClock className="h-3 w-3" />{s.texto}</Badge>;
+};
 
 const FilesTab = ({ employeeId }: FilesTabProps) => {
   const [files, setFiles] = useState<EmployeeFile[]>([]);
@@ -37,6 +75,27 @@ const FilesTab = ({ employeeId }: FilesTabProps) => {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [isCropping, setIsCropping] = useState(false);
+  const [categoria, setCategoria] = useState("");
+  const [validade, setValidade] = useState("");
+  const [editando, setEditando] = useState<EmployeeFile | null>(null);
+  const [salvandoEdicao, setSalvandoEdicao] = useState(false);
+
+  const limparTipo = () => { setCategoria(""); setValidade(""); };
+
+  const salvarEdicao = async () => {
+    if (!editando) return;
+    setSalvandoEdicao(true);
+    const { error } = await supabase.from("employee_files").update({
+      categoria: editando.categoria || null,
+      validade: editando.validade || null,
+      description: editando.description || null,
+    }).eq("id", editando.id);
+    setSalvandoEdicao(false);
+    if (error) return toast.error("Erro ao salvar: " + error.message);
+    toast.success("Documento atualizado");
+    setEditando(null);
+    fetchFiles();
+  };
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -104,6 +163,8 @@ const FilesTab = ({ employeeId }: FilesTabProps) => {
           file_size: selectedFile.size,
           description: description || null,
           uploaded_by: user?.id,
+          categoria: categoria || null,
+          validade: validade || null,
         });
 
       if (dbError) throw dbError;
@@ -112,6 +173,7 @@ const FilesTab = ({ employeeId }: FilesTabProps) => {
       setShowUploadDialog(false);
       setSelectedFile(null);
       setDescription("");
+      limparTipo();
       fetchFiles();
     } catch (error) {
       console.error("Error uploading file:", error);
@@ -235,8 +297,10 @@ const FilesTab = ({ employeeId }: FilesTabProps) => {
           file_path: fileName,
           file_type: contentType,
           file_size: blob.size,
-          description: scannerDescription || "Documento escaneado",
+          description: scannerDescription || (categoria ? null : "Documento escaneado"),
           uploaded_by: user?.id,
+          categoria: categoria || null,
+          validade: validade || null,
         });
 
       if (dbError) throw dbError;
@@ -258,6 +322,7 @@ const FilesTab = ({ employeeId }: FilesTabProps) => {
     setScannerDescription("");
     setIsCropping(false);
     setShowScannerDialog(false);
+    limparTipo();
   };
 
   const handleDownload = async (file: EmployeeFile) => {
@@ -328,7 +393,7 @@ const FilesTab = ({ employeeId }: FilesTabProps) => {
     <>
       <Card>
         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <CardTitle className="text-lg">Arquivos do Funcionário</CardTitle>
+          <CardTitle className="text-lg">Documentos e arquivos</CardTitle>
           <div className="flex gap-2 w-full sm:w-auto">
             <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => {
               setShowScannerDialog(true);
@@ -358,7 +423,13 @@ const FilesTab = ({ employeeId }: FilesTabProps) => {
                   <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
                     <FileText className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5 sm:mt-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm sm:text-base break-words">{file.file_name}</p>
+                      <p className="font-medium text-sm sm:text-base break-words">{file.categoria ? nomeTipoDocumento(file.categoria) : file.file_name}</p>
+                      {(file.categoria || file.validade) && (
+                        <div className="mt-1 flex flex-wrap items-center gap-1">
+                          {file.categoria && <span className="text-xs text-muted-foreground break-all">{file.file_name}</span>}
+                          <SeloValidade validade={file.validade} />
+                        </div>
+                      )}
                       {file.description && (
                         <p className="text-xs sm:text-sm text-muted-foreground break-words">
                           {file.description}
@@ -371,6 +442,14 @@ const FilesTab = ({ employeeId }: FilesTabProps) => {
                     </div>
                   </div>
                   <div className="flex gap-2 self-end sm:self-auto shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      aria-label="Editar tipo e validade"
+                      onClick={() => setEditando({ ...file })}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
@@ -409,6 +488,7 @@ const FilesTab = ({ employeeId }: FilesTabProps) => {
                 accept="image/*,.pdf,.doc,.docx"
               />
             </div>
+            <CamposTipoValidade prefixo="envio" categoria={categoria} validade={validade} onCategoria={setCategoria} onValidade={setValidade} />
             <div>
               <Label htmlFor="description">Descrição (opcional)</Label>
               <Textarea
@@ -426,6 +506,7 @@ const FilesTab = ({ employeeId }: FilesTabProps) => {
                   setShowUploadDialog(false);
                   setSelectedFile(null);
                   setDescription("");
+                  limparTipo();
                 }}
                 disabled={uploading}
               >
@@ -446,6 +527,35 @@ const FilesTab = ({ employeeId }: FilesTabProps) => {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Editar tipo e validade */}
+      <Dialog open={!!editando} onOpenChange={(o) => !o && setEditando(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Tipo e validade do documento</DialogTitle>
+          </DialogHeader>
+          {editando && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground break-all">{editando.file_name}</p>
+              <CamposTipoValidade
+                prefixo="editar"
+                categoria={editando.categoria || ""}
+                validade={editando.validade || ""}
+                onCategoria={(v) => setEditando({ ...editando, categoria: v })}
+                onValidade={(v) => setEditando({ ...editando, validade: v })}
+              />
+              <div>
+                <Label htmlFor="editar-descricao">Descrição</Label>
+                <Textarea id="editar-descricao" rows={2} value={editando.description || ""} onChange={(e) => setEditando({ ...editando, description: e.target.value })} />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setEditando(null)}>Cancelar</Button>
+                <Button onClick={salvarEdicao} disabled={salvandoEdicao}>{salvandoEdicao ? "Salvando…" : "Salvar"}</Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -512,6 +622,7 @@ const FilesTab = ({ employeeId }: FilesTabProps) => {
                   </Button>
                 ) : (
                   <>
+                    <CamposTipoValidade prefixo="scanner" categoria={categoria} validade={validade} onCategoria={setCategoria} onValidade={setValidade} />
                     <div>
                       <Label htmlFor="scannerDescription">Descrição (opcional)</Label>
                       <Textarea

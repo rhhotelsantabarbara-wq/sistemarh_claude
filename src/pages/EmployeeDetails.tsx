@@ -37,6 +37,7 @@ import { VariaveisFixasTab } from "@/components/employees/tabs/VariaveisFixasTab
 import ReadmitDialog from "@/components/employees/ReadmitDialog";
 import { HoleritesTab } from "@/components/employees/tabs/HoleritesTab";
 import HistoricoTimelineTab from "@/components/employees/tabs/HistoricoTimelineTab";
+import DependentesTab from "@/components/employees/tabs/DependentesTab";
 
 const EmployeeDetails = () => {
   const { id } = useParams();
@@ -193,7 +194,8 @@ const EmployeeDetails = () => {
             <TabsTrigger value="afastamentos" className="flex-shrink-0">Afastamentos</TabsTrigger>
             <TabsTrigger value="folgas" className="flex-shrink-0">Folgas</TabsTrigger>
             <TabsTrigger value="faltas" className="flex-shrink-0">Faltas</TabsTrigger>
-            <TabsTrigger value="arquivos" className="flex-shrink-0">Arquivos</TabsTrigger>
+            <TabsTrigger value="arquivos" className="flex-shrink-0">Documentos</TabsTrigger>
+            <TabsTrigger value="dependentes" className="flex-shrink-0">Dependentes</TabsTrigger>
             <TabsTrigger value="reajustes" className="flex-shrink-0">Histórico Salarial</TabsTrigger>
             <TabsTrigger value="holerites" className="flex-shrink-0">Holerites</TabsTrigger>
             <TabsTrigger value="variaveis" className="flex-shrink-0">Variáveis Fixas</TabsTrigger>
@@ -229,6 +231,10 @@ const EmployeeDetails = () => {
 
           <TabsContent value="arquivos">
             <FilesTab employeeId={id!} />
+          </TabsContent>
+
+          <TabsContent value="dependentes">
+            <DependentesTab employeeId={id!} />
           </TabsContent>
 
           <TabsContent value="reajustes">

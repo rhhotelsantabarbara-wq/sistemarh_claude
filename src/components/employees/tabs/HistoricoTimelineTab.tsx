@@ -2,14 +2,35 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Briefcase, Calendar, TrendingUp, UserMinus, UserPlus, Clock, FileText, AlertTriangle } from "lucide-react";
+import { Loader2, Briefcase, Calendar, TrendingUp, UserMinus, UserPlus, Clock, FileText, AlertTriangle, PenLine } from "lucide-react";
+import { toISODateLocal } from "@/lib/date";
+
+const NOME_CAMPO: Record<string, string> = {
+  cargo: "Função", setor: "Setor", empresa_id: "Empresa", salario: "Salário", tipo_salario: "Tipo de salário",
+  tipo_contrato: "Tipo de contrato", status: "Situação", gestor_id: "Gestor direto", escala: "Escala",
+  horario_trabalho: "Horário", horas_semanais: "Horas semanais", centro_custo: "Centro de custo",
+  local_trabalho: "Local de trabalho", data_admissao: "Data de admissão", data_desligamento: "Data de desligamento",
+  codigo_funcionario: "Código do funcionário",
+};
+const ROTULO_VALOR: Record<string, Record<string, string>> = {
+  status: { em_admissao: "Em admissão", ativo: "Ativo", afastado: "Afastado", demitido: "Demitido", ferias: "Férias" },
+  tipo_contrato: { fixo: "Fixo", intermitente: "Intermitente", prestador_servico: "Prestador de serviço" },
+  tipo_salario: { mensal: "Mensal", diario: "Diário", por_hora: "Por hora" },
+};
+const valorAlteracao = (campo: string, v: string | null) => {
+  if (v === null || v === "") return "vazio";
+  if (ROTULO_VALOR[campo]?.[v]) return ROTULO_VALOR[campo][v];
+  if (campo === "salario") return Number(v).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v.split("-").reverse().join("/");
+  return v;
+};
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface TimelineEvent {
   id: string;
   date: string;
-  type: "admissao" | "ferias" | "reajuste" | "desligamento" | "readmissao" | "afastamento" | "falta" | "folga";
+  type: "admissao" | "ferias" | "reajuste" | "desligamento" | "readmissao" | "afastamento" | "falta" | "folga" | "alteracao";
   title: string;
   description?: string;
   icon: React.ReactNode;
@@ -30,6 +51,7 @@ const typeConfig: Record<string, { label: string; color: string }> = {
   afastamento: { label: "Afastamento", color: "bg-orange-500" },
   falta: { label: "Falta", color: "bg-rose-400" },
   folga: { label: "Folga", color: "bg-sky-400" },
+  alteracao: { label: "Alteração de cadastro", color: "bg-slate-500" },
 };
 
 const HistoricoTimelineTab = ({ employeeId, employee }: HistoricoTimelineTabProps) => {
@@ -43,13 +65,22 @@ const HistoricoTimelineTab = ({ employeeId, employee }: HistoricoTimelineTabProp
   const fetchTimeline = async () => {
     setLoading(true);
     try {
-      const [feriasRes, reajustesRes, afastamentosRes, faltasRes, folgasRes] = await Promise.all([
+      const [feriasRes, reajustesRes, afastamentosRes, faltasRes, folgasRes, alteracoesRes] = await Promise.all([
         supabase.from("ferias").select("*").eq("employee_id", employeeId),
         supabase.from("historico_reajustes_salariais").select("*").eq("employee_id", employeeId),
         supabase.from("afastamentos").select("*").eq("employee_id", employeeId),
         supabase.from("faltas").select("*").eq("employee_id", employeeId),
         supabase.from("folgas").select("*").eq("employee_id", employeeId),
+        (supabase as any).from("employee_alteracoes").select("*").eq("employee_id", employeeId).order("alterado_em", { ascending: false }).limit(300),
       ]);
+
+      // Quem alterou (nome do perfil)
+      const autores = Array.from(new Set(((alteracoesRes.data || []) as any[]).map((a) => a.alterado_por).filter(Boolean)));
+      const nomesAutores: Record<string, string> = {};
+      if (autores.length) {
+        const { data: perfis } = await supabase.from("profiles").select("id, nome_completo").in("id", autores);
+        (perfis || []).forEach((p: any) => { nomesAutores[p.id] = p.nome_completo; });
+      }
 
       const timeline: TimelineEvent[] = [];
 
@@ -142,6 +173,23 @@ const HistoricoTimelineTab = ({ employeeId, employee }: HistoricoTimelineTabProp
           description: f.motivo || undefined,
           icon: <FileText className="w-4 h-4 text-white" />,
           color: typeConfig.folga.color,
+        });
+      });
+
+      // Alterações de cadastro (função, setor, salário, gestor…)
+      ((alteracoesRes.data || []) as any[]).forEach((a) => {
+        // Reajuste salarial do mesmo dia já aparece pelo histórico de reajustes
+        const quando = new Date(a.alterado_em);
+        if (a.campo === "salario" && (reajustesRes.data || []).some((r: any) => r.aplicado_em && toISODateLocal(new Date(r.aplicado_em)) === toISODateLocal(quando))) return;
+        const hora = quando.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+        timeline.push({
+          id: "alteracao-" + a.id,
+          date: toISODateLocal(quando),
+          type: "alteracao",
+          title: `${NOME_CAMPO[a.campo] || a.campo} alterado`,
+          description: `${valorAlteracao(a.campo, a.valor_anterior)} → ${valorAlteracao(a.campo, a.valor_novo)} · ${hora}${a.alterado_por ? ` · por ${nomesAutores[a.alterado_por] || "usuário do sistema"}` : " · automático"}`,
+          icon: <PenLine className="w-4 h-4 text-white" />,
+          color: typeConfig.alteracao.color,
         });
       });
 
