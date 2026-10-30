@@ -181,7 +181,7 @@ export function ControleFerias({ filters, onFiltersChange, onProgramar, onAprova
           type="button"
           onClick={() => setSituacao("todas")}
           aria-pressed={situacao === "todas"}
-          className={`min-h-11 rounded-full border px-4 text-sm font-medium transition ${situacao === "todas" ? "bg-foreground text-background border-foreground" : "bg-card hover:bg-muted"}`}
+          className={`min-h-10 rounded-full border px-4 text-xs font-bold uppercase tracking-[0.04em] transition ${situacao === "todas" ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-muted"}`}
         >
           Todos <span className="ml-1 opacity-70">{filtradas.length}</span>
         </button>
@@ -192,7 +192,7 @@ export function ControleFerias({ filters, onFiltersChange, onProgramar, onAprova
             title={SITUACOES[s].descricao}
             onClick={() => setSituacao(situacao === s ? "todas" : s)}
             aria-pressed={situacao === s}
-            className={`min-h-11 rounded-full border px-4 text-sm font-medium transition ${SITUACOES[s].classe} ${situacao === s ? "ring-2 ring-offset-2 ring-foreground/60" : "hover:brightness-95"}`}
+            className={`min-h-10 rounded-full border px-4 text-xs font-bold uppercase tracking-[0.04em] transition ${SITUACOES[s].classe} ${situacao === s ? "ring-2 ring-offset-2 ring-primary/60" : "hover:brightness-95"}`}
           >
             {SITUACOES[s].rotulo} <span className="ml-1 font-bold">{contagem[s]}</span>
           </button>
@@ -204,11 +204,11 @@ export function ControleFerias({ filters, onFiltersChange, onProgramar, onAprova
           <div className="flex flex-wrap gap-3">
             <div className="relative flex-1 min-w-[220px]">
               <Label htmlFor="busca-ferias" className="sr-only">Buscar colaborador</Label>
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="busca-ferias"
-                placeholder="Buscar colaborador…"
-                className="pl-9 h-11"
+                placeholder="Procure por colaborador"
+                className="h-10 rounded-full border-0 bg-muted pl-10"
                 value={filters.search}
                 onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
               />
@@ -216,7 +216,7 @@ export function ControleFerias({ filters, onFiltersChange, onProgramar, onAprova
             <div className="w-full sm:w-56">
               <Label htmlFor="setor-ferias" className="sr-only">Setor</Label>
               <Select value={filters.setor || "all"} onValueChange={(v) => onFiltersChange({ ...filters, setor: v })}>
-                <SelectTrigger id="setor-ferias" className="h-11">
+                <SelectTrigger id="setor-ferias" className="h-10 rounded-full">
                   <SelectValue placeholder="Setor" />
                 </SelectTrigger>
                 <SelectContent>

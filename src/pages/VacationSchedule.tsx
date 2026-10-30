@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import PageHeader, { BOTAO_PRINCIPAL } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
-import { Calendar, ClipboardList, History, Settings, ArrowLeft, Plus, FileDown } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Calendar, ClipboardList, History, Settings, Plus, FileDown, Palmtree } from "lucide-react";
 import { VacationCalendar } from "@/components/vacation-schedule/VacationCalendar";
 import { VacationTimeline } from "@/components/vacation-schedule/VacationTimeline";
 import { VacationList } from "@/components/vacation-schedule/VacationList";
@@ -17,7 +17,6 @@ import type { VacationFiltersType } from "@/components/vacation-schedule/types";
 import type { FeriasPlanejada } from "@/lib/feriasCalculo";
 
 export default function VacationSchedule() {
-  const navigate = useNavigate();
   const [filters, setFilters] = useState<VacationFiltersType>({
     empresa: "all",
     setor: "all",
@@ -42,36 +41,18 @@ export default function VacationSchedule() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")} aria-label="Voltar">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">Férias</h1>
-                <p className="text-sm text-muted-foreground">
-                  Saldo, prazos e programação de férias da equipe
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={() => setShowExportDialog(true)}>
-                <FileDown className="h-4 w-4 mr-2" />
-                Exportar
-              </Button>
-              <Button onClick={() => abrirProgramar(null)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Programar férias
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="space-y-6">
+      <PageHeader
+        titulo="Férias"
+        descricao="Saldo, prazos e programação de férias da equipe"
+        icone={Palmtree}
+        acoes={<>
+          <Button variant="outline" onClick={() => setShowExportDialog(true)}><FileDown className="h-4 w-4" />Exportar</Button>
+          <Button className={BOTAO_PRINCIPAL} onClick={() => abrirProgramar(null)}><Plus className="h-4 w-4" />Programar férias</Button>
+        </>}
+      />
 
-      <main className="container mx-auto px-4 py-6 space-y-6">
+      <div className="space-y-6">
         <Tabs defaultValue="controle" className="w-full">
           <TabsList className="inline-flex w-full overflow-x-auto tabs-scroll">
             <TabsTrigger value="controle" className="flex-shrink-0 flex items-center gap-2">
@@ -103,10 +84,10 @@ export default function VacationSchedule() {
           </TabsContent>
 
           <TabsContent value="calendar" className="mt-6 space-y-4">
-            <Card className="p-6">
+            <Card className="p-4 sm:p-5">
               <VacationFilters filters={filters} onFiltersChange={setFilters} />
             </Card>
-            <div className="inline-flex rounded-lg border p-1" role="group" aria-label="Visualização">
+            <div className="inline-flex rounded-full bg-card p-1 shadow-[0_1px_2px_rgba(20,24,40,0.06)]" role="group" aria-label="Visualização">
               <Button size="sm" variant={visaoCalendario === "linha" ? "default" : "ghost"} aria-pressed={visaoCalendario === "linha"} onClick={() => setVisaoCalendario("linha")}>Linha do tempo</Button>
               <Button size="sm" variant={visaoCalendario === "mes" ? "default" : "ghost"} aria-pressed={visaoCalendario === "mes"} onClick={() => setVisaoCalendario("mes")}>Mês</Button>
             </div>
@@ -125,7 +106,7 @@ export default function VacationSchedule() {
             <VacationSettings />
           </TabsContent>
         </Tabs>
-      </main>
+      </div>
 
       <AddVacationDialog
         open={showAddDialog}
