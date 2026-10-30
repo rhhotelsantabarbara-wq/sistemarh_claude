@@ -41,7 +41,7 @@ const AIInsights = () => {
         </div>
 
         <Tabs defaultValue="assistant" className="space-y-6">
-          <TabsList className="inline-flex w-full overflow-x-auto tabs-scroll lg:grid lg:grid-cols-5">
+          <TabsList className="inline-flex w-full overflow-x-auto tabs-scroll">
             <TabsTrigger value="assistant" className="flex-shrink-0 flex items-center gap-2">
               <Bot className="h-4 w-4" />
               <span className="hidden sm:inline">Assistente</span>

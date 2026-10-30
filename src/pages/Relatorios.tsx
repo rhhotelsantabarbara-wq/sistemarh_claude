@@ -40,7 +40,7 @@ const Relatorios = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="inline-flex lg:grid w-full lg:grid-cols-4 overflow-x-auto tabs-scroll">
+        <TabsList className="inline-flex w-full overflow-x-auto tabs-scroll">
           <TabsTrigger
             value="employees"
             className="flex items-center gap-2 flex-shrink-0 min-w-fit"

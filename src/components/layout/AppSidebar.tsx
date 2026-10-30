@@ -239,15 +239,15 @@ export function AppSidebar({ allowedModules = null }: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon" className="z-40">
 
-      <SidebarHeader className="p-4 border-b border-sidebar-border">
+      <SidebarHeader className="h-16 justify-center px-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shrink-0 shadow-lg">
-            <Bot className="w-5 h-5 text-primary-foreground" />
+          <div className="w-9 h-9 rounded-[10px] bg-primary flex items-center justify-center shrink-0 text-primary-foreground text-[17px] font-bold">
+            C
           </div>
           {!collapsed && (
             <div className="flex flex-col">
-              <span className="text-sm font-bold text-sidebar-foreground tracking-wide">Cérebrum</span>
-              <span className="text-[11px] text-sidebar-foreground/50 font-medium">Sistema de RH</span>
+              <span className="text-[15px] font-medium text-foreground">Cérebrum</span>
+              <span className="text-[11px] text-muted-foreground">Sistema de RH</span>
             </div>
           )}
         </div>
@@ -259,7 +259,7 @@ export function AppSidebar({ allowedModules = null }: AppSidebarProps) {
           if (visibleItems.length === 0) return null;
           return (
           <SidebarGroup key={group.label} className="py-1">
-            <SidebarGroupLabel className="text-[10px] uppercase tracking-widest text-sidebar-foreground/40 font-semibold px-3 mb-1">
+            <SidebarGroupLabel className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground/80 font-medium px-3 mb-1">
               {group.label}
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -274,10 +274,10 @@ export function AppSidebar({ allowedModules = null }: AppSidebarProps) {
                       <NavLink
                          to={item.url + ("hash" in item ? item.hash : "")}
                         end
-                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground/70 transition-all duration-200 hover:text-sidebar-foreground hover:bg-sidebar-accent"
-                         activeClassName={isActive(item.url, "hash" in item ? item.hash : undefined) ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : undefined}
+                        className="flex items-center gap-3 rounded-[10px] px-3 py-2 text-sidebar-foreground transition-colors hover:text-foreground hover:bg-muted"
+                         activeClassName={isActive(item.url, "hash" in item ? item.hash : undefined) ? "!bg-sidebar-accent !text-sidebar-accent-foreground font-medium" : undefined}
                       >
-                        <item.icon className="h-4 w-4 shrink-0" />
+                        <item.icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.8} />
                         <span className="text-[13px]">{item.title}</span>
                       </NavLink>
                     </SidebarMenuButton>
@@ -292,7 +292,7 @@ export function AppSidebar({ allowedModules = null }: AppSidebarProps) {
 
       <SidebarFooter className="border-t border-sidebar-border p-3">
         {!collapsed && (
-          <p className="text-[11px] text-sidebar-foreground/40 text-center font-medium">
+          <p className="text-[11px] text-muted-foreground text-center">
             RH Santa Bárbara
           </p>
         )}

@@ -199,7 +199,7 @@ export const BirthdayListDialog = ({
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className="inline-flex w-full overflow-x-auto tabs-scroll lg:grid lg:grid-cols-3">
+          <TabsList className="inline-flex w-full overflow-x-auto tabs-scroll">
             <TabsTrigger value="today" className="flex-shrink-0 flex items-center gap-2">
               <Cake className="w-4 h-4" />
               Hoje ({birthdaysToday.length})

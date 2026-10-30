@@ -13,6 +13,7 @@ import { useInactivityLock } from "@/hooks/useInactivityLock";
 import LockScreen from "./LockScreen";
 import { useUserPermissions } from "@/hooks/useUserPermissions";
 import { moduleKeyFromPath } from "@/lib/modules";
+import NavigationSearch from "@/components/dashboard/NavigationSearch";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -121,19 +122,17 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <AppSidebar allowedModules={isPartial ? allowedModules : null} />
         <div className="flex-1 flex flex-col min-w-0">
           {/* Header */}
-          <header className="h-16 bg-card shadow-sm flex items-center justify-between px-4 sm:px-6 shrink-0 z-20">
-            <div className="flex items-center gap-3">
-              <SidebarTrigger />
-              {companyLogo && (
-                <img src={companyLogo} alt="Logo" className="w-8 h-8 object-contain hidden sm:block" />
-              )}
-              <span className="text-sm font-medium text-muted-foreground hidden md:block">
-                Olá, {isPartial ? "Administrador" : "Gestor"}
-              </span>
+          <header className="h-16 bg-card border-b border-border flex items-center gap-3 px-4 sm:px-6 shrink-0 z-20">
+            <SidebarTrigger className="text-muted-foreground" />
+            {companyLogo && (
+              <img src={companyLogo} alt="Logo da empresa" className="w-8 h-8 object-contain hidden sm:block" />
+            )}
+            <div className="hidden md:flex flex-1 justify-center">
+              <NavigationSearch />
             </div>
-            <div className="flex items-center gap-3">
+            <div className="ml-auto md:ml-0 flex items-center gap-2 sm:gap-3">
               <Select value={selectedEmpresa} onValueChange={setSelectedEmpresa}>
-                <SelectTrigger className="w-[140px] sm:w-[220px] text-xs sm:text-sm bg-muted/50 border-0">
+                <SelectTrigger className="h-9 w-[140px] sm:w-[230px] rounded-full border-0 bg-muted text-xs uppercase tracking-[0.03em] text-muted-foreground">
                   <SelectValue placeholder="Empresa" />
                 </SelectTrigger>
                 <SelectContent>
@@ -143,14 +142,18 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   ))}
                 </SelectContent>
               </Select>
-              <Button variant="ghost" size="icon" onClick={handleLogout} className="text-muted-foreground hover:text-foreground">
+              <div className="hidden sm:block h-7 w-px bg-border" />
+              <div className="hidden sm:flex h-9 w-9 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-800" title={isPartial ? "Administrador" : "Gestor"}>
+                {isPartial ? "AD" : "RH"}
+              </div>
+              <Button variant="ghost" size="icon" onClick={handleLogout} aria-label="Sair" className="h-9 w-9 text-muted-foreground hover:text-foreground">
                 <LogOut className="w-4 h-4" />
               </Button>
             </div>
           </header>
 
           {/* Main content */}
-          <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
+          <main className="flex-1 overflow-auto p-4 sm:p-6 lg:px-8 lg:py-7">
             <Suspense fallback={<CarregandoTela />}>
               {typeof children === "function"
                 ? (children as any)({ selectedEmpresa, empresas, user })

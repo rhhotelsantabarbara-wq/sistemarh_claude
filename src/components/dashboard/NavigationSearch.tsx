@@ -78,13 +78,13 @@ export default function NavigationSearch() {
   return (
     <div ref={containerRef} className="relative w-full max-w-md">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Buscar módulo... (ex: adiantamento, férias)"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setFocused(true)}
-          className="pl-9 pr-8"
+          className="h-10 rounded-full border-0 bg-muted pl-10 pr-9 focus-visible:ring-1"
         />
         {query && (
           <button
@@ -97,7 +97,7 @@ export default function NavigationSearch() {
       </div>
 
       {focused && query.trim() && (
-        <div className="absolute top-full mt-1 left-0 right-0 z-50 bg-popover border rounded-md shadow-lg max-h-[300px] overflow-y-auto">
+        <div className="absolute top-full mt-2 left-0 right-0 z-50 bg-popover border rounded-xl shadow-lg max-h-[300px] overflow-y-auto">
           {results.length === 0 ? (
             <p className="text-sm text-muted-foreground p-3 text-center">Nenhum resultado encontrado.</p>
           ) : (

@@ -33,7 +33,7 @@ const Stock = () => {
 
       <Tabs defaultValue="epis" className="w-full">
         <div className="overflow-x-auto tabs-scroll">
-          <TabsList className="inline-flex w-auto min-w-full lg:grid lg:grid-cols-7">
+          <TabsList className="inline-flex w-auto min-w-full">
             <TabsTrigger value="epis" className="whitespace-nowrap">Estoque EPIs</TabsTrigger>
             <TabsTrigger value="uniformes" className="whitespace-nowrap">Estoque Uniformes</TabsTrigger>
             <TabsTrigger value="distribuicao-lote" className="whitespace-nowrap">Distribuição em Lote</TabsTrigger>

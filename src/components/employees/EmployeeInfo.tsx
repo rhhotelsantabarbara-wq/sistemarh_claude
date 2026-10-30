@@ -131,7 +131,7 @@ const EmployeeInfo = ({ employee, onUpdate }: EmployeeInfoProps) => {
         </div>
 
         <Tabs defaultValue="dados-pessoais" className="w-full">
-          <TabsList className="inline-flex w-full overflow-x-auto tabs-scroll lg:grid lg:grid-cols-6">
+          <TabsList className="inline-flex w-full overflow-x-auto tabs-scroll">
             <TabsTrigger value="dados-pessoais" className="flex-shrink-0 flex items-center gap-2">
               <User className="h-4 w-4" />
               <span className="hidden sm:inline">Dados Pessoais</span>

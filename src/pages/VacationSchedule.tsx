@@ -73,7 +73,7 @@ export default function VacationSchedule() {
 
       <main className="container mx-auto px-4 py-6 space-y-6">
         <Tabs defaultValue="controle" className="w-full">
-          <TabsList className="inline-flex w-full overflow-x-auto tabs-scroll lg:grid lg:grid-cols-4">
+          <TabsList className="inline-flex w-full overflow-x-auto tabs-scroll">
             <TabsTrigger value="controle" className="flex-shrink-0 flex items-center gap-2">
               <ClipboardList className="h-4 w-4" />
               <span>Controle</span>

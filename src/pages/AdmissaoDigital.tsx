@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,12 +6,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { CheckCircle2, ClipboardCheck, Copy, ExternalLink, FileText, Loader2, MessageCircle, Plus, RotateCcw, UserPlus, XCircle } from "lucide-react";
+import { CalendarDays, CheckCircle2, ClipboardCheck, Copy, ExternalLink, FileText, Loader2, MessageCircle, Plus, RotateCcw, Search, UserPlus, XCircle } from "lucide-react";
 import EmployeeForm from "@/components/forms/EmployeeForm";
 import { CAMPOS_ADMISSAO, GRUPOS_BASE, GRUPOS_FICHA, formatarValor } from "@/lib/fichaCampos";
 import { nomeTipoDocumento, tipoDocumento } from "@/lib/documentosTipos";
@@ -21,12 +19,6 @@ const db = supabase as any;
 const BUCKET = "admissao-documentos";
 
 type Status = "aguardando" | "preenchido" | "aprovado" | "cancelado";
-const STATUS: Record<Status, { rotulo: string; cor: string }> = {
-  aguardando: { rotulo: "Aguardando o candidato", cor: "bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-950 dark:text-sky-200 dark:border-sky-900" },
-  preenchido: { rotulo: "Para conferir", cor: "bg-amber-100 text-amber-900 border-amber-200 dark:bg-amber-950 dark:text-amber-200 dark:border-amber-900" },
-  aprovado: { rotulo: "Cadastrado", cor: "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-200 dark:border-emerald-900" },
-  cancelado: { rotulo: "Cancelado", cor: "bg-muted text-muted-foreground" },
-};
 
 const linkDe = (codigo: string) => `${window.location.origin}/admissao/${codigo}`;
 const mensagemWhats = (c: any) =>
@@ -268,7 +260,6 @@ const Conferir = ({ convite, onFechar, onAprovar, onReabrir }: { convite: any | 
 
 const AdmissaoDigital = () => {
   const qc = useQueryClient();
-  const [filtro, setFiltro] = useState<"abertos" | Status>("abertos");
   const [novo, setNovo] = useState(false);
   const [link, setLink] = useState<any | null>(null);
   const [conferir, setConferir] = useState<any | null>(null);
@@ -285,12 +276,6 @@ const AdmissaoDigital = () => {
   const recarregar = () => { qc.invalidateQueries({ queryKey: ["admissao-convites"] }); qc.invalidateQueries({ queryKey: ["documentos-vencendo"] }); };
 
   const hoje = todayISO();
-  const contagem = useMemo(() => {
-    const c: Record<string, number> = { abertos: 0, aguardando: 0, preenchido: 0, aprovado: 0, cancelado: 0 };
-    convites.forEach((x: any) => { c[x.status]++; if (x.status === "aguardando" || x.status === "preenchido") c.abertos++; });
-    return c;
-  }, [convites]);
-  const lista = convites.filter((x: any) => (filtro === "abertos" ? x.status === "aguardando" || x.status === "preenchido" : x.status === filtro));
 
   const mudarStatus = async (c: any, status: Status, extra: Record<string, any> = {}) => {
     const { error } = await db.from("admissao_convites").update({ status, ...extra }).eq("id", c.id);
@@ -326,67 +311,90 @@ const AdmissaoDigital = () => {
     };
   };
 
-  return (
-    <div className="container mx-auto space-y-6 p-0 sm:p-2 lg:p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="flex items-center gap-2 text-2xl font-bold"><UserPlus className="h-6 w-6 text-primary" />Admissão digital</h1>
-          <p className="text-sm text-muted-foreground">Mande um link para o novo colaborador preencher os dados e enviar as fotos dos documentos. Depois é só conferir e cadastrar.</p>
+  const [busca, setBusca] = useState("");
+  const [verCancelados, setVerCancelados] = useState(false);
+  const termo = busca.trim().toLowerCase();
+  const filtrar = (x: any) => !termo || `${x.dados?.nome_completo || x.nome} ${x.cargo || ""} ${x.setor || ""}`.toLowerCase().includes(termo);
+  const vencidoDe = (x: any) => x.status === "aguardando" && x.expira_em < hoje;
+  const iniciais = (n: string) => String(n || "").split(" ").filter(Boolean).map((p, k, a) => (k === 0 || k === a.length - 1 ? p[0] : "")).join("").toUpperCase();
+  const camposPreenchidos = (x: any) => Object.values(x.dados || {}).filter((v) => v !== "" && v !== null && v !== false).length;
+
+  const colunas = [
+    { chave: "aguardando", titulo: "Aguardando o candidato", faixa: "border-l-amber-400", linha: "border-b-amber-400", itens: convites.filter((x: any) => x.status === "aguardando" && !vencidoDe(x)) },
+    { chave: "preenchido", titulo: "Para conferir", faixa: "border-l-violet-500", linha: "border-b-violet-500", itens: convites.filter((x: any) => x.status === "preenchido") },
+    { chave: "vencido", titulo: "Link vencido", faixa: "border-l-sky-500", linha: "border-b-sky-500", itens: convites.filter(vencidoDe) },
+    { chave: "aprovado", titulo: "Cadastrados", faixa: "border-l-emerald-500", linha: "border-b-emerald-500", itens: convites.filter((x: any) => x.status === "aprovado").slice(0, 12) },
+  ].map((c) => ({ ...c, itens: c.itens.filter(filtrar) }));
+  const cancelados = convites.filter((x: any) => x.status === "cancelado").filter(filtrar);
+
+  const Cartao = ({ c, faixa }: { c: any; faixa: string }) => {
+    const nome = c.dados?.nome_completo || c.nome;
+    const vencido = vencidoDe(c);
+    const info = c.status === "preenchido" ? `recebido ${dataBR(c.preenchido_em?.slice(0, 10) || hoje).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}`
+      : c.status === "aprovado" ? `cadastrado ${dataBR(c.aprovado_em?.slice(0, 10) || hoje).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}`
+      : vencido ? `venceu ${dataBR(c.expira_em).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}`
+      : `vale até ${dataBR(c.expira_em).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}`;
+    return (
+      <div className={`flex flex-col gap-3 rounded-lg border-l-4 ${faixa} bg-card p-3 pl-3.5 shadow-[0_1px_2px_rgba(20,24,40,0.06)]`}>
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground">{iniciais(nome)}</span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium">{nome}</p>
+            <p className="truncate text-xs text-muted-foreground">{[c.cargo, c.setor].filter(Boolean).join(" · ") || "Sem função definida"}</p>
+          </div>
         </div>
-        <Button onClick={() => setNovo(true)}><Plus className="mr-2 h-4 w-4" />Nova admissão</Button>
+        <div className="flex flex-wrap gap-1.5">
+          <span className="flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-[11px] text-muted-foreground"><ClipboardCheck className="h-3 w-3" />{camposPreenchidos(c)} campos · {(c.documentos || []).length} fotos</span>
+          <span className="flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-[11px] text-muted-foreground"><CalendarDays className="h-3 w-3" />{info}</span>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {c.status === "aguardando" && !vencido && <Button size="sm" variant="outline" className="h-8" onClick={() => setLink(c)}><MessageCircle className="h-3.5 w-3.5" />Enviar link</Button>}
+          {vencido && <Button size="sm" variant="outline" className="h-8" onClick={() => reabrir(c)}><RotateCcw className="h-3.5 w-3.5" />Renovar link</Button>}
+          {c.status === "aguardando" && <Button size="sm" variant="ghost" className="h-8 text-muted-foreground" onClick={() => { if (confirm(`Cancelar a admissão de ${c.nome}? O link deixa de funcionar.`)) mudarStatus(c, "cancelado"); }}><XCircle className="h-3.5 w-3.5" />Cancelar</Button>}
+          {c.status === "preenchido" && <Button size="sm" className="h-8" onClick={() => setConferir(c)}><ClipboardCheck className="h-3.5 w-3.5" />Conferir</Button>}
+          {c.status === "aprovado" && c.employee_id && <Button size="sm" variant="outline" className="h-8" asChild><Link to={`/employee/${c.employee_id}`}><CheckCircle2 className="h-3.5 w-3.5" />Ver ficha</Link></Button>}
+          {c.status === "cancelado" && <Button size="sm" variant="outline" className="h-8" onClick={() => reabrir(c)}><RotateCcw className="h-3.5 w-3.5" />Reativar</Button>}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="flex items-center gap-2 text-xl font-medium"><UserPlus className="h-5 w-5 text-primary" />Admissão digital</h1>
+          <p className="text-sm text-muted-foreground">O novo colaborador preenche os dados e manda as fotos dos documentos pelo link. Você confere e cadastra.</p>
+        </div>
+        <Button onClick={() => setNovo(true)} className="h-10 px-5 text-[11px] font-bold uppercase tracking-[0.04em]"><Plus className="h-4 w-4" />Nova admissão por link</Button>
       </div>
 
-      <Tabs value={filtro} onValueChange={(v) => setFiltro(v as any)}>
-        <TabsList>
-          <TabsTrigger value="abertos">Em andamento ({contagem.abertos})</TabsTrigger>
-          <TabsTrigger value="preenchido">Para conferir ({contagem.preenchido})</TabsTrigger>
-          <TabsTrigger value="aprovado">Cadastrados ({contagem.aprovado})</TabsTrigger>
-          <TabsTrigger value="cancelado">Cancelados ({contagem.cancelado})</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <div className="relative max-w-md">
+        <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input aria-label="Buscar admissão" placeholder="Procure por candidato, cargo ou setor" value={busca} onChange={(e) => setBusca(e.target.value)} className="h-10 rounded-full border-0 bg-[hsl(228_14%_92%)] pl-10" />
+      </div>
 
       {isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
-      ) : lista.length === 0 ? (
-        <Card><CardContent className="py-12 text-center text-muted-foreground">
-          {filtro === "abertos" ? "Nenhuma admissão em andamento. Clique em “Nova admissão” para gerar um link." : "Nada por aqui."}
-        </CardContent></Card>
       ) : (
-        <div className="grid gap-3">
-          {lista.map((c: any) => {
-            const st = STATUS[c.status as Status];
-            const vencido = c.status === "aguardando" && c.expira_em < hoje;
-            return (
-              <Card key={c.id}>
-                <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0 space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-semibold break-words">{c.dados?.nome_completo || c.nome}</p>
-                      <Badge variant="outline" className={`font-normal ${st.cor}`}>{vencido ? "Link vencido" : st.rotulo}</Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{[c.cargo, c.setor, c.empresas?.nome].filter(Boolean).join(" · ") || "Sem função definida"}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {c.status === "preenchido" ? `Enviado em ${dataHora(c.preenchido_em)}` : c.status === "aprovado" ? `Cadastrado em ${dataHora(c.aprovado_em)}` : `Criado em ${dataHora(c.created_at)} · vale até ${dataBR(c.expira_em).toLocaleDateString("pt-BR")}`}
-                      {c.status === "aguardando" && (c.documentos?.length || Object.keys(c.dados || {}).length > 3) ? " · já começou a preencher" : ""}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2 sm:shrink-0 sm:justify-end">
-                    {c.status === "aguardando" && (
-                      <>
-                        {vencido
-                          ? <Button size="sm" variant="outline" onClick={() => reabrir(c)}><RotateCcw className="mr-1 h-4 w-4" />Renovar link</Button>
-                          : <Button size="sm" variant="outline" onClick={() => setLink(c)}><MessageCircle className="mr-1 h-4 w-4" />Enviar link</Button>}
-                        <Button size="sm" variant="ghost" onClick={() => { if (confirm(`Cancelar a admissão de ${c.nome}? O link deixa de funcionar.`)) mudarStatus(c, "cancelado"); }}><XCircle className="mr-1 h-4 w-4" />Cancelar</Button>
-                      </>
-                    )}
-                    {c.status === "preenchido" && <Button size="sm" onClick={() => setConferir(c)}><ClipboardCheck className="mr-1 h-4 w-4" />Conferir</Button>}
-                    {c.status === "aprovado" && c.employee_id && <Button size="sm" variant="outline" asChild><Link to={`/employee/${c.employee_id}`}><CheckCircle2 className="mr-1 h-4 w-4" />Ver ficha</Link></Button>}
-                    {c.status === "cancelado" && <Button size="sm" variant="outline" onClick={() => reabrir(c)}><RotateCcw className="mr-1 h-4 w-4" />Reativar</Button>}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+        <div className="grid items-start gap-5 sm:grid-cols-2 xl:grid-cols-4">
+          {colunas.map((col) => (
+            <section key={col.chave} className="flex min-w-0 flex-col gap-2.5">
+              <h2 className={`mb-1 w-fit border-b-[3px] ${col.linha} pb-2 text-sm font-medium`}>{col.titulo} ({col.itens.length})</h2>
+              {col.itens.length === 0
+                ? <p className="rounded-lg border border-dashed px-3 py-6 text-center text-xs text-muted-foreground">Nenhum</p>
+                : col.itens.map((c: any) => <Cartao key={c.id} c={c} faixa={col.faixa} />)}
+            </section>
+          ))}
+        </div>
+      )}
+
+      {cancelados.length > 0 && (
+        <div className="space-y-2.5">
+          <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setVerCancelados(!verCancelados)}>
+            {verCancelados ? "Esconder" : "Mostrar"} cancelados ({cancelados.length})
+          </Button>
+          {verCancelados && <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">{cancelados.map((c: any) => <Cartao key={c.id} c={c} faixa="border-l-slate-300" />)}</div>}
         </div>
       )}
 

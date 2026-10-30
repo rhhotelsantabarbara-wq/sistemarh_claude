@@ -548,12 +548,12 @@ const GestorDashboard = ({ user }: GestorDashboardProps) => {
 
   return (
     <div className="space-y-8">
-        {/* Navigation Search */}
-        <NavigationSearch />
+        {/* Busca no celular (no computador ela fica no topo) */}
+        <div className="md:hidden"><NavigationSearch /></div>
 
         {/* Navigation Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="inline-flex lg:grid w-full lg:grid-cols-6 overflow-x-auto tabs-scroll">
+          <TabsList className="inline-flex w-full overflow-x-auto tabs-scroll">
             <TabsTrigger value="overview" className="flex items-center gap-2 flex-shrink-0 min-w-fit">
               <LayoutDashboard className="w-4 h-4" />
               Visão Geral
@@ -818,23 +818,24 @@ const GestorDashboard = ({ user }: GestorDashboardProps) => {
           </TabsContent>
 
           <TabsContent value="funcionarios" className="space-y-6">
-            <h1 className="text-2xl font-bold">Funcionários</h1>
+            <h1 className="text-xl font-medium">Colaboradores</h1>
             {/* Search and Employee List */}
             <div className="space-y-4">
               <div className="flex flex-wrap items-center gap-3">
                 <div className="relative min-w-[200px] flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <Input
-                    placeholder="Buscar por nome, cargo ou setor..."
+                    placeholder="Procure por colaborador, cargo ou setor"
+                    aria-label="Buscar colaborador"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
+                    className="h-10 rounded-full border-0 bg-[hsl(228_14%_92%)] pl-10"
                   />
                 </div>
                 <VerComoColaboradorButton />
-                <Button onClick={handleAddEmployee}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Novo Funcionário
+                <Button onClick={handleAddEmployee} className="h-10 px-5 text-[11px] font-bold uppercase tracking-[0.04em]">
+                  <Plus className="w-4 h-4" />
+                  Novo colaborador
                 </Button>
               </div>
             </div>

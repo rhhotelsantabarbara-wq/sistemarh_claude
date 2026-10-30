@@ -32,7 +32,7 @@ export default function PeopleManager() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="inline-flex w-full overflow-x-auto tabs-scroll lg:grid lg:grid-cols-7 h-auto">
+          <TabsList className="inline-flex w-full overflow-x-auto tabs-scroll h-auto">
             <TabsTrigger value="dashboard" className="flex-shrink-0 flex flex-col gap-1 py-3">
               <Users className="h-4 w-4" />
               <span className="text-xs hidden sm:inline">Dashboard</span>
