@@ -23,15 +23,6 @@ interface Props {
   onSigned?: () => void;
 }
 
-function downloadBlob(blob: Blob, name: string) {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = name;
-  anchor.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
 export function AssinaturaDocumentoHoleriteWizard({ open, onOpenChange, documento, onSigned }: Props) {
   const [step, setStep] = useState(0);
   const [aceite, setAceite] = useState(false);
@@ -90,9 +81,10 @@ export function AssinaturaDocumentoHoleriteWizard({ open, onOpenChange, document
   async function downloadSigned() {
     const path = result?.pdf_path;
     if (!path) return toast.error("PDF assinado indisponível");
-    const { data, error } = await supabase.storage.from("holerites-assinados").download(path);
-    if (error || !data) return toast.error("Não foi possível baixar o holerite");
-    downloadBlob(data, documento.arquivo_nome);
+    const nome = `holerite-${String(documento.mes).padStart(2, "0")}-${documento.ano}.pdf`;
+    const { data, error } = await supabase.storage.from("holerites-assinados").createSignedUrl(path, 300, { download: nome });
+    if (error || !data?.signedUrl) return toast.error("Não foi possível baixar o holerite");
+    window.location.href = data.signedUrl;
   }
 
   return <Dialog open={open} onOpenChange={onOpenChange}>

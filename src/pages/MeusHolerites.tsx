@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileCheck2, PenLine, ArrowLeft, Download } from "lucide-react";
+import { FileCheck2, PenLine, ArrowLeft, Download, Loader2 } from "lucide-react";
 import { AssinaturaDocumentoHoleriteWizard } from "@/components/holerites-assinatura/AssinaturaDocumentoHoleriteWizard";
 import { toast } from "sonner";
 
@@ -27,6 +27,27 @@ export default function MeusHolerites() {
   useEffect(() => {
     load();
   }, []);
+
+  const [baixando, setBaixando] = useState<string | null>(null);
+
+  // Link temporário de download: funciona no computador e no celular (Android e iPhone)
+  async function baixar(documento: any) {
+    const path = documento.pdf_assinado_path || documento.arquivo_path;
+    const bucket = documento.pdf_assinado_path ? "holerites-assinados" : "holerites-importados";
+    const nome = `holerite-${String(documento.mes).padStart(2, "0")}-${documento.ano}.pdf`;
+    setBaixando(documento.id);
+    try {
+      const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 300, { download: nome });
+      if (error || !data?.signedUrl) throw error || new Error("sem link");
+      window.location.href = data.signedUrl;
+      toast.success("Baixando o holerite…");
+    } catch (e) {
+      console.error("Erro ao baixar holerite:", e);
+      toast.error("Não foi possível baixar o holerite. Tente de novo ou fale com o RH.");
+    } finally {
+      setTimeout(() => setBaixando(null), 1500);
+    }
+  }
 
   async function load() {
     setLoading(true);
@@ -101,18 +122,9 @@ export default function MeusHolerites() {
                 {documentos.filter((documento) => documento.status === "assinado").map((documento) => (
                   <div key={documento.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
                     <div className="min-w-0"><div className="flex flex-wrap items-center gap-2 font-medium">{MESES[documento.mes]}/{documento.ano}<Badge variant="secondary" className="bg-green-100 text-green-800">Assinado</Badge></div><div className="break-all text-xs font-mono text-muted-foreground">{documento.protocolo}</div></div>
-                    <Button variant="outline" className="shrink-0" onClick={async () => {
-                      const path = documento.pdf_assinado_path || documento.arquivo_path;
-                      const bucket = documento.pdf_assinado_path ? "holerites-assinados" : "holerites-importados";
-                      const { data, error } = await supabase.storage.from(bucket).download(path);
-                      if (error || !data) return toast.error("Não foi possível baixar o holerite");
-                      const url = URL.createObjectURL(data);
-                      const anchor = document.createElement("a");
-                      anchor.href = url;
-                      anchor.download = documento.arquivo_nome;
-                      anchor.click();
-                      setTimeout(() => URL.revokeObjectURL(url), 1000);
-                    }}><Download className="mr-2 h-4 w-4" /> Baixar</Button>
+                    <Button variant="outline" className="shrink-0" disabled={baixando === documento.id} onClick={() => baixar(documento)}>
+                      {baixando === documento.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />} Baixar
+                    </Button>
                   </div>
                 ))}
               </CardContent>
