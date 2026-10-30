@@ -33,15 +33,15 @@ const FichaLeitura = ({ grupos, dados, semFinanceiro }: Props) => {
         });
         return (
           <section key={g.chave}>
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">{g.titulo}</h3>
+            <h3 className="mb-3 text-sm font-medium text-foreground">{g.titulo}</h3>
             {preenchidos.length === 0 ? (
               <p className="text-sm text-muted-foreground">Nada informado. Use “Editar” para preencher.</p>
             ) : (
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
                 {campos.map((c) => (
-                  <div key={c.campo} className={c.largo ? "md:col-span-2" : undefined}>
-                    <p className="text-sm text-muted-foreground">{c.rotulo}</p>
-                    <p className="font-medium break-words">{formatarValor(c, dados?.[c.campo], nomes)}</p>
+                  <div key={c.campo} className={c.largo ? "sm:col-span-2" : undefined}>
+                    <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted-foreground">{c.rotulo}</p>
+                    <p className="mt-0.5 break-words text-sm">{formatarValor(c, dados?.[c.campo], nomes)}</p>
                   </div>
                 ))}
               </div>

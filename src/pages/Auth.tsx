@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 
 import { toast } from "sonner";
 import { User, Session } from "@supabase/supabase-js";
-import { Briefcase, Bot } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -17,6 +17,7 @@ const Auth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
+  const [verSenha, setVerSenha] = useState(false);
 
   useEffect(() => {
     const fetchCompanyLogo = async () => {
@@ -103,83 +104,74 @@ const Auth = () => {
     }
   };
 
+  const formatarCpf = (v: string) => {
+    const d = v.replace(/\D/g, "").slice(0, 11);
+    return d.replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+  };
+
   return (
-    <div className="min-h-screen flex">
-      {/* Left panel - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary via-primary/90 to-secondary items-center justify-center p-12 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 left-20 w-64 h-64 rounded-full bg-white/20 blur-3xl" />
-          <div className="absolute bottom-20 right-20 w-96 h-96 rounded-full bg-white/10 blur-3xl" />
-        </div>
-        <div className="relative z-10 text-center space-y-8">
-          <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto shadow-2xl">
-            <Bot className="w-10 h-10 text-white" />
-          </div>
-          <div className="space-y-3">
-            <h1 className="text-4xl font-bold text-white tracking-tight">Cérebrum</h1>
-            <p className="text-lg text-white/70 max-w-sm mx-auto leading-relaxed">
-              Sistema inteligente de gestão de recursos humanos
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Right panel - Form */}
-      <div className="flex-1 flex items-center justify-center bg-background p-6 sm:p-12">
-        <div className="w-full max-w-sm space-y-8">
-          {/* Mobile logo */}
-          <div className="lg:hidden text-center space-y-3">
-            {companyLogo ? (
-              <img src={companyLogo} alt="Logo" className="w-14 h-14 object-contain mx-auto" />
-            ) : (
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center mx-auto shadow-lg">
-                <Bot className="w-7 h-7 text-white" />
+    <div className="flex min-h-screen flex-col bg-background">
+      <main className="flex flex-1 items-center justify-center px-4 py-10">
+        <div className="w-full max-w-[400px]">
+          <div className="rounded-xl bg-card px-6 py-8 shadow-[0_1px_2px_rgba(20,24,40,0.06),0_8px_24px_rgba(20,24,40,0.06)] sm:px-9 sm:py-10">
+            <div className="mb-8 flex flex-col items-center text-center">
+              <img src={companyLogo || "/favicon.png"} alt="Hotel Fazenda Santa Bárbara" className="h-20 w-auto object-contain" />
+              <div className="mt-5 flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">C</span>
+                <span className="text-lg font-medium">Cérebrum</span>
               </div>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-foreground">Bem-vindo</h2>
-            <p className="text-muted-foreground text-sm">
-              Entre com suas credenciais para acessar o sistema
-            </p>
-          </div>
-
-          <form onSubmit={handleLogin} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="cpf" className="text-sm font-medium">CPF</Label>
-              <Input
-                id="cpf"
-                type="text"
-                placeholder="Seu CPF"
-                value={cpf}
-                onChange={(e) => setCpf(e.target.value)}
-                required
-                className="h-11 bg-card border-0 shadow-sm"
-              />
+              <p className="mt-1 text-sm text-muted-foreground">Entre com seu CPF e senha</p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="h-11 bg-card border-0 shadow-sm"
-              />
-            </div>
-            <Button type="submit" className="w-full h-11 text-sm font-medium shadow-md" disabled={loading}>
-              {loading ? "Entrando..." : "Entrar"}
-            </Button>
-          </form>
 
-          <p className="text-center text-xs text-muted-foreground/60">
-            RH Santa Bárbara © {new Date().getFullYear()}
-          </p>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="cpf" className="text-[11px] font-bold uppercase tracking-[0.04em] text-muted-foreground">CPF</Label>
+                <Input
+                  id="cpf"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="username"
+                  placeholder="000.000.000-00"
+                  value={cpf}
+                  onChange={(e) => setCpf(formatarCpf(e.target.value))}
+                  required
+                  className="h-11 rounded-lg border-0 bg-muted text-base sm:text-sm"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="password" className="text-[11px] font-bold uppercase tracking-[0.04em] text-muted-foreground">Senha</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={verSenha ? "text" : "password"}
+                    autoComplete="current-password"
+                    placeholder="Sua senha"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="h-11 rounded-lg border-0 bg-muted pr-11 text-base sm:text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setVerSenha(!verSenha)}
+                    aria-label={verSenha ? "Esconder senha" : "Mostrar senha"}
+                    className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
+                  >
+                    {verSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+              <Button type="submit" className="mt-2 h-11 w-full text-[12px] font-bold uppercase tracking-[0.05em]" disabled={loading}>
+                {loading ? "Entrando…" : "Entrar"}
+              </Button>
+            </form>
+            <p className="mt-6 text-center text-xs text-muted-foreground">Esqueceu a senha? Fale com o RH.</p>
+          </div>
         </div>
-      </div>
+      </main>
+      <footer className="pb-6 text-center text-xs text-muted-foreground">
+        Hotel Fazenda Santa Bárbara · RH © {new Date().getFullYear()}
+      </footer>
     </div>
   );
 };

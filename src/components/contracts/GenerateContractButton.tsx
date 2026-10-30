@@ -223,6 +223,8 @@ export const GenerateContractButton = ({
     <Button
       onClick={generateContract}
       disabled={loading}
+      variant="outline"
+      size="sm"
       className="gap-2"
     >
       {loading ? (

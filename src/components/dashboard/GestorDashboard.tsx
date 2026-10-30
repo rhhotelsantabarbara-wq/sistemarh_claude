@@ -591,77 +591,23 @@ const GestorDashboard = ({ user }: GestorDashboardProps) => {
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-8">
-            {/* Event Notifications */}
-            <EventoNotifications />
-
-            {/* Task List */}
-            <TaskList />
-
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                      <Users className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground font-medium">Total</p>
-                      <p className="text-2xl font-bold">{stats.totalEmployees}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center shrink-0">
-                      <LayoutDashboard className="h-5 w-5 text-secondary" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground font-medium">Ativos</p>
-                      <p className="text-2xl font-bold text-secondary">{stats.activeEmployees}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                      <Calendar className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground font-medium">Férias</p>
-                      <p className="text-2xl font-bold text-primary">{stats.onVacation}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-destructive/10 flex items-center justify-center shrink-0">
-                      <FileText className="h-5 w-5 text-destructive" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground font-medium">Afastados</p>
-                      <p className="text-2xl font-bold text-destructive">{stats.onLeave}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            {/* Indicadores */}
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              {[
+                { rotulo: "Total", valor: stats.totalEmployees, faixa: "border-l-slate-300", cor: "" },
+                { rotulo: "Ativos", valor: stats.activeEmployees, faixa: "border-l-primary", cor: "text-primary" },
+                { rotulo: "Em férias", valor: stats.onVacation, faixa: "border-l-sky-400", cor: "text-sky-700" },
+                { rotulo: "Afastados", valor: stats.onLeave, faixa: "border-l-rose-400", cor: "text-rose-700" },
+              ].map((k) => (
+                <div key={k.rotulo} className={`rounded-lg border-l-4 ${k.faixa} bg-card px-4 py-4 shadow-[0_1px_2px_rgba(20,24,40,0.06)] sm:px-5`}>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-muted-foreground">{k.rotulo}</p>
+                  <p className={`mt-1 text-3xl font-medium tabular-nums ${k.cor}`}>{k.valor}</p>
+                </div>
+              ))}
             </div>
 
-            {/* Birthday Card */}
-            <BirthdayCard 
-              empresaId={selectedEmpresa !== "all" ? selectedEmpresa : undefined}
-              onViewAll={() => setShowBirthdayDialog(true)}
-            />
-
+            <div className="grid items-start gap-6 lg:grid-cols-3">
+              <div className="min-w-0 space-y-6 lg:col-span-2">
             {/* Pending Checklists Alert */}
             <PendingChecklistsAlert />
 
@@ -681,7 +627,7 @@ const GestorDashboard = ({ user }: GestorDashboardProps) => {
                   <Calendar className="w-5 h-5" />
                   Funcionários em Férias / Aguardando Confirmação de Retorno ({employeesOnVacation.length})
                 </h2>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-2">
                   {employeesOnVacation.map((employee) => {
                     const { progress, daysRemaining, totalDays, vacationDays, timeOffDays } = calculateVacationProgress(
                       employee.vacation.periodo_gozo_inicio,
@@ -815,6 +761,22 @@ const GestorDashboard = ({ user }: GestorDashboardProps) => {
               </div>
             </div>
 
+              </div>
+              <aside className="min-w-0 space-y-6">
+            {/* Event Notifications */}
+            <EventoNotifications />
+
+            {/* Task List */}
+            <TaskList />
+
+            {/* Birthday Card */}
+            <BirthdayCard 
+              empresaId={selectedEmpresa !== "all" ? selectedEmpresa : undefined}
+              onViewAll={() => setShowBirthdayDialog(true)}
+            />
+
+              </aside>
+            </div>
           </TabsContent>
 
           <TabsContent value="funcionarios" className="space-y-6">

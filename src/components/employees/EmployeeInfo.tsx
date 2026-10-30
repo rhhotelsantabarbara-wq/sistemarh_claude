@@ -3,7 +3,6 @@ import { todayISO, dataBR } from "@/lib/date";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { User, FileText, MapPin, Briefcase, Landmark, FileSignature, Wallet } from "lucide-react";
@@ -98,8 +97,8 @@ const EmployeeInfo = ({ employee, onUpdate }: EmployeeInfoProps) => {
 
   const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
     <div>
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="font-medium">{value || "—"}</p>
+      <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-muted-foreground">{label}</p>
+      <p className="mt-0.5 break-words text-sm">{value || "—"}</p>
     </div>
   );
 
@@ -107,9 +106,9 @@ const EmployeeInfo = ({ employee, onUpdate }: EmployeeInfoProps) => {
     <Card>
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <CardTitle className="flex items-center gap-2">
-            <span>Informações do Funcionário</span>
-            {getStatusBadge(getEffectiveStatus())}
+          <CardTitle className="flex items-center gap-2 text-base">
+            <span>Dados cadastrais</span>
+            {getEffectiveStatus() === "ferias" && employee.status !== "ferias" && getStatusBadge("ferias")}
           </CardTitle>
           <ChangePasswordDialog 
             userId={employee.user_id} 
@@ -121,14 +120,6 @@ const EmployeeInfo = ({ employee, onUpdate }: EmployeeInfoProps) => {
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="flex justify-center">
-          <Avatar className="w-32 h-32">
-            <AvatarImage src={employee.foto_url || undefined} alt={employee.nome_completo} />
-            <AvatarFallback className="bg-muted">
-              <User className="w-16 h-16 text-muted-foreground" />
-            </AvatarFallback>
-          </Avatar>
-        </div>
 
         <Tabs defaultValue="dados-pessoais" className="w-full">
           <TabsList className="inline-flex w-full overflow-x-auto tabs-scroll">
@@ -159,8 +150,8 @@ const EmployeeInfo = ({ employee, onUpdate }: EmployeeInfoProps) => {
           </TabsList>
 
           <TabsContent value="dados-pessoais" className="mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
+            <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="sm:col-span-2">
                 <InfoRow label="Nome Completo" value={employee.nome_completo} />
               </div>
               <InfoRow label="Código do funcionário" value={employee.codigo_funcionario} />
@@ -179,7 +170,7 @@ const EmployeeInfo = ({ employee, onUpdate }: EmployeeInfoProps) => {
           </TabsContent>
 
           <TabsContent value="documentacao" className="mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
               <InfoRow label="Carteira de Trabalho" value={employee.carteira_trabalho} />
               <InfoRow label="CPF" value={employee.cpf} />
               <InfoRow label="PIS" value={employee.pis} />
@@ -237,9 +228,9 @@ const EmployeeInfo = ({ employee, onUpdate }: EmployeeInfoProps) => {
           </TabsContent>
 
           <TabsContent value="endereco" className="mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
               <InfoRow label="CEP" value={employee.cep} />
-              <div className="md:col-span-2">
+              <div className="sm:col-span-2">
                 <InfoRow label="Endereço" value={employee.endereco} />
               </div>
               <InfoRow label="Número" value={employee.endereco_numero} />
@@ -251,7 +242,7 @@ const EmployeeInfo = ({ employee, onUpdate }: EmployeeInfoProps) => {
           </TabsContent>
 
           <TabsContent value="movimentacoes" className="mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
               <InfoRow label="Função" value={employee.cargo} />
               <InfoRow label="Setor" value={employee.setor} />
               <InfoRow label="Tipo de Contrato" value={getTipoContratoLabel(employee.tipo_contrato)} />

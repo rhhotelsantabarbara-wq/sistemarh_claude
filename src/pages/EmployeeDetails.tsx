@@ -17,6 +17,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { ArrowLeft, Edit, Loader2, Trash2, RotateCcw, Eye } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 
 import EmployeeInfo from "@/components/employees/EmployeeInfo";
@@ -121,28 +122,50 @@ const EmployeeDetails = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar
-          </Button>
-          <div className="flex flex-wrap gap-2">
+    <div>
+      <div className="space-y-5">
+        <button type="button" onClick={() => navigate("/dashboard#funcionarios")} className="-ml-1 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-4 w-4" /> Colaboradores
+        </button>
+
+        <div className="flex flex-col gap-5 rounded-lg border-l-4 border-l-primary bg-card p-5 shadow-[0_1px_2px_rgba(20,24,40,0.06)] lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="relative shrink-0">
+              <Avatar className="h-16 w-16 sm:h-20 sm:w-20">
+                <AvatarImage src={employee.foto_url || undefined} alt="" className="object-cover" />
+                <AvatarFallback className="bg-muted text-lg font-bold text-muted-foreground">
+                  {String(employee.nome_completo || "").split(" ").filter(Boolean).map((p: string, i: number, a: string[]) => (i === 0 || i === a.length - 1 ? p[0] : "")).join("").toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <span className={`absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full border-2 border-card ${employee.status === "ativo" ? "bg-emerald-500" : "bg-slate-300"}`} />
+            </div>
+            <div className="min-w-0 space-y-1.5">
+              <h1 className="break-words text-xl font-medium leading-tight sm:text-2xl">{employee.nome_completo}</h1>
+              <p className="text-sm text-muted-foreground">{[employee.cargo, employee.setor].filter(Boolean).join(" · ")}</p>
+              <div className="flex flex-wrap gap-1.5">
+                <span className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.04em] ${({ ativo: "bg-emerald-50 text-emerald-700", ferias: "bg-sky-50 text-sky-700", afastado: "bg-rose-50 text-rose-700", em_admissao: "bg-amber-50 text-amber-800", demitido: "bg-slate-100 text-slate-600" } as Record<string, string>)[employee.status] || "bg-muted text-muted-foreground"}`}>
+                  {({ ativo: "Ativo", ferias: "Férias", afastado: "Afastado", em_admissao: "Em admissão", demitido: "Desligado" } as Record<string, string>)[employee.status] || employee.status}
+                </span>
+                {employee.codigo_funcionario && <span className="rounded-full bg-muted px-2.5 py-0.5 text-[11px] text-muted-foreground">Cód. {employee.codigo_funcionario}</span>}
+                {employee.data_admissao && <span className="rounded-full bg-muted px-2.5 py-0.5 text-[11px] text-muted-foreground">Desde {String(employee.data_admissao).split("-").reverse().join("/")}</span>}
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2 lg:justify-end">
             {employee.status === "demitido" && (
-              <Button variant="outline" onClick={() => setShowReadmitDialog(true)}>
+              <Button variant="outline" size="sm" onClick={() => setShowReadmitDialog(true)}>
                 <RotateCcw className="w-4 h-4 mr-2" />
                 Readmitir
               </Button>
             )}
-            <Button variant="outline" onClick={() => navigate(`/ver-como/${employee.id}`)}>
+            <Button variant="outline" size="sm" onClick={() => navigate(`/ver-como/${employee.id}`)}>
               <Eye className="w-4 h-4 mr-2" />
               Ver portal
             </Button>
             <GenerateContractButton employee={employee} />
             <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
             <DialogTrigger asChild>
-              <Button variant="outline">
+              <Button size="sm">
                 <Edit className="w-4 h-4 mr-2" />
                 Editar
               </Button>
@@ -164,7 +187,7 @@ const EmployeeDetails = () => {
           </Dialog>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive" disabled={deleting}>
+                <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 hover:text-destructive" disabled={deleting}>
                   <Trash2 className="w-4 h-4 mr-2" />
                   {deleting ? "Excluindo..." : "Excluir"}
                 </Button>
@@ -190,7 +213,7 @@ const EmployeeDetails = () => {
 
         <EmployeeInfo employee={employee} onUpdate={fetchEmployee} />
 
-        <Tabs defaultValue="epis" className="mt-6">
+        <Tabs defaultValue="epis" className="mt-2">
           <TabsList className="inline-flex w-full overflow-x-auto justify-start tabs-scroll">
             <TabsTrigger value="epis" className="flex-shrink-0">EPIs</TabsTrigger>
             <TabsTrigger value="uniformes" className="flex-shrink-0">Uniformes</TabsTrigger>
