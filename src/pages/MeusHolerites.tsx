@@ -57,12 +57,12 @@ export default function MeusHolerites() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+    <div className="mx-auto max-w-4xl space-y-5 px-4 py-5 sm:p-6">
+      <div className="space-y-2">
+        <Button variant="ghost" size="sm" className="-ml-2" onClick={() => navigate(-1)}>
           <ArrowLeft className="w-4 h-4 mr-1" /> Voltar
         </Button>
-        <h1 className="text-2xl font-bold">{colaboradorPreview && employee ? `Holerites de ${employee.nome_completo}` : "Meus Holerites"}</h1>
+        <h1 className="break-words text-xl font-medium sm:text-2xl">{colaboradorPreview && employee ? `Holerites de ${employee.nome_completo}` : "Meus Holerites"}</h1>
       </div>
       {colaboradorPreview && (
         <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900">
@@ -82,12 +82,12 @@ export default function MeusHolerites() {
         <>
           {documentos.filter((documento) => documento.status !== "assinado").length > 0 && (
             <Card className="border-orange-300 bg-orange-50/40">
-              <CardHeader><CardTitle className="flex items-center gap-2 text-base"><PenLine className="h-4 w-4 text-orange-600" /> PDFs pendentes de assinatura</CardTitle></CardHeader>
-              <CardContent className="space-y-2">
+              <CardHeader className="px-4 sm:px-6"><CardTitle className="flex items-center gap-2 text-base"><PenLine className="h-4 w-4 text-orange-600" /> PDFs pendentes de assinatura</CardTitle></CardHeader>
+              <CardContent className="space-y-2 px-3 sm:px-6">
                 {documentos.filter((documento) => documento.status !== "assinado").map((documento) => (
-                  <div key={documento.id} className="flex items-center justify-between gap-3 rounded-lg border bg-background p-3">
-                    <div><div className="font-medium">{MESES[documento.mes]}/{documento.ano}</div><div className="text-sm text-muted-foreground">{documento.arquivo_nome}</div></div>
-                    <Button disabled={!!colaboradorPreview} onClick={() => setSelectedDocumento(documento)}><PenLine className="mr-2 h-4 w-4" /> Assinar</Button>
+                  <div key={documento.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-background p-3">
+                    <div className="min-w-0"><div className="font-medium">{MESES[documento.mes]}/{documento.ano}</div><div className="truncate text-sm text-muted-foreground">{documento.arquivo_nome}</div></div>
+                    <Button className="shrink-0" disabled={!!colaboradorPreview} onClick={() => setSelectedDocumento(documento)}><PenLine className="mr-2 h-4 w-4" /> Assinar</Button>
                   </div>
                 ))}
               </CardContent>
@@ -96,12 +96,12 @@ export default function MeusHolerites() {
 
           {documentos.some((documento) => documento.status === "assinado") && (
             <Card>
-              <CardHeader><CardTitle className="flex items-center gap-2 text-base"><FileCheck2 className="h-4 w-4 text-green-600" /> PDFs assinados</CardTitle></CardHeader>
-              <CardContent className="space-y-2">
+              <CardHeader className="px-4 sm:px-6"><CardTitle className="flex items-center gap-2 text-base"><FileCheck2 className="h-4 w-4 text-green-600" /> PDFs assinados</CardTitle></CardHeader>
+              <CardContent className="space-y-2 px-3 sm:px-6">
                 {documentos.filter((documento) => documento.status === "assinado").map((documento) => (
-                  <div key={documento.id} className="flex items-center justify-between gap-3 rounded-lg border p-3">
-                    <div><div className="flex items-center gap-2 font-medium">{MESES[documento.mes]}/{documento.ano}<Badge variant="secondary" className="bg-green-100 text-green-800">Assinado</Badge></div><div className="text-xs font-mono text-muted-foreground">{documento.protocolo}</div></div>
-                    <Button variant="outline" onClick={async () => {
+                  <div key={documento.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
+                    <div className="min-w-0"><div className="flex flex-wrap items-center gap-2 font-medium">{MESES[documento.mes]}/{documento.ano}<Badge variant="secondary" className="bg-green-100 text-green-800">Assinado</Badge></div><div className="break-all text-xs font-mono text-muted-foreground">{documento.protocolo}</div></div>
+                    <Button variant="outline" className="shrink-0" onClick={async () => {
                       const path = documento.pdf_assinado_path || documento.arquivo_path;
                       const bucket = documento.pdf_assinado_path ? "holerites-assinados" : "holerites-importados";
                       const { data, error } = await supabase.storage.from(bucket).download(path);
