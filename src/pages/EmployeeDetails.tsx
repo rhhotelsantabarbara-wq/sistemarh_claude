@@ -16,7 +16,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Edit, Loader2, Trash2, RotateCcw } from "lucide-react";
+import { ArrowLeft, Edit, Loader2, Trash2, RotateCcw, Eye } from "lucide-react";
 import { toast } from "sonner";
 
 import EmployeeInfo from "@/components/employees/EmployeeInfo";
@@ -135,6 +135,10 @@ const EmployeeDetails = () => {
                 Readmitir
               </Button>
             )}
+            <Button variant="outline" onClick={() => navigate(`/ver-como/${employee.id}`)}>
+              <Eye className="w-4 h-4 mr-2" />
+              Ver portal
+            </Button>
             <GenerateContractButton employee={employee} />
             <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
             <DialogTrigger asChild>

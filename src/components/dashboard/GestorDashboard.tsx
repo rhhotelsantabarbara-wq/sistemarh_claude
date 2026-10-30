@@ -62,6 +62,7 @@ import { BirthdayListDialog } from "@/components/dashboard/BirthdayListDialog";
 import { PendingChecklistsAlert } from "@/components/dashboard/PendingChecklistsAlert";
 import { ExperiencePeriodAlerts } from "@/components/dashboard/ExperiencePeriodAlerts";
 import { DocumentosVencendoAlert } from "@/components/dashboard/DocumentosVencendoAlert";
+import { VerComoColaboradorButton } from "@/components/employees/VerComoColaboradorDialog";
 import EventoNotifications from "@/components/dashboard/EventoNotifications";
 import TaskList from "@/components/dashboard/TaskList";
 import NavigationSearch from "@/components/dashboard/NavigationSearch";
@@ -820,8 +821,8 @@ const GestorDashboard = ({ user }: GestorDashboardProps) => {
             <h1 className="text-2xl font-bold">Funcionários</h1>
             {/* Search and Employee List */}
             <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="relative flex-1">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="relative min-w-[200px] flex-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <Input
                     placeholder="Buscar por nome, cargo ou setor..."
@@ -830,6 +831,7 @@ const GestorDashboard = ({ user }: GestorDashboardProps) => {
                     className="pl-10"
                   />
                 </div>
+                <VerComoColaboradorButton />
                 <Button onClick={handleAddEmployee}>
                   <Plus className="w-4 h-4 mr-2" />
                   Novo Funcionário

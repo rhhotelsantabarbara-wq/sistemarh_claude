@@ -43,6 +43,7 @@ const Treinamentos = lazyComRetry(() => import("./pages/Treinamentos"));
 const Adiantamentos = lazyComRetry(() => import("./pages/Adiantamentos"));
 const PlanoAdmissaoDesligamento = lazyComRetry(() => import("./pages/PlanoAdmissaoDesligamento"));
 const AdmissaoDigital = lazyComRetry(() => import("./pages/AdmissaoDigital"));
+const VerComoColaborador = lazyComRetry(() => import("./pages/VerComoColaborador"));
 const AdmissaoPublica = lazyComRetry(() => import("./pages/AdmissaoPublica"));
 const PeopleManager = lazyComRetry(() => import("./pages/PeopleManager"));
 const Tacs = lazyComRetry(() => import("./pages/Tacs"));
@@ -117,6 +118,7 @@ const App = () => {
               <Route path="/adiantamentos" element={<AppLayout><Adiantamentos /></AppLayout>} />
               <Route path="/plano-admissao-desligamento" element={<AppLayout><PlanoAdmissaoDesligamento /></AppLayout>} />
               <Route path="/admissao-digital" element={<AppLayout><AdmissaoDigital /></AppLayout>} />
+              <Route path="/ver-como/:id" element={<VerComoColaborador />} />
               <Route path="/people-manager" element={<AppLayout><PeopleManager /></AppLayout>} />
               <Route path="/tacs" element={<AppLayout><Tacs /></AppLayout>} />
               <Route path="/crachas" element={<AppLayout><Crachas /></AppLayout>} />

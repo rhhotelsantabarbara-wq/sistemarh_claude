@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,8 @@ const COMPETENCIA_INICIAL_COLABORADOR = "ano.gt.2026,and(ano.eq.2026,mes.gte.9)"
 
 export default function MeusHolerites() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const colaboradorPreview = params.get("colaborador"); // RH vendo como o colaborador
   const [loading, setLoading] = useState(true);
   const [employee, setEmployee] = useState<any>(null);
   const [documentos, setDocumentos] = useState<any[]>([]);
@@ -36,7 +38,7 @@ export default function MeusHolerites() {
     const { data: emp } = await supabase
       .from("employees")
       .select("*")
-      .eq("user_id", user.id)
+      .eq(colaboradorPreview ? "id" : "user_id", colaboradorPreview || user.id)
       .maybeSingle();
     if (!emp) {
       setLoading(false);
@@ -60,8 +62,13 @@ export default function MeusHolerites() {
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
           <ArrowLeft className="w-4 h-4 mr-1" /> Voltar
         </Button>
-        <h1 className="text-2xl font-bold">Meus Holerites</h1>
+        <h1 className="text-2xl font-bold">{colaboradorPreview && employee ? `Holerites de ${employee.nome_completo}` : "Meus Holerites"}</h1>
       </div>
+      {colaboradorPreview && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900">
+          Visualização do RH: você vê os holerites como o colaborador vê, mas não pode assinar por ele.
+        </div>
+      )}
 
       {loading ? (
         <p className="text-muted-foreground">Carregando...</p>
@@ -80,7 +87,7 @@ export default function MeusHolerites() {
                 {documentos.filter((documento) => documento.status !== "assinado").map((documento) => (
                   <div key={documento.id} className="flex items-center justify-between gap-3 rounded-lg border bg-background p-3">
                     <div><div className="font-medium">{MESES[documento.mes]}/{documento.ano}</div><div className="text-sm text-muted-foreground">{documento.arquivo_nome}</div></div>
-                    <Button onClick={() => setSelectedDocumento(documento)}><PenLine className="mr-2 h-4 w-4" /> Assinar</Button>
+                    <Button disabled={!!colaboradorPreview} onClick={() => setSelectedDocumento(documento)}><PenLine className="mr-2 h-4 w-4" /> Assinar</Button>
                   </div>
                 ))}
               </CardContent>

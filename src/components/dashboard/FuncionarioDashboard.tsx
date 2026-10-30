@@ -80,10 +80,13 @@ interface VisibilitySettings {
 }
 
 interface FuncionarioDashboardProps {
-  user: User;
+  user?: User;
+  /** RH vendo o painel de um colaborador (só visualização) */
+  previewEmployeeId?: string;
 }
 
-const FuncionarioDashboard = ({ user }: FuncionarioDashboardProps) => {
+const FuncionarioDashboard = ({ user, previewEmployeeId }: FuncionarioDashboardProps) => {
+  const preview = !!previewEmployeeId;
   const navigate = useNavigate();
   const [employee, setEmployee] = useState<any>(null);
   const [epis, setEpis] = useState<any[]>([]);
@@ -113,7 +116,7 @@ const FuncionarioDashboard = ({ user }: FuncionarioDashboardProps) => {
   useEffect(() => {
     fetchEmployeeData();
     fetchVisibilitySettings();
-  }, [user]);
+  }, [user, previewEmployeeId]);
 
   const fetchVisibilitySettings = async () => {
     try {
@@ -148,7 +151,7 @@ const FuncionarioDashboard = ({ user }: FuncionarioDashboardProps) => {
       const { data: empData } = await supabase
         .from("employees")
         .select("*")
-        .eq("user_id", user.id)
+        .eq(preview ? "id" : "user_id", preview ? previewEmployeeId! : user!.id)
         .maybeSingle();
 
       if (empData) {
@@ -281,6 +284,7 @@ const FuncionarioDashboard = ({ user }: FuncionarioDashboardProps) => {
   };
 
   const handleLogout = async () => {
+    if (preview) { navigate("/dashboard#funcionarios"); return; }
     const { error } = await supabase.auth.signOut();
     if (error) {
       toast.error("Erro ao sair");
@@ -324,7 +328,7 @@ const FuncionarioDashboard = ({ user }: FuncionarioDashboardProps) => {
             <span className="flex h-9 items-center rounded-lg bg-white/95 px-2"><img src={companyLogo} alt="Logo da empresa" className="h-7 w-auto object-contain" /></span>
           ) : <span className="text-sm font-semibold opacity-90">Meu Painel</span>}
           <Button variant="ghost" size="sm" onClick={handleLogout} className="text-primary-foreground hover:bg-white/15 hover:text-primary-foreground">
-            <LogOut className="mr-1.5 h-4 w-4" />Sair
+            <LogOut className="mr-1.5 h-4 w-4" />{preview ? "Sair da visualização" : "Sair"}
           </Button>
         </div>
         {!compacto && (
@@ -378,6 +382,7 @@ const FuncionarioDashboard = ({ user }: FuncionarioDashboardProps) => {
   const dataCurta = (d: string) => dataBR(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
 
   const marcarComoLido = async (aviso: any) => {
+    if (preview) { toast.info("Na visualização do RH nada é marcado em nome do colaborador."); return; }
     if (avisosLidos.has(aviso.id)) return;
     const { error } = await supabase.from("avisos_leituras").insert({ aviso_id: aviso.id, employee_id: employee.id });
     if (!error) setAvisosLidos((prev) => new Set(prev).add(aviso.id));
@@ -435,7 +440,7 @@ const FuncionarioDashboard = ({ user }: FuncionarioDashboardProps) => {
   });
 
   const atalhos: { chave: string; titulo: string; sub: string; icone: any; cor: string; contador?: number; acao?: () => void }[] = [];
-  if (visibility.holerite_visivel) atalhos.push({ chave: "holerites", titulo: "Holerites", sub: "Ver, baixar e assinar", icone: Receipt, cor: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300", acao: () => navigate("/meus-holerites") });
+  if (visibility.holerite_visivel) atalhos.push({ chave: "holerites", titulo: "Holerites", sub: "Ver, baixar e assinar", icone: Receipt, cor: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300", acao: () => navigate(preview ? `/meus-holerites?colaborador=${employee.id}` : "/meus-holerites") });
   if (visibility.avisos_visivel) atalhos.push({ chave: "avisos", titulo: "Avisos", sub: naoLidos.length ? `${naoLidos.length} não lido${naoLidos.length > 1 ? "s" : ""}` : "Tudo lido", icone: Megaphone, cor: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300", contador: naoLidos.length });
   if (visibility.treinamentos_visivel) atalhos.push({ chave: "treinamentos", titulo: "Treinamentos", sub: "Cursos e certificados", icone: GraduationCap, cor: "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300" });
   if (visibility.epis_visivel) atalhos.push({ chave: "epis", titulo: "EPIs", sub: `${epis.length} recebido${epis.length === 1 ? "" : "s"}`, icone: HardHat, cor: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300" });
@@ -506,8 +511,8 @@ const FuncionarioDashboard = ({ user }: FuncionarioDashboardProps) => {
     <div className="min-h-screen bg-muted/30">
       <Cabecalho />
       <main className="mx-auto -mt-4 max-w-3xl space-y-5 px-4 pb-10">
-        <PendingSignaturesAlert />
-        <PendingHoleritesAlert />
+        {!preview && <PendingSignaturesAlert />}
+        {!preview && <PendingHoleritesAlert />}
 
         {visibility.ferias_visivel && feriasEmCurso && progressoFerias && progressoFerias.daysRemaining > 0 && (
           <Card className="overflow-hidden border-0 bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md">
