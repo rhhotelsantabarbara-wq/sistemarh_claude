@@ -1,4 +1,4 @@
-// Acesso direto à API do Google Drive (substitui o conector da Lovable).
+// Acesso direto à API do Google Drive.
 // Secrets: GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET.
 // A autorização da conta Google vem do botão "Conectar Google Drive" (tabela google_drive_conexao);
 // opcionalmente, GOOGLE_DRIVE_REFRESH_TOKEN nos secrets tem prioridade.

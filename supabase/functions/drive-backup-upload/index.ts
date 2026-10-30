@@ -148,7 +148,7 @@ Deno.serve(async (req) => {
       const folderId = await ensurePath(supabase, segments, rootId);
 
       // Upload multipart
-      const boundary = "lovable_boundary_" + crypto.randomUUID();
+      const boundary = "cerebrum_boundary_" + crypto.randomUUID();
       const metadata = { name: nome_arquivo, parents: [folderId] };
       const body1 = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n--${boundary}\r\nContent-Type: application/pdf\r\nContent-Transfer-Encoding: base64\r\n\r\n${pdf_base64}\r\n--${boundary}--`;
 
