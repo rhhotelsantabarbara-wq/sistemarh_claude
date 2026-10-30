@@ -29,8 +29,10 @@ import {
   Palmtree,
   GraduationCap,
   HardHat,
+  Stethoscope,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import EnviarAtestado from "@/components/portal/EnviarAtestado";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { VacationProgress } from "@/components/ui/vacation-progress";
@@ -441,6 +443,7 @@ const FuncionarioDashboard = ({ user, previewEmployeeId }: FuncionarioDashboardP
 
   const atalhos: { chave: string; titulo: string; sub: string; icone: any; cor: string; contador?: number; acao?: () => void }[] = [];
   if (visibility.holerite_visivel) atalhos.push({ chave: "holerites", titulo: "Holerites", sub: "Ver, baixar e assinar", icone: Receipt, cor: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300", acao: () => navigate(preview ? `/meus-holerites?colaborador=${employee.id}` : "/meus-holerites") });
+  atalhos.push({ chave: "atestado", titulo: "Enviar atestado", sub: "Foto pelo celular", icone: Stethoscope, cor: "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300" });
   if (visibility.avisos_visivel) atalhos.push({ chave: "avisos", titulo: "Avisos", sub: naoLidos.length ? `${naoLidos.length} não lido${naoLidos.length > 1 ? "s" : ""}` : "Tudo lido", icone: Megaphone, cor: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300", contador: naoLidos.length });
   if (visibility.treinamentos_visivel) atalhos.push({ chave: "treinamentos", titulo: "Treinamentos", sub: "Cursos e certificados", icone: GraduationCap, cor: "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300" });
   if (visibility.epis_visivel) atalhos.push({ chave: "epis", titulo: "EPIs", sub: `${epis.length} recebido${epis.length === 1 ? "" : "s"}`, icone: HardHat, cor: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300" });
@@ -465,6 +468,12 @@ const FuncionarioDashboard = ({ user, previewEmployeeId }: FuncionarioDashboardP
   if (secao === "avisos" && visibility.avisos_visivel) return (
     <TelaSecao titulo="Avisos">
       {avisosOrdenados.length === 0 ? <ListaVazia texto="Nenhum aviso no momento." /> : <div className="space-y-3">{avisosOrdenados.map((a) => <CartaoAviso key={a.id} aviso={a} />)}</div>}
+    </TelaSecao>
+  );
+  if (secao === "atestado") return (
+    <TelaSecao titulo="Enviar atestado">
+      {preview && <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">Visualização do RH: o envio fica bloqueado, só aparecem os atestados já enviados.</p>}
+      <EnviarAtestado employeeId={employee.id} somenteLeitura={preview} />
     </TelaSecao>
   );
   if (secao === "treinamentos" && visibility.treinamentos_visivel) return (

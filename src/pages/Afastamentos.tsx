@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { abrirDocumentoAfastamento } from "@/components/afastamentos/AtestadosRecebidos";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Plus, FileText, Eye, Download, Search } from "lucide-react";
 import AbsenceForm from "@/components/forms/AbsenceForm";
+import AtestadosRecebidos from "@/components/afastamentos/AtestadosRecebidos";
 import { formatDateOnlyPtBR, todayISO } from "@/lib/date";
 
 interface EmployeeOption {
@@ -77,6 +79,8 @@ const Afastamentos = () => {
           Registrar Afastamento
         </Button>
       </div>
+
+      <AtestadosRecebidos onAprovado={fetchAll} />
 
       {showForm && (
         <Card>
@@ -182,7 +186,7 @@ const Afastamentos = () => {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => window.open(a.documento_url, "_blank")}
+                      onClick={() => abrirDocumentoAfastamento(a.documento_url)}
                     >
                       <Eye className="w-4 h-4 mr-1" />
                       Visualizar
@@ -190,12 +194,7 @@ const Afastamentos = () => {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => {
-                        const link = document.createElement("a");
-                        link.href = a.documento_url;
-                        link.download = `atestado_${a.id}`;
-                        link.click();
-                      }}
+                      onClick={() => abrirDocumentoAfastamento(a.documento_url, true)}
                     >
                       <Download className="w-4 h-4 mr-1" />
                       Baixar

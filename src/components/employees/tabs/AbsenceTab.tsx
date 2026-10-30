@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { abrirDocumentoAfastamento } from "@/components/afastamentos/AtestadosRecebidos";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, FileText, Download, Eye } from "lucide-react";
@@ -100,7 +101,7 @@ const AbsenceTab = ({ employeeId }: AbsenceTabProps) => {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => window.open(afastamento.documento_url, '_blank')}
+                          onClick={() => abrirDocumentoAfastamento(afastamento.documento_url)}
                         >
                           <Eye className="w-4 h-4 mr-1" />
                           Visualizar
@@ -108,12 +109,7 @@ const AbsenceTab = ({ employeeId }: AbsenceTabProps) => {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => {
-                            const link = document.createElement('a');
-                            link.href = afastamento.documento_url;
-                            link.download = `atestado_${afastamento.id}`;
-                            link.click();
-                          }}
+                          onClick={() => abrirDocumentoAfastamento(afastamento.documento_url, true)}
                         >
                           <Download className="w-4 h-4 mr-1" />
                           Baixar

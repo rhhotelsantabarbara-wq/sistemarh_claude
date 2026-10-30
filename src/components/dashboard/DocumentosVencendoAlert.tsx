@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CalendarClock, ChevronDown, ChevronUp, UserPlus } from "lucide-react";
+import { CalendarClock, ChevronDown, ChevronUp, Stethoscope, UserPlus } from "lucide-react";
 import { DIAS_AVISO_VENCIMENTO, nomeTipoDocumento, situacaoValidade } from "@/lib/documentosTipos";
 import { toISODateLocal, todayISO } from "@/lib/date";
 import { buscarTudo } from "@/lib/buscarTudo";
@@ -32,10 +32,11 @@ export const DocumentosVencendoAlert = () => {
       const limite = new Date();
       limite.setDate(limite.getDate() + DIAS_AVISO_VENCIMENTO);
       const ate = toISODateLocal(limite);
-      const [arquivos, cnh, convites] = await Promise.all([
+      const [arquivos, cnh, convites, atestados] = await Promise.all([
         supabase.from("employee_files").select("id, employee_id, categoria, file_name, validade, employees!inner(nome_completo, status)").not("validade", "is", null).lte("validade", ate).neq("employees.status", "demitido"),
         supabase.from("employees").select("id, nome_completo, cnh_validade").not("cnh_validade", "is", null).lte("cnh_validade", ate).neq("status", "demitido"),
         (supabase as any).from("admissao_convites").select("id", { count: "exact", head: true }).eq("status", "preenchido"),
+        (supabase as any).from("atestados_enviados").select("id", { count: "exact", head: true }).eq("status", "pendente"),
       ]);
       const itens: Item[] = [];
       // Um documento por pessoa e tipo: só o de validade mais recente conta (se já renovou, some do alerta)
@@ -54,11 +55,11 @@ export const DocumentosVencendoAlert = () => {
         itens.push({ chave: "cnh-" + e.id, employeeId: e.id, pessoa: e.nome_completo, documento: "CNH", validade: e.cnh_validade });
       });
       itens.sort((a, b) => a.validade.localeCompare(b.validade));
-      return { itens, convitesPreenchidos: convites.count || 0 };
+      return { itens, convitesPreenchidos: convites.count || 0, atestadosPendentes: atestados.count || 0 };
     },
   });
 
-  if (!data || (data.itens.length === 0 && data.convitesPreenchidos === 0)) return null;
+  if (!data || (data.itens.length === 0 && data.convitesPreenchidos === 0 && data.atestadosPendentes === 0)) return null;
   const hoje = todayISO();
   const vencidos = data.itens.filter((i) => i.validade < hoje).length;
   const visiveis = tudo ? data.itens : data.itens.slice(0, LIMITE_INICIAL);
@@ -68,12 +69,19 @@ export const DocumentosVencendoAlert = () => {
       <CardHeader className="pb-3">
         <CardTitle className="flex flex-wrap items-center gap-2 text-base">
           <CalendarClock className="h-5 w-5 text-amber-600" />
-          Documentos e admissões
+          Pendências do RH
           {vencidos > 0 && <Badge variant="destructive">{vencidos} vencido{vencidos > 1 ? "s" : ""}</Badge>}
           {data.itens.length - vencidos > 0 && <Badge variant="secondary">{data.itens.length - vencidos} vencendo</Badge>}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        {data.atestadosPendentes > 0 && (
+          <button type="button" onClick={() => navigate("/afastamentos")}
+            className="flex w-full items-center gap-3 rounded-lg border border-rose-300/60 bg-rose-50 p-3 text-left transition hover:bg-rose-100 dark:border-rose-900 dark:bg-rose-950/40">
+            <Stethoscope className="h-5 w-5 shrink-0 text-rose-600" />
+            <span className="text-sm"><strong>{data.atestadosPendentes}</strong> {data.atestadosPendentes === 1 ? "atestado enviado pelo celular espera" : "atestados enviados pelo celular esperam"} aprovação</span>
+          </button>
+        )}
         {data.convitesPreenchidos > 0 && (
           <button type="button" onClick={() => navigate("/admissao-digital")}
             className="flex w-full items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-left transition hover:bg-primary/10">
