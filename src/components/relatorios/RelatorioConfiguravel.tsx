@@ -143,14 +143,14 @@ export function RelatorioConfiguravel({ tipos, titulo }: { tipos: TipoRel[]; tit
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle>{titulo}</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">{titulo}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {tipos.length > 1 && (
               <div className="space-y-2">
-                <Label htmlFor={`rel-tipo-${titulo}`}>Relatório</Label>
+                <Label htmlFor={`rel-tipo-${titulo}`} className="text-[11px] font-bold uppercase tracking-[0.04em] text-muted-foreground">Relatório</Label>
                 <Select value={tipoChave} onValueChange={trocarTipo}>
                   <SelectTrigger id={`rel-tipo-${titulo}`}><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -160,7 +160,7 @@ export function RelatorioConfiguravel({ tipos, titulo }: { tipos: TipoRel[]; tit
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor={`rel-agrupar-${titulo}`}>Agrupar por</Label>
+              <Label htmlFor={`rel-agrupar-${titulo}`} className="text-[11px] font-bold uppercase tracking-[0.04em] text-muted-foreground">Agrupar por</Label>
               <Select value={agrupar} onValueChange={setAgrupar}>
                 <SelectTrigger id={`rel-agrupar-${titulo}`}><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -170,20 +170,20 @@ export function RelatorioConfiguravel({ tipos, titulo }: { tipos: TipoRel[]; tit
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor={`rel-busca-${titulo}`}>Buscar</Label>
+              <Label htmlFor={`rel-busca-${titulo}`} className="text-[11px] font-bold uppercase tracking-[0.04em] text-muted-foreground">Buscar</Label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input id={`rel-busca-${titulo}`} className="pl-9" placeholder="Nome, item, motivo…" value={busca} onChange={(e) => setBusca(e.target.value)} />
+                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input id={`rel-busca-${titulo}`} className="rounded-full border-0 bg-muted pl-10" placeholder="Nome, item, motivo…" value={busca} onChange={(e) => setBusca(e.target.value)} />
               </div>
             </div>
             {tipo.campoData && (
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label htmlFor={`rel-de-${titulo}`}>De</Label>
+                  <Label htmlFor={`rel-de-${titulo}`} className="text-[11px] font-bold uppercase tracking-[0.04em] text-muted-foreground">De</Label>
                   <Input id={`rel-de-${titulo}`} type="date" value={de} onChange={(e) => setDe(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor={`rel-ate-${titulo}`}>Até</Label>
+                  <Label htmlFor={`rel-ate-${titulo}`} className="text-[11px] font-bold uppercase tracking-[0.04em] text-muted-foreground">Até</Label>
                   <Input id={`rel-ate-${titulo}`} type="date" value={ate} onChange={(e) => setAte(e.target.value)} />
                 </div>
               </div>
@@ -232,8 +232,8 @@ export function RelatorioConfiguravel({ tipos, titulo }: { tipos: TipoRel[]; tit
           {grupos.map((g) => (
             <Card key={g.titulo || "todos"} id={`rel-${tipoChave}-${encodeURIComponent(g.titulo)}`} className="scroll-mt-24 overflow-hidden">
               {grupoDef && (
-                <div className="flex items-baseline justify-between gap-3 border-b bg-muted/40 px-4 py-3">
-                  <h3 className="font-semibold">{g.titulo}</h3>
+                <div className="flex items-baseline justify-between gap-3 border-b border-l-4 border-l-primary px-4 py-3">
+                  <h3 className="font-medium">{g.titulo}</h3>
                   <span className="text-sm text-muted-foreground">{g.lista.length} {g.lista.length === 1 ? "registro" : "registros"}</span>
                 </div>
               )}

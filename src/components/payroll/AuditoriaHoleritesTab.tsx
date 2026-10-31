@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { AuditoriaDocumentoDialog } from "@/components/holerites-assinatura/AuditoriaDocumentoDialog";
 import { baixarArquivo, gerarComprovanteDocumento, nomeArquivoSeguro, salvarBlob } from "@/components/holerites-assinatura/comprovanteDocumento";
 import { dataBR } from "@/lib/date";
+import { Indicador } from "@/components/layout/PageHeader";
 
 interface Props {
   empresaIdInicial?: string;
@@ -182,9 +183,9 @@ export function AuditoriaHoleritesTab({ empresaIdInicial }: Props) {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-base">
             <ShieldCheck className="w-5 h-5 text-primary" />
-            Auditoria & Fiscalização de Holerites
+            Auditoria e fiscalização de holerites
           </CardTitle>
           <p className="text-sm text-muted-foreground">
             Painel para conferência e exportação de comprovantes assinados conforme Lei nº 14.063/2020 e CLT art. 464.
@@ -362,19 +363,13 @@ export function AuditoriaHoleritesTab({ empresaIdInicial }: Props) {
 }
 
 function KpiCard({ label, value, accent }: { label: string; value: any; accent?: "emerald" | "amber" | "indigo" }) {
-  const colors: Record<string, string> = {
-    emerald: "text-emerald-600",
-    amber: "text-amber-600",
-    indigo: "text-indigo-600",
+  const estilo: Record<string, [string, string]> = {
+    emerald: ["border-l-emerald-500", "text-emerald-700"],
+    amber: ["border-l-amber-400", "text-amber-700"],
+    indigo: ["border-l-primary", "text-primary"],
   };
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="text-xs text-muted-foreground">{label}</div>
-        <div className={`text-2xl font-bold ${accent ? colors[accent] : ""}`}>{value}</div>
-      </CardContent>
-    </Card>
-  );
+  const [faixa, cor] = accent ? estilo[accent] : ["border-l-slate-300", ""];
+  return <Indicador rotulo={label} valor={value} faixa={faixa} cor={cor} />;
 }
 
 function HistoricoExportacoes() {

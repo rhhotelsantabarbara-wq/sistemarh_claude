@@ -1,16 +1,16 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Download, Plus, Pencil, Trash2, ChevronDown, ChevronUp, Calendar, FileText, Printer } from "lucide-react";
+import { Receipt, Download, Plus, Pencil, Trash2, ChevronDown, ChevronUp, Calendar, FileText, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import PageHeader, { BOTAO_PRINCIPAL } from "@/components/layout/PageHeader";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import VariaveisConfig from "@/components/payroll/VariaveisConfig";
@@ -105,7 +105,6 @@ interface ResumoVariavel {
 }
 
 const Payroll = () => {
-  const navigate = useNavigate();
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [setores, setSetores] = useState<Setor[]>([]);
   const [selectedEmpresa, setSelectedEmpresa] = useState<string>("all");
@@ -893,34 +892,22 @@ const Payroll = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background sm:p-2 lg:p-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <h1 className="text-3xl font-bold">Folha de Pagamento</h1>
-          </div>
-          {activeTab === "lancamentos" && pagamentos.length > 0 && (
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setShowRelatorioDialog(true)}>
-                <FileText className="w-4 h-4 mr-2" />
-                Relatório Detalhado
-              </Button>
-              <Button onClick={exportToPDF}>
-                <Download className="w-4 h-4 mr-2" />
-                Exportar PDF
-              </Button>
-            </div>
-          )}
-        </div>
+    <div>
+      <div className="space-y-6">
+        <PageHeader
+          titulo="Folha de pagamento"
+          descricao="Lançamentos, holerites para assinatura e auditoria"
+          icone={Receipt}
+          acoes={activeTab === "lancamentos" && pagamentos.length > 0 ? (
+            <>
+              <Button variant="outline" onClick={() => setShowRelatorioDialog(true)}><FileText className="h-4 w-4" />Relatório detalhado</Button>
+              <Button className={BOTAO_PRINCIPAL} onClick={exportToPDF}><Download className="h-4 w-4" />Exportar PDF</Button>
+            </>
+          ) : undefined}
+        />
 
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Filtros</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <Card>
+          <CardContent className="p-4 sm:p-5">
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <div>
                 <Label>Empresa</Label>
