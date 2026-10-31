@@ -36,7 +36,7 @@ const DistribuirEpi = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Distribuir EPI</h1>
+          <h1 className="text-xl font-medium leading-tight">Distribuir EPI</h1>
           <p className="text-sm text-muted-foreground">
             Entregue EPIs do estoque aos colaboradores e gere o recibo assinado
           </p>

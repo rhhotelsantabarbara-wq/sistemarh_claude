@@ -19,7 +19,7 @@ const Contracts = () => {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Contratos</h1>
+            <h1 className="text-xl font-medium leading-tight text-foreground">Contratos</h1>
             <p className="text-muted-foreground">
               Configure modelos de contrato para cada função
             </p>

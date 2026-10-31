@@ -283,8 +283,8 @@ export default function ConsultaJudicial() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Scale className="h-6 w-6" />
+          <h1 className="text-xl font-medium leading-tight flex items-center gap-2">
+            <Scale className="h-5 w-5 text-primary" />
             Consulta Judicial
           </h1>
           <p className="text-muted-foreground text-sm">

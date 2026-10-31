@@ -512,7 +512,7 @@ const Adiantamentos = () => {
 
   return (
     <div className="container mx-auto p-0 sm:p-2 lg:p-4 space-y-6">
-      <h1 className="text-3xl font-bold">Adiantamentos Mensais</h1>
+      <h1 className="text-xl font-medium leading-tight">Adiantamentos Mensais</h1>
 
       <Tabs defaultValue="lancamentos" className="space-y-6">
         <TabsList>

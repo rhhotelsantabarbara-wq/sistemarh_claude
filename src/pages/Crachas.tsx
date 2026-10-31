@@ -7,7 +7,7 @@ const Crachas = () => {
       <div className="flex items-center gap-3 mb-6">
         <IdCard className="h-8 w-8 text-primary" />
         <div>
-          <h1 className="text-3xl font-bold">Impressão de Crachás</h1>
+          <h1 className="text-xl font-medium leading-tight">Impressão de Crachás</h1>
           <p className="text-muted-foreground">
             Selecione os funcionários e gere um PDF com os crachás
           </p>

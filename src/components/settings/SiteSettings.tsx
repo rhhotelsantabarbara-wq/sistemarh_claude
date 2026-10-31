@@ -192,7 +192,7 @@ export function SiteSettings() {
   return (
     <div className="space-y-6 p-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Configurações do Site</h2>
+        <h2 className="text-lg font-medium">Configurações do site</h2>
         <p className="text-muted-foreground">
           Personalize a aparência e informações do seu sistema
         </p>

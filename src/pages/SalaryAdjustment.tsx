@@ -176,16 +176,8 @@ export default function SalaryAdjustment() {
 
   return (
     <div className="container mx-auto p-0 sm:p-2 lg:p-4">
-      <Button
-        variant="ghost"
-        onClick={() => navigate("/dashboard")}
-        className="mb-4"
-      >
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Voltar
-      </Button>
       <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
-        <h1 className="text-3xl font-bold">Reajuste Salarial</h1>
+        <h1 className="text-xl font-medium leading-tight">Reajuste Salarial</h1>
         <Button onClick={() => setShowHistory(true)}>Ver Histórico Completo</Button>
       </div>
 

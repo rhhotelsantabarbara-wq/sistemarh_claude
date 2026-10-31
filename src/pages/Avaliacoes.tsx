@@ -116,7 +116,7 @@ export default function Avaliacoes() {
     <div className="container mx-auto p-0 sm:p-2 lg:p-4 space-y-6">
       <div className="flex-wrap gap-3 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Avaliações de Desempenho</h1>
+          <h1 className="text-xl font-medium leading-tight">Avaliações de Desempenho</h1>
           <p className="text-muted-foreground">
             Gerencie avaliações periódicas e acompanhe o desenvolvimento da equipe
           </p>

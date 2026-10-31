@@ -55,15 +55,11 @@ const Eventos = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
+    <div className="">
+      <div className="space-y-6">
         <div className="flex-wrap gap-3 mb-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => navigate("/dashboard")}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Voltar
-            </Button>
-            <h1 className="text-3xl font-bold">Calendário de Eventos</h1>
+            <h1 className="text-xl font-medium leading-tight">Calendário de Eventos</h1>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={handleExportAll} disabled={exporting}>

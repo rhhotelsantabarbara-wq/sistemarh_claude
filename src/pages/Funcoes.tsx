@@ -44,17 +44,9 @@ const Funcoes = () => {
 
   return (
     <div className="container mx-auto p-0 sm:p-2 lg:p-4 space-y-6">
-      <Button
-        variant="ghost"
-        onClick={() => navigate("/dashboard")}
-        className="mb-4"
-      >
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Voltar
-      </Button>
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Funções</h1>
+          <h1 className="text-xl font-medium leading-tight">Funções</h1>
           <p className="text-muted-foreground">Gerencie as funções e seus CBOs</p>
         </div>
         <Button onClick={() => setIsDialogOpen(true)}>

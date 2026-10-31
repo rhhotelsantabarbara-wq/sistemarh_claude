@@ -107,15 +107,7 @@ export default function Turnover() {
 
   return (
     <div className="container mx-auto p-0 sm:p-2 lg:p-4 max-w-6xl">
-      <Button
-        variant="ghost"
-        onClick={() => navigate("/dashboard")}
-        className="mb-4"
-      >
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Voltar
-      </Button>
-      <h1 className="text-3xl font-bold mb-6">Relatório de Turnover</h1>
+      <h1 className="text-xl font-medium leading-tight ">Relatório de Turnover</h1>
 
       <Card className="mb-6">
         <CardHeader>

@@ -528,8 +528,8 @@ export default function NR1AuditoriaMT() {
     <div className="container mx-auto p-0 sm:p-2 lg:p-4 space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <ShieldCheck className="w-7 h-7 text-primary" />
+          <h1 className="text-xl font-medium leading-tight flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-primary" />
             Auditoria — Ministério do Trabalho
           </h1>
           <p className="text-muted-foreground mt-1">

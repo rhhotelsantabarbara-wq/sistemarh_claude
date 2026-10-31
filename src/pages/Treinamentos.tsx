@@ -7,7 +7,7 @@ export default function Treinamentos() {
   return (
     <div className="container mx-auto p-0 sm:p-2 lg:p-4 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Sistema de Treinamentos</h1>
+        <h1 className="text-xl font-medium leading-tight">Sistema de Treinamentos</h1>
         <p className="text-muted-foreground mt-2">
           Gerencie cursos, módulos, aulas e acompanhe o progresso dos funcionários
         </p>

@@ -98,7 +98,7 @@ export default function Recrutamento() {
 
   if (showForm || editingVaga) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="space-y-6">
         <VagaForm
           vagaId={editingVaga}
           onClose={() => {
@@ -113,18 +113,10 @@ export default function Recrutamento() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Button
-        variant="ghost"
-        onClick={() => navigate("/dashboard")}
-        className="mb-4"
-      >
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Voltar
-      </Button>
+    <div className="space-y-6">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Recrutamento e Seleção</h1>
+          <h1 className="text-xl font-medium leading-tight">Recrutamento e Seleção</h1>
           <p className="text-muted-foreground mt-2">Gerencie vagas e candidaturas</p>
         </div>
         <Button onClick={() => setShowForm(true)}>

@@ -12,7 +12,7 @@ const AIInsights = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="">
       <div className="container mx-auto py-6 px-4">
         <div className="mb-6">
           <Button
@@ -29,7 +29,7 @@ const AIInsights = () => {
               <Bot className="h-8 w-8 text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2">
+              <h1 className="text-xl font-medium leading-tight flex items-center gap-2">
                 Inteligência Artificial
                 <Sparkles className="h-5 w-5 text-yellow-500" />
               </h1>

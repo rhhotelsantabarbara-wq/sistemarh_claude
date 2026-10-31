@@ -18,15 +18,11 @@ export default function PeopleManager() {
   const [activeTab, setActiveTab] = useState("dashboard");
 
   return (
-    <div className="min-h-screen bg-background sm:p-2 lg:p-4">
+    <div className="">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar
-          </Button>
           <div>
-            <h1 className="text-3xl font-bold">People Manager</h1>
+            <h1 className="text-xl font-medium leading-tight">People Manager</h1>
             <p className="text-muted-foreground">Gestão estratégica de pessoas e talentos</p>
           </div>
         </div>

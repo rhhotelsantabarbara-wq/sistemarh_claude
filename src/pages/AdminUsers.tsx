@@ -62,11 +62,11 @@ export default function AdminUsers() {
     <div className="space-y-6">
       <div className="flex-wrap gap-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
             <ShieldCheck className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">Administradores</h1>
+            <h1 className="text-xl font-medium leading-tight">Administradores</h1>
             <p className="text-sm text-muted-foreground">Cadastre admins com acesso restrito a módulos específicos</p>
           </div>
         </div>

@@ -18,13 +18,9 @@ const SaudeOcupacional = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
+    <div className="">
+      <div className="space-y-6">
         <div className="mb-6 flex items-center justify-between">
-          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar
-          </Button>
           
           <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>
             <DialogTrigger asChild>
@@ -46,7 +42,7 @@ const SaudeOcupacional = () => {
         </div>
 
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Saúde Ocupacional</h1>
+          <h1 className="text-xl font-medium leading-tight mb-2">Saúde Ocupacional</h1>
           <p className="text-muted-foreground">
             Gerencie encaminhamentos para exames médicos ocupacionais
           </p>

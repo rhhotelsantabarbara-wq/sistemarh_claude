@@ -154,11 +154,8 @@ export default function Contabilidade() {
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-5xl mx-auto space-y-6">
-        <Button variant="ghost" onClick={() => navigate("/dashboard")} className="mb-2">
-          <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
-        </Button>
 
-        <h1 className="text-2xl font-bold">Informações para Contabilidade</h1>
+        <h1 className="text-xl font-medium leading-tight">Informações para Contabilidade</h1>
 
         {/* Form */}
         <Card>

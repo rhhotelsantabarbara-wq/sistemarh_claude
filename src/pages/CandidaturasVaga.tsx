@@ -77,11 +77,11 @@ export default function CandidaturasVaga() {
   };
 
   if (loading) {
-    return <div className="container mx-auto px-4 py-8">Carregando...</div>;
+    return <div className="space-y-6">Carregando...</div>;
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="space-y-6">
       <Button variant="ghost" onClick={() => navigate("/recrutamento")} className="mb-6">
         <ArrowLeft className="mr-2 h-4 w-4" />
         Voltar para Vagas
@@ -89,7 +89,7 @@ export default function CandidaturasVaga() {
 
       {vaga && (
         <div className="mb-8">
-          <h1 className="text-3xl font-bold">{vaga.titulo}</h1>
+          <h1 className="text-xl font-medium leading-tight">{vaga.titulo}</h1>
           <p className="text-muted-foreground mt-2">
             {candidaturas.length} candidatura(s) recebida(s)
           </p>

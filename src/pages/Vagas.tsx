@@ -67,9 +67,9 @@ export default function Vagas() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
+    <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="relative overflow-hidden border-b bg-gradient-to-br from-primary/5 via-background to-secondary/5">
+      <section className="relative overflow-hidden border-b bg-card">
         <div className="absolute inset-0 bg-grid-white/10 bg-[size:20px_20px]" />
         <div className="container relative mx-auto px-4 py-16 md:py-24">
           <div className="mx-auto max-w-3xl text-center space-y-6">
@@ -77,7 +77,7 @@ export default function Vagas() {
               <Users className="h-3 w-3 mr-1" />
               Novas Oportunidades
             </Badge>
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight animate-fade-in bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            <h1 className="text-3xl md:text-5xl font-medium tracking-tight text-foreground">
               Trabalhe Conosco
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground animate-fade-in max-w-2xl mx-auto">
@@ -190,7 +190,7 @@ export default function Vagas() {
                   className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-border/50 hover:border-primary/50 animate-fade-in overflow-hidden"
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-secondary to-accent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                  <div className="absolute top-0 left-0 w-full h-1 bg-primary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
                   
                   <CardHeader className="space-y-3">
                     <div className="flex items-start justify-between gap-2">
@@ -254,7 +254,7 @@ export default function Vagas() {
 
       {/* Footer CTA */}
       {!loading && filteredVagas.length > 0 && (
-        <section className="border-t bg-gradient-to-br from-primary/5 via-background to-secondary/5 py-16">
+        <section className="border-t bg-card py-16">
           <div className="container mx-auto px-4 text-center">
             <h3 className="text-2xl md:text-3xl font-bold mb-4">Não encontrou a vaga ideal?</h3>
             <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">

@@ -10,6 +10,8 @@ import { DatabaseBackupSettings } from "@/components/settings/DatabaseBackupSett
 import { DriveBackupSettings } from "@/components/settings/DriveBackupSettings";
 import { WhatsAppSettings } from "@/components/settings/WhatsAppSettings";
 import { AISettings } from "@/components/settings/AISettings";
+import PageHeader from "@/components/layout/PageHeader";
+import { Settings as SettingsIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Settings = () => {
@@ -39,18 +41,13 @@ const Settings = () => {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto">
-        <div className="p-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/dashboard")}
-            className="mb-4"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar ao Dashboard
-          </Button>
-          
+    <div className="">
+      <div>
+        <div>
+          <div className="mb-6">
+            <PageHeader titulo="Configurações" descricao="Site, painel do colaborador, alertas, backup, Google Drive, WhatsApp e inteligência artificial" icone={SettingsIcon} />
+          </div>
+
           <Tabs defaultValue={new URLSearchParams(window.location.search).has("drive") ? "drive" : "site"} className="space-y-6">
             <TabsList className="flex-wrap">
               <TabsTrigger value="site">Site</TabsTrigger>

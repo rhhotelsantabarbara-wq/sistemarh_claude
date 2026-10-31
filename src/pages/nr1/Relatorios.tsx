@@ -70,7 +70,7 @@ export default function NR1Relatorios() {
   return (
     <div className="container mx-auto p-0 sm:p-2 lg:p-4 space-y-6">
       <div className="flex-wrap gap-3 flex items-center justify-between">
-        <div className="flex items-center gap-3"><FileBarChart className="h-7 w-7 text-primary" /><h1 className="text-3xl font-bold">Relatórios NR-1</h1></div>
+        <div className="flex items-center gap-3"><FileBarChart className="h-5 w-5 text-primary" /><h1 className="text-xl font-medium leading-tight">Relatórios NR-1</h1></div>
         <div className="flex flex-wrap gap-2">
           <Button onClick={exportPDF}><Download className="h-4 w-4 mr-2" />PDF</Button>
           <Button onClick={exportExcel} variant="outline"><Download className="h-4 w-4 mr-2" />Excel</Button>
