@@ -323,38 +323,46 @@ const FuncionarioDashboard = ({ user, previewEmployeeId }: FuncionarioDashboardP
   const iniciais = String(employee.nome_completo || "").split(" ").filter(Boolean).map((p: string, i: number, a: string[]) => (i === 0 || i === a.length - 1 ? p[0] : "")).join("").toUpperCase();
 
   const Cabecalho = ({ compacto }: { compacto?: boolean }) => (
-    <header className="bg-primary text-primary-foreground">
-      <div className={`mx-auto max-w-3xl px-4 ${compacto ? "py-3" : "pt-4 pb-8"}`}>
-        <div className="flex items-center justify-between gap-3">
-          {companyLogo ? (
-            <span className="flex h-9 items-center rounded-lg bg-white/95 px-2"><img src={companyLogo} alt="Logo da empresa" className="h-7 w-auto object-contain" /></span>
-          ) : <span className="text-sm font-semibold opacity-90">Meu Painel</span>}
-          <Button variant="ghost" size="sm" onClick={handleLogout} className="text-primary-foreground hover:bg-white/15 hover:text-primary-foreground">
-            <LogOut className="mr-1.5 h-4 w-4" />{preview ? "Sair da visualização" : "Sair"}
+    <>
+      <header className="sticky top-0 z-20 border-b border-border bg-card">
+        <div className="mx-auto flex h-14 max-w-3xl items-center justify-between gap-3 px-4">
+          <div className="flex items-center gap-2.5">
+            {companyLogo
+              ? <img src={companyLogo} alt="Logo da empresa" className="h-8 w-auto object-contain" />
+              : <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">C</span>}
+            <span className="text-sm font-medium">Meu painel</span>
+          </div>
+          <Button variant="ghost" size="sm" onClick={handleLogout} className="text-muted-foreground">
+            <LogOut className="h-4 w-4" />{preview ? "Sair da visualização" : "Sair"}
           </Button>
         </div>
-        {!compacto && (
-          <div className="mt-5 flex items-center gap-4">
-            <Avatar className="h-16 w-16 border-2 border-white/40">
-              <AvatarImage src={employee.foto_url || undefined} alt="" className="object-cover" />
-              <AvatarFallback className="bg-white/20 text-lg font-semibold text-primary-foreground">{iniciais}</AvatarFallback>
-            </Avatar>
+      </header>
+      {!compacto && (
+        <div className="mx-auto max-w-3xl px-4 pt-5">
+          <div className="flex items-center gap-4 rounded-lg border-l-4 border-l-primary bg-card p-4 shadow-[0_1px_2px_rgba(20,24,40,0.06)]">
+            <div className="relative shrink-0">
+              <Avatar className="h-14 w-14">
+                <AvatarImage src={employee.foto_url || undefined} alt="" className="object-cover" />
+                <AvatarFallback className="bg-muted text-base font-bold text-muted-foreground">{iniciais}</AvatarFallback>
+              </Avatar>
+              <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-card bg-emerald-500" />
+            </div>
             <div className="min-w-0">
-              <p className="text-sm opacity-85">{saudacao},</p>
-              <h1 className="truncate text-2xl font-bold">{nomeBonito}</h1>
-              <p className="truncate text-sm opacity-85">{[employee.cargo, employee.setor].filter(Boolean).join(" · ")}</p>
+              <p className="text-xs text-muted-foreground">{saudacao},</p>
+              <h1 className="truncate text-xl font-medium leading-tight">{nomeBonito}</h1>
+              <p className="truncate text-xs text-muted-foreground">{[employee.cargo, employee.setor].filter(Boolean).join(" · ")}</p>
             </div>
           </div>
-        )}
-      </div>
-    </header>
+        </div>
+      )}
+    </>
   );
 
   if (hasAccess === false) {
     return (
-      <div className="min-h-screen bg-muted/30">
+      <div className="min-h-screen bg-background">
         <Cabecalho />
-        <main className="mx-auto -mt-4 max-w-3xl px-4 pb-8">
+        <main className="mx-auto max-w-3xl px-4 pb-8 pt-5">
           <Card>
             <CardContent className="py-12 text-center">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
@@ -395,7 +403,7 @@ const FuncionarioDashboard = ({ user, previewEmployeeId }: FuncionarioDashboardP
     const CategoriaIcon = categoriaIcons[aviso.categoria] || Bell;
     const lido = avisosLidos.has(aviso.id);
     return (
-      <div className={`rounded-xl border-l-4 bg-card p-4 shadow-sm ${prioridade.borderColor} ${lido ? "opacity-70" : ""}`}>
+      <div className={`rounded-lg border-l-4 bg-card p-4 shadow-[0_1px_2px_rgba(20,24,40,0.06)] ${prioridade.borderColor} ${lido ? "opacity-70" : ""}`}>
         <div className="flex items-start gap-3">
           <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${prioridade.bgColor}`}><CategoriaIcon className="h-4 w-4" /></span>
           <div className="min-w-0 flex-1">
@@ -424,20 +432,22 @@ const FuncionarioDashboard = ({ user, previewEmployeeId }: FuncionarioDashboardP
     );
   };
 
-  const resumo: { rotulo: string; valor: string; detalhe?: string; cor?: string; icone: any }[] = [];
-  if (visibility.folgas_visivel) resumo.push({ rotulo: "Folgas", valor: String(employee.quantidade_folgas || 0), detalhe: "disponíveis", icone: CalendarCheck });
-  if (visibility.banco_horas_visivel) resumo.push({ rotulo: "Banco de horas", valor: formatDecimalToHoursMinutes(bancoHoras), detalhe: "acumuladas", icone: Wallet });
+  const resumo: { rotulo: string; valor: string; detalhe?: string; cor?: string; faixa?: string; icone: any }[] = [];
+  if (visibility.folgas_visivel) resumo.push({ rotulo: "Folgas", valor: String(employee.quantidade_folgas || 0), detalhe: "disponíveis", faixa: "border-l-primary", icone: CalendarCheck });
+  if (visibility.banco_horas_visivel) resumo.push({ rotulo: "Banco de horas", valor: formatDecimalToHoursMinutes(bancoHoras), detalhe: "acumuladas", faixa: "border-l-violet-400", icone: Wallet });
   if (visibility.saldo_horas_visivel) resumo.push({
     rotulo: "Saldo do mês",
     valor: horasMesAnterior === null ? "—" : `${horasMesAnterior > 0 ? "+" : ""}${formatDecimalToHoursMinutes(horasMesAnterior)}`,
     detalhe: format(subMonths(new Date(), 1), "MMMM", { locale: ptBR }),
     cor: horasMesAnterior === null || horasMesAnterior === 0 ? undefined : horasMesAnterior > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400",
+    faixa: "border-l-amber-400",
     icone: Clock,
   });
   if (visibility.ferias_visivel) resumo.push({
     rotulo: "Férias",
     valor: feriasEmCurso ? "Agora" : feriasMarcadas ? dataCurta(feriasMarcadas.periodo_gozo_inicio) : "—",
     detalhe: feriasEmCurso ? `volta ${dataCurta(feriasEmCurso.periodo_gozo_fim)}` : feriasMarcadas ? "próximas férias" : "nada marcado",
+    faixa: "border-l-emerald-500",
     icone: Palmtree,
   });
 
@@ -450,13 +460,13 @@ const FuncionarioDashboard = ({ user, previewEmployeeId }: FuncionarioDashboardP
   if (visibility.uniformes_visivel) atalhos.push({ chave: "uniformes", titulo: "Uniformes", sub: `${uniformes.length} recebido${uniformes.length === 1 ? "" : "s"}`, icone: Shirt, cor: "bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300" });
 
   const TelaSecao = ({ titulo, children }: { titulo: string; children: React.ReactNode }) => (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen bg-background">
       <Cabecalho compacto />
       <main className="mx-auto max-w-3xl space-y-4 px-4 py-4 pb-10">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={voltar} className="-ml-2"><ArrowLeft className="mr-1 h-4 w-4" />Início</Button>
         </div>
-        <h2 className="text-2xl font-bold">{titulo}</h2>
+        <h2 className="text-xl font-medium">{titulo}</h2>
         {children}
       </main>
     </div>
@@ -517,35 +527,31 @@ const FuncionarioDashboard = ({ user, previewEmployeeId }: FuncionarioDashboardP
   );
   // ---------- tela inicial ----------
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen bg-background">
       <Cabecalho />
-      <main className="mx-auto -mt-4 max-w-3xl space-y-5 px-4 pb-10">
+      <main className="mx-auto max-w-3xl space-y-5 px-4 pb-10 pt-5">
         {!preview && <PendingSignaturesAlert />}
         {!preview && <PendingHoleritesAlert />}
 
         {visibility.ferias_visivel && feriasEmCurso && progressoFerias && progressoFerias.daysRemaining > 0 && (
-          <Card className="overflow-hidden border-0 bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md">
-            <CardContent className="space-y-3 p-5">
-              <div className="flex items-center gap-2 text-sm font-medium opacity-90"><Palmtree className="h-4 w-4" />Você está de férias</div>
-              <p className="text-2xl font-bold">Faltam {progressoFerias.daysRemaining} {progressoFerias.daysRemaining === 1 ? "dia" : "dias"}</p>
-              <div className="h-2 overflow-hidden rounded-full bg-white/25">
-                <div className="h-full rounded-full bg-white" style={{ width: `${progressoFerias.progress}%` }} />
-              </div>
-              <p className="text-sm opacity-90">Retorno previsto: {dataBR(feriasEmCurso.periodo_gozo_fim).toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}</p>
-            </CardContent>
-          </Card>
+          <div className="space-y-3 rounded-lg border-l-4 border-l-emerald-500 bg-card p-5 shadow-[0_1px_2px_rgba(20,24,40,0.06)]">
+            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.06em] text-emerald-700"><Palmtree className="h-4 w-4" />Você está de férias</div>
+            <p className="text-2xl font-medium">Faltam {progressoFerias.daysRemaining} {progressoFerias.daysRemaining === 1 ? "dia" : "dias"}</p>
+            <div className="h-2 overflow-hidden rounded-full bg-muted">
+              <div className="h-full rounded-full bg-emerald-500" style={{ width: `${progressoFerias.progress}%` }} />
+            </div>
+            <p className="text-sm text-muted-foreground">Retorno previsto: {dataBR(feriasEmCurso.periodo_gozo_fim).toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}</p>
+          </div>
         )}
 
         {resumo.length > 0 && (
           <div className={`grid gap-3 ${resumo.length === 1 ? "grid-cols-1" : "grid-cols-2"} ${resumo.length >= 4 ? "sm:grid-cols-4" : ""}`}>
             {resumo.map((r) => (
-              <Card key={r.rotulo} className="shadow-sm">
-                <CardContent className="p-4">
-                  <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground"><r.icone className="h-3.5 w-3.5" />{r.rotulo}</p>
-                  <p className={`mt-1 truncate text-2xl font-bold tabular-nums ${r.cor || ""}`}>{r.valor}</p>
-                  {r.detalhe && <p className="truncate text-xs text-muted-foreground">{r.detalhe}</p>}
-                </CardContent>
-              </Card>
+              <div key={r.rotulo} className={`rounded-lg border-l-4 ${r.faixa || "border-l-slate-300"} bg-card p-4 shadow-[0_1px_2px_rgba(20,24,40,0.06)]`}>
+                <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-muted-foreground">{r.rotulo}</p>
+                <p className={`mt-1 truncate text-2xl font-medium tabular-nums ${r.cor || ""}`}>{r.valor}</p>
+                {r.detalhe && <p className="truncate text-xs text-muted-foreground">{r.detalhe}</p>}
+              </div>
             ))}
           </div>
         )}
@@ -555,7 +561,7 @@ const FuncionarioDashboard = ({ user, previewEmployeeId }: FuncionarioDashboardP
         {visibility.avisos_visivel && naoLidos.length > 0 && (
           <section className="space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="flex items-center gap-2 text-lg font-semibold"><Bell className="h-5 w-5" />Avisos novos</h2>
+              <h2 className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.06em] text-muted-foreground"><Bell className="h-3.5 w-3.5" />Avisos novos</h2>
               {avisos.length > 2 && <Button variant="link" size="sm" className="px-0" onClick={() => abrir("avisos")}>Ver todos</Button>}
             </div>
             {avisosOrdenados.filter((a) => !avisosLidos.has(a.id)).slice(0, 2).map((a) => <CartaoAviso key={a.id} aviso={a} />)}
@@ -564,16 +570,16 @@ const FuncionarioDashboard = ({ user, previewEmployeeId }: FuncionarioDashboardP
 
         {atalhos.length > 0 && (
           <section className="space-y-3">
-            <h2 className="text-lg font-semibold">Acesso rápido</h2>
+            <h2 className="text-[11px] font-bold uppercase tracking-[0.06em] text-muted-foreground">Acesso rápido</h2>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {atalhos.map((a) => (
                 <button
                   key={a.chave}
                   type="button"
                   onClick={a.acao || (() => abrir(a.chave))}
-                  className="relative flex min-h-[112px] flex-col items-start justify-between rounded-2xl border bg-card p-4 text-left shadow-sm transition hover:border-primary/40 hover:shadow-md active:scale-[0.98]"
+                  className="relative flex min-h-[108px] flex-col items-start justify-between rounded-lg bg-card p-4 text-left shadow-[0_1px_2px_rgba(20,24,40,0.06)] transition hover:shadow-[0_2px_8px_rgba(20,24,40,0.1)] active:scale-[0.98]"
                 >
-                  <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${a.cor}`}><a.icone className="h-5 w-5" /></span>
+                  <span className={`flex h-10 w-10 items-center justify-center rounded-full ${a.cor}`}><a.icone className="h-5 w-5" /></span>
                   {!!a.contador && <span className="absolute right-3 top-3 flex h-6 min-w-6 items-center justify-center rounded-full bg-destructive px-1.5 text-xs font-bold text-destructive-foreground">{a.contador}</span>}
                   <span className="mt-3 block w-full">
                     <span className="block font-semibold">{a.titulo}</span>
