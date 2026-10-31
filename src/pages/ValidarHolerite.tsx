@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { dataBR } from "@/lib/date";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function ValidarHolerite() {
   const { protocolo } = useParams();
@@ -13,21 +14,27 @@ export default function ValidarHolerite() {
 
   useEffect(() => {
     if (!protocolo) return;
-    fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/holerite-validar?protocolo=${encodeURIComponent(protocolo)}`,
-      {
-        headers: {
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        },
-      },
-    )
-      .then((r) => r.json())
-      .then((res) => {
-        if (res.valido) setData(res);
-        else setErro(res.erro || "Documento não encontrado");
-      })
-      .catch((e) => setErro(String(e)))
-      .finally(() => setLoading(false));
+    (async () => {
+      try {
+        // Verificação direto no banco (holerites em PDF e antigos)
+        const { data: res, error } = await (supabase.rpc as any)("validar_holerite", { p_protocolo: protocolo });
+        if (!error && res) {
+          if (res.valido) return setData(res);
+          if (res.erro) return setErro(res.erro);
+        }
+        // Reserva: função antiga
+        const r = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/holerite-validar?protocolo=${encodeURIComponent(protocolo)}`,
+          { headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY } },
+        ).then((x) => x.json());
+        if (r.valido) setData(r);
+        else setErro(r.erro || "Documento não encontrado");
+      } catch (e) {
+        setErro(String(e));
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [protocolo]);
 
   return (
