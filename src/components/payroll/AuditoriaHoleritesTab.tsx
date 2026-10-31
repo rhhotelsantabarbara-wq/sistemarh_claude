@@ -10,7 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Download, Eye, ShieldCheck, FileWarning, Package, History } from "lucide-react";
 import { toast } from "sonner";
-import { AuditoriaHoleriteDialog } from "@/components/holerites-assinatura/AuditoriaHoleriteDialog";
+import { AuditoriaDocumentoDialog } from "@/components/holerites-assinatura/AuditoriaDocumentoDialog";
+import { baixarArquivo, gerarComprovanteDocumento, nomeArquivoSeguro, salvarBlob } from "@/components/holerites-assinatura/comprovanteDocumento";
 import { dataBR } from "@/lib/date";
 
 interface Props {
@@ -27,7 +28,7 @@ export function AuditoriaHoleritesTab({ empresaIdInicial }: Props) {
   const [statusFiltro, setStatusFiltro] = useState<string>("all");
   const [busca, setBusca] = useState("");
   const [exportando, setExportando] = useState(false);
-  const [auditId, setAuditId] = useState<string | null>(null);
+  const [linhaAuditoria, setLinhaAuditoria] = useState<any | null>(null);
   const [showHistorico, setShowHistorico] = useState(false);
 
   const { data: empresas } = useQuery({
@@ -49,51 +50,50 @@ export function AuditoriaHoleritesTab({ empresaIdInicial }: Props) {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["audit-holerites", mes, ano, empresaId, tipoContrato, setor, statusFiltro],
     queryFn: async () => {
-      let folhaQ = supabase
-        .from("folha_pagamento")
-        .select("id, employee_id, empresa_id, mes, ano, valor_bruto, valor_liquido, tipo_folha")
+      // Holerites em PDF importados para assinatura (holerite_documentos)
+      let docQ = (supabase as any)
+        .from("holerite_documentos")
+        .select("*")
         .eq("mes", mes)
         .eq("ano", ano);
-      if (empresaId !== "all") folhaQ = folhaQ.eq("empresa_id", empresaId);
-      const { data: folhas } = await folhaQ;
-      if (!folhas || folhas.length === 0) return [];
+      if (empresaId !== "all") docQ = docQ.eq("empresa_id", empresaId);
+      const { data: docs, error } = await docQ;
+      if (error) throw error;
+      if (!docs || docs.length === 0) return [];
 
-      const empIds = [...new Set(folhas.map((f) => f.employee_id))];
+      const empIds = [...new Set(docs.map((d: any) => d.employee_id))] as string[];
       const { data: emps } = await supabase
         .from("employees")
-        .select("id, nome_completo, cpf, cargo, setor, tipo_contrato")
+        .select("id, nome_completo, cpf, cargo, setor, tipo_contrato, codigo_funcionario")
         .in("id", empIds);
       const empMap = new Map((emps || []).map((e: any) => [e.id, e]));
 
-      const empresaIds = [...new Set(folhas.map((f) => f.empresa_id).filter(Boolean))] as string[];
+      const empresaIds = [...new Set(docs.map((d: any) => d.empresa_id).filter(Boolean))] as string[];
       const { data: empresasD } = await supabase
         .from("empresas")
-        .select("id, nome")
+        .select("id, nome, cnpj")
         .in("id", empresaIds.length ? empresaIds : ["00000000-0000-0000-0000-000000000000"]);
-      const empresaMap = new Map((empresasD || []).map((e: any) => [e.id, e.nome]));
+      const empresaMap = new Map((empresasD || []).map((e: any) => [e.id, e]));
 
-      const folhaIds = folhas.map((f) => f.id);
-      const { data: assinaturas } = await supabase
-        .from("holerite_assinaturas")
-        .select("id, folha_pagamento_id, protocolo, status, data_assinatura, ip_publico")
-        .in("folha_pagamento_id", folhaIds);
-      const assMap = new Map((assinaturas || []).map((a: any) => [a.folha_pagamento_id, a]));
-
-      let rows = folhas.map((f) => {
-        const e: any = empMap.get(f.employee_id) || {};
-        const a: any = assMap.get(f.id);
+      let rows = docs.map((d: any) => {
+        const e: any = empMap.get(d.employee_id) || {};
+        const empresa: any = empresaMap.get(d.empresa_id) || null;
+        const status = d.status === "assinado" ? "assinado" : d.data_visualizacao ? "visualizado" : "pendente";
         return {
-          folha_id: f.id,
-          assinatura_id: a?.id || null,
+          folha_id: d.id,
+          assinatura_id: d.status === "assinado" ? d.id : null,
+          doc: d,
+          emp: e,
+          empresaObj: empresa,
           funcionario: e.nome_completo || "—",
           cpf: e.cpf || "",
-          empresa: empresaMap.get(f.empresa_id) || "",
+          empresa: empresa?.nome || "",
           contrato: e.tipo_contrato || "",
           setor: e.setor || "",
-          status: a?.status || "nao_enviado",
-          protocolo: a?.protocolo || "",
-          data_assinatura: a?.data_assinatura || null,
-          ip: a?.ip_publico || "",
+          status,
+          protocolo: d.protocolo || "",
+          data_assinatura: d.data_assinatura || null,
+          ip: d.ip_publico || "",
         };
       });
 
@@ -139,46 +139,40 @@ export function AuditoriaHoleritesTab({ empresaIdInicial }: Props) {
     return <Badge variant="destructive">Não enviado</Badge>;
   };
 
+  // Pacote para fiscalização montado no navegador: holerite assinado + comprovante + selfie de cada um, e uma planilha geral
   const exportarPacote = async () => {
+    const linhas = rowsFiltradas;
+    if (!linhas.length) return;
     setExportando(true);
+    const aviso = toast.loading("Montando o pacote…");
     try {
-      const { data: session } = await supabase.auth.getSession();
-      const token = session.session?.access_token;
-      if (!token) throw new Error("Sessão inválida");
-
-      const url = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/holerite-export-fiscalizacao`;
-      const resp = await fetch(url, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mes, ano,
-          empresa_id: empresaId === "all" ? null : empresaId,
-          tipo_contrato: tipoContrato === "all" ? null : tipoContrato,
-          setor: setor === "all" ? null : setores?.find((s) => s.id === setor)?.nome,
-          status: statusFiltro === "all" ? null : statusFiltro,
-          incluir_holerites: true,
-          incluir_certificados: true,
-          incluir_selfies: true,
-        }),
-      });
-
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({ error: "Falha ao gerar pacote" }));
-        throw new Error(err.error || "Falha ao gerar pacote");
+      const JSZip = (await import("jszip")).default;
+      const zip = new JSZip();
+      const periodo = `${String(mes).padStart(2, "0")}-${ano}`;
+      const csv = ["Colaborador;CPF;Empresa;Contrato;Setor;Situação;Protocolo;Assinado em;IP;Código do documento (SHA-256);Código da assinatura (SHA-256)"];
+      let feitos = 0;
+      const assinados = linhas.filter((r) => r.status === "assinado");
+      for (const r of linhas) {
+        csv.push([r.funcionario, r.cpf, r.empresa, r.contrato, r.setor, r.status, r.protocolo, r.data_assinatura ? new Date(r.data_assinatura).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }) : "", r.ip, r.doc?.hash_documento || "", r.doc?.hash_assinatura || ""].map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(";"));
       }
-      const hash = resp.headers.get("X-Hash-Pacote") || "";
-      const blob = await resp.blob();
-      const dlUrl = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = dlUrl;
-      a.download = `fiscalizacao_${ano}${String(mes).padStart(2, "0")}.zip`;
-      a.click();
-      URL.revokeObjectURL(dlUrl);
-      toast.success("Pacote gerado", {
-        description: `Hash SHA-256: ${hash.slice(0, 16)}...`,
-      });
+      for (const r of assinados) {
+        const pasta = zip.folder(`${nomeArquivoSeguro(r.funcionario)}_${nomeArquivoSeguro(r.cpf || r.folha_id.slice(0, 6))}`)!;
+        const [pdf, selfie] = await Promise.all([baixarArquivo(r.doc.pdf_assinado_path), baixarArquivo(r.doc.selfie_path)]);
+        if (pdf) pasta.file(`holerite_assinado_${periodo}.pdf`, pdf);
+        if (selfie) pasta.file("selfie.jpg", selfie);
+        try {
+          pasta.file(`comprovante_assinatura_${periodo}.pdf`, await gerarComprovanteDocumento(r.doc, r.emp, r.empresaObj));
+        } catch (e) { console.error("comprovante", r.funcionario, e); }
+        feitos++;
+        toast.loading(`Montando o pacote… ${feitos}/${assinados.length}`, { id: aviso });
+      }
+      zip.file("relatorio_assinaturas.csv", "\ufeff" + csv.join("\r\n"));
+      const blob = await zip.generateAsync({ type: "blob" });
+      const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", await blob.arrayBuffer()))).map((b) => b.toString(16).padStart(2, "0")).join("");
+      salvarBlob(blob, `fiscalizacao_holerites_${ano}${String(mes).padStart(2, "0")}.zip`);
+      toast.success("Pacote gerado", { id: aviso, description: `${assinados.length} assinado(s) · código SHA-256 ${hash.slice(0, 16)}…` });
     } catch (e: any) {
-      toast.error(e.message || "Erro ao exportar");
+      toast.error(e.message || "Erro ao montar o pacote", { id: aviso });
     } finally {
       setExportando(false);
     }
@@ -267,7 +261,6 @@ export function AuditoriaHoleritesTab({ empresaIdInicial }: Props) {
                   <SelectItem value="assinado">Assinados</SelectItem>
                   <SelectItem value="visualizado">Visualizados</SelectItem>
                   <SelectItem value="pendente">Pendentes</SelectItem>
-                  <SelectItem value="nao_enviado">Não enviados</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -284,7 +277,7 @@ export function AuditoriaHoleritesTab({ empresaIdInicial }: Props) {
             </Button>
             <Button onClick={exportarPacote} disabled={exportando || (data || []).length === 0}>
               {exportando ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Package className="w-4 h-4 mr-2" />}
-              Exportar Pacote de Fiscalização (.zip)
+              Baixar pacote de fiscalização (.zip)
             </Button>
           </div>
         </CardContent>
@@ -312,7 +305,7 @@ export function AuditoriaHoleritesTab({ empresaIdInicial }: Props) {
           ) : rowsFiltradas.length === 0 ? (
             <div className="text-center py-10 text-muted-foreground flex flex-col items-center gap-2">
               <FileWarning className="w-8 h-8" />
-              Nenhum holerite encontrado.
+              Nenhum holerite em PDF importado neste mês.
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -331,7 +324,7 @@ export function AuditoriaHoleritesTab({ empresaIdInicial }: Props) {
                 </TableHeader>
                 <TableBody>
                   {rowsFiltradas.map((r) => (
-                    <TableRow key={r.folha_id}>
+                    <TableRow key={r.folha_id} className={r.status === "assinado" ? "cursor-pointer" : undefined} onClick={() => r.assinatura_id && setLinhaAuditoria({ doc: r.doc, emp: r.emp, empresa: r.empresaObj })}>
                       <TableCell className="font-medium">
                         {r.funcionario}
                         <div className="text-xs text-muted-foreground">{r.cpf}</div>
@@ -349,9 +342,9 @@ export function AuditoriaHoleritesTab({ empresaIdInicial }: Props) {
                           size="sm"
                           variant="outline"
                           disabled={!r.assinatura_id}
-                          onClick={() => setAuditId(r.assinatura_id)}
+                          onClick={(e) => { e.stopPropagation(); setLinhaAuditoria({ doc: r.doc, emp: r.emp, empresa: r.empresaObj }); }}
                         >
-                          <Eye className="w-4 h-4 mr-1" /> Auditoria
+                          <Eye className="w-4 h-4 mr-1" /> Comprovante
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -363,11 +356,7 @@ export function AuditoriaHoleritesTab({ empresaIdInicial }: Props) {
         </CardContent>
       </Card>
 
-      <AuditoriaHoleriteDialog
-        open={!!auditId}
-        onOpenChange={(o) => !o && setAuditId(null)}
-        assinaturaId={auditId}
-      />
+      <AuditoriaDocumentoDialog linha={linhaAuditoria} onFechar={() => setLinhaAuditoria(null)} />
     </div>
   );
 }

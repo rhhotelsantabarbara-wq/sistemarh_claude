@@ -203,7 +203,7 @@ export async function gerarCertificadoPdf(data: CertificadoData): Promise<Blob> 
   try {
     doc.setDrawColor(180, 180, 180);
     doc.rect(m, y, imgW, imgH);
-    doc.addImage(data.selfie_data_url, "JPEG", m, y, imgW, imgH);
+    doc.addImage(data.selfie_data_url, data.selfie_data_url.startsWith("data:image/png") ? "PNG" : "JPEG", m, y, imgW, imgH);
     doc.setFontSize(7);
     doc.text("Selfie capturada no ato", m, y + imgH + 4);
   } catch (e) {
@@ -213,7 +213,7 @@ export async function gerarCertificadoPdf(data: CertificadoData): Promise<Blob> 
     const sigX = m + imgW + 10;
     doc.setDrawColor(180, 180, 180);
     doc.rect(sigX, y, imgW + 20, imgH);
-    doc.addImage(data.assinatura_data_url, "PNG", sigX + 2, y + 2, imgW + 16, imgH - 4);
+    doc.addImage(data.assinatura_data_url, data.assinatura_data_url.startsWith("data:image/jpeg") ? "JPEG" : "PNG", sigX + 2, y + 2, imgW + 16, imgH - 4);
     doc.setFontSize(7);
     doc.text("Assinatura manuscrita", sigX, y + imgH + 4);
   } catch (e) {

@@ -49,6 +49,33 @@ Deno.serve(async (req) => {
       .eq("status", "assinado")
       .maybeSingle();
 
+    if (!error && !data) {
+      // Holerites em PDF importados e assinados pelo portal
+      const { data: doc } = await supa
+        .from("holerite_documentos")
+        .select("protocolo, hash_documento, hash_assinatura, data_assinatura, mes, ano, employees:employee_id(nome_completo, cpf), empresas:empresa_id(nome, cnpj)")
+        .eq("protocolo", protocolo)
+        .eq("status", "assinado")
+        .maybeSingle();
+      if (doc) {
+        return new Response(
+          JSON.stringify({
+            valido: true,
+            protocolo: doc.protocolo,
+            hash_documento: doc.hash_documento,
+            hash_assinatura: doc.hash_assinatura,
+            signatario_nome: maskNome((doc as any).employees?.nome_completo),
+            signatario_cpf: maskCpf((doc as any).employees?.cpf),
+            empresa: (doc as any).empresas?.nome || null,
+            cnpj: (doc as any).empresas?.cnpj || null,
+            periodo: `${String(doc.mes).padStart(2, "0")}/${doc.ano}`,
+            data_assinatura: doc.data_assinatura,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
     if (error || !data) {
       return new Response(JSON.stringify({ valido: false, erro: "Não encontrado" }), {
         status: 404,
